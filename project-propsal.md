@@ -7,7 +7,7 @@ Three project ideas, ranked by preference.
 
 | Rank | Idea | Tagline |
 |------|------|---------|
-| 1 | Event App | [_one-line tagline_] |
+| 1 | Event App | Event discovery app for Yale graduate students |
 | 2 | Ridesharing App | [_one-line tagline_]|
 | 3 | Coffee App | [_one-line tagline_] |
 
@@ -16,44 +16,41 @@ Three project ideas, ranked by preference.
 ## Priority 1: Event App
 
 ### 1. Tagline
-> _"[Product] for [specific audience]" in one line. Example format: "review app for local bagel shops"._
+> Event discovery app for Yale graduate students
 
 ### 2. Major User Journeys
 
-**Journey A: As a [primary user, e.g. attendee]**
-1. I log in / sign up and see ...
-2. I do ...
-3. I submit / receive ...
-4. Result: ...
+**Journey A: As a Yale graduate student looking to attend an event,**
+1. I sign up, login and see a map of New Haven will different types of events and filtering options.
+2. I filter the shown events to reflect my preferred event type and time.
+3. I read the event details of suggestions that interest me and share the one I like most with my friends. 
+4. Result: My friends and me are going out this weekend.
 
-**Journey B: As a [second user, e.g. organizer]**
-1. I log in and see ...
-2. I create / manage ...
-3. I submit / publish ...
-4. Result: ...
-
-**Journey C (optional): As an admin**
-1. ...
+**Journey B: As a event organizer**
+1. I sign up, log in and see a button to add my event.
+2. I create the event page, fill out all its details, add photos and add any relevant links.
+3. I submit the event so it shows up on the map and share the event link across Social Media.
+4. Result: The event I wanted to host has super many super cool guests. 
 
 ### 3. Core Features (MVP, 3-5)
 
-1. **Feature 1:** what it does, and why it is essential
-2. **Feature 2:** ...
-3. **Feature 3:** ...
-4. **Feature 4 (optional):** ...
-5. **Feature 5 (optional):** ...
+1. **Registration & Login:** Users need to create an account to persistently store relevant data with their profile and to manage platform access controls (event & attendance visibility). Each attendee account needs a username, email, password, profile photo, and degree program. Each
+2. **Event Search:** Users can search for events by text input, time, event type, price, and whether the event is attended by friends
+3. **Event Creation:** Users can create events by adding the event data (name, date, time, location, description, price, category) and a visual to the event before publishing it.
+4. **Community:** Users can add their friends via their email or username to see the events they are going to and invite them to events. They can also add their friends as co-editors of the event page. Users can share events both in & outside of the app.
 
 **Deliberately skipped for the MVP:**
-- ... (and why)
-- ...
+- Yale Auth Flow: Integration of sign in via Yale NetID is likely too technically/administratively complex
+- Payment Flow for Business Organizers: interesting for monetization but not to demonstrate the ID
+- Ticket Booking: Payment integration for paid events exceeds scope and would likely require coordination with external vendors
 
 ### 4. AI Feature
 
-- **What the LLM does for the user:** one sentence, e.g. "summarizes a week of club events".
-- **Input:** what data goes into the model
-- **Output:** what the user sees
-- **Why an LLM (vs. plain code or a database query):** ...
-- **Failure mode / fallback:** what happens if the output is wrong or the API is down
+- **What the LLM does for the user:** Autofill event creation form
+- **Input:** Event characteristics key:value pairs & text input
+- **Output:** A generated event visual & filled out event creation form
+- **Why an LLM (vs. plain code or a database query):** The friction of filling out the form can only be effectively lowered by generating new content (text + image) based on user input (e.g., the categories & description) that is likely to match what the user wants.
+- **Failure mode / fallback:** Error notification appears, form has to be filled out manually & instead of generating a visual, the img is the event category's icon if empty.
 
 ---
 
