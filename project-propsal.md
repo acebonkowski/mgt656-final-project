@@ -9,7 +9,7 @@ Three project ideas, ranked by preference.
 |------|------|---------|
 | 1 | Event App | Event discovery app for Yale graduate students |
 | 2 | Ridesharing App | [_one-line tagline_]|
-| 3 | Coffee App | [_one-line tagline_] |
+| 3 | Coffee App | A café discovery app helping New Haven students and residents find cafés based on coffee preferences, purpose of visit, and atmosphere |
 
 ---
 
