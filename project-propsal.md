@@ -57,37 +57,83 @@ Three project ideas, ranked by preference.
 ## Priority 2: Ridesharing App
 
 ### 1. Tagline
-> ...
+> SOM Ride Match helps Yale School of Management students find and coordinate shared rides for airport trips, weekend travel, conferences, and visits to nearby cities. Instead of relying on scattered Slack groups & WhatsApp messages, students can find compatible travel partners, negotiate small adjustments, and confirm a shared plan
 
 ### 2. Major User Journeys
 
 **Journey A: As a [rider]**
-1. ...
+1.  I log in to SOM Ride Match as a Yale SOM community member.
+2.	I enter my destination, travel date, preferred departure window, latest acceptable arrival time, luggage requirements, and number of seats needed.
+3.	I see available rides ranked by practical compatibility, not just matching destinations.
+4.	I can understand why a ride is suitable, including departure flexibility, pickup convenience, available seats, and any compromises required.
+5.	If the ride is almost suitable, I can use the AI Coordination Copilot to explore a mutually acceptable departure time or pickup location.
+6.	I send a request to the driver and confirm the plan once we both agree.
+
 
 **Journey B: As a [driver]**
-1. ...
+1.  I create a ride offer specifying my destination, departure window, available seats, luggage capacity, and preferred pickup area.
+2.	I indicate what I am flexible about, such as leaving 15 minutes later or making a small detour.
+3.	I receive requests from riders whose requirements are compatible with my trip.
+4.	I review each request, including the compromises needed to accommodate the rider.
+5.	I accept or decline requests and coordinate the final pickup arrangements.
+6.	I mark the ride as confirmed, and the app updates the remaining seat availability.
 
-**Journey C (optional): As an admin**
-1. ...
+**Journey C: As an admin**
+1.  I manage the approved SOM community membership list for the pilot.
+2.	I review reported users or inappropriate ride listings.
+3.	I monitor anonymized ride activity to understand which destinations have the most unmet demand.
+4.	I can compare and review the rate with others ride-hailing app 
+5.	I can send messages & notification to users (both riders & drivers) on on-going events & promotions if any
+<p align="center"> 
+<img width="293" height="340" alt="image" src="https://github.com/user-attachments/assets/af01de76-d037-4e3f-b88d-bc559a064893" />
+</p>
+
+
 
 ### 3. Core Features (MVP, 3-5)
 
-1. **Feature 1:** ...
-2. **Feature 2:** ...
-3. **Feature 3:** ...
-
+1.	SOM Travel Board: Students can post ride offers or requests and browse trips by date, destination, and departure window. Common destinations such as JFK, LaGuardia, Newark, Bradley Airport, NYC, and Boston can be selected quickly.
+2.	Constraint-Aware Ride Matching: Instead of matching only by destination, the app checks overlapping travel windows, seat availability, luggage capacity, and arrival deadlines. It distinguishes between a feasible match, a match requiring some flexibility, and an incompatible match.
+3.	Flexibility Preferences: Drivers and riders explicitly specify what they can compromise on. For example, a rider may be willing to walk to a campus pickup point but unable to arrive later because of a flight. The app respects these hard constraints.
+4.	Ride Coordination and Confirmation: A simple coordination space allows participants to exchange requests, agree on departure and pickup details, and mark a ride as pending or confirmed. Remaining seats are updated when requests are accepted.
+5.	Transparent Cost-Sharing Estimate: Drivers can enter estimated gas and toll costs, and the app calculates a suggested cost split among participants. The amount is visible before confirmation, but all payments happen outside the app.
+<p align="center"> 
+<img width="443" height="200" alt="image" src="https://github.com/user-attachments/assets/3f422ece-3477-4bf8-8900-b8657a63fc49" />
+</p>
 **Deliberately skipped for the MVP:**
-- ...
+6.	GPS-based live location tracking and navigation.
+7.	In-app payments and automated financial transactions.
+8.	Live flight tracking and automatic flight-delay adjustments.
+9.	Real-time Google Maps route optimization.
+10.	Complex driver ratings, background checks, and identity verification beyond pilot membership controls.
+11.	Automatic ride booking without driver and rider approval.
+
 
 ### 4. AI Feature
 
-- **What the LLM does for the user:** ...
-- **Input:** ...
-- **Output:** ...
-- **Why an LLM:** ...
-- **Failure mode / fallback:** ...
-
----
+**What the LLM does for the user**: The AI acts as a coordination assistant, not just a matching algorithm. It identifies possible compromises between students whose travel plans are close but not identical. Instead of simply saying "85% match," it explains what would need to change for the ride to work and helps both students agree on a practical plan.
+**Input**:
+•	Rider's and driver's trip information.
+•	Departure and arrival time constraints.
+•	Seats and luggage requirements.
+•	Preferred pickup locations.
+•	Free-text preferences such as "I can leave after my last class" or "I don't mind walking, but I cannot be late."
+•	Existing compatible ride listings.
+**Output**:
+•	A plain-language explanation of potential compatibility.
+•	One or two possible coordination plans.
+•	Suggested pickup and departure arrangements.
+•	Constraints that must not be violated.
+•	Questions participants need to resolve before confirming.
+•	A short message that the rider can send to the driver.
+**Failure mode / fallback**:
+•	The LLM may misunderstand vague statements such as "early evening" or "not too much luggage."
+•	It may suggest a departure time that does not satisfy a hard constraint.
+•	It may make unrealistic assumptions about traffic, airport arrival times, or driving detours.
+•	It may produce a plausible-sounding plan even though no viable ride exists.
+<p align="center"> 
+<img width="208" height="441" alt="image" src="https://github.com/user-attachments/assets/8eb4d819-3e11-4a3e-bb98-da29746758c7" />
+</p>
 
 ## Priority 3: Coffee App
 
