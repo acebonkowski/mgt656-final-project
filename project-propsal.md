@@ -8,7 +8,7 @@ Three project ideas, ranked by preference.
 | Rank | Idea | Tagline |
 |------|------|---------|
 | 1 | Event App | Event discovery app for Yale graduate students |
-| 2 | Ridesharing App | [_one-line tagline_]|
+| 2 | Ridesharing App | SOM Ride Match finds the classmate heading your way ahead of time so you can share the ride|
 | 3 | Coffee App | A café discovery app helping New Haven students and residents find cafés based on coffee preferences, purpose of visit, and atmosphere |
 
 ---
@@ -57,6 +57,7 @@ Three project ideas, ranked by preference.
 ## Priority 2: Ridesharing App
 
 ### 1. Tagline
+> SOM Ride Match finds the classmate heading your way ahead of time so you can share the ride
 > SOM Ride Match helps Yale School of Management students find and coordinate shared rides for airport trips, weekend travel, conferences, and visits to nearby cities. Instead of relying on scattered Slack groups & WhatsApp messages, students can find compatible travel partners, negotiate small adjustments, and confirm a shared plan
 
 ### 2. Major User Journeys
@@ -100,7 +101,7 @@ Three project ideas, ranked by preference.
 <p align="center"> 
 <img width="443" height="200" alt="image" src="https://github.com/user-attachments/assets/3f422ece-3477-4bf8-8900-b8657a63fc49" />
 </p>
-**Deliberately skipped for the MVP:**
+
 6.	GPS-based live location tracking and navigation.
 7.	In-app payments and automated financial transactions.
 8.	Live flight tracking and automatic flight-delay adjustments.
@@ -112,25 +113,28 @@ Three project ideas, ranked by preference.
 ### 4. AI Feature
 
 **What the LLM does for the user**: The AI acts as a coordination assistant, not just a matching algorithm. It identifies possible compromises between students whose travel plans are close but not identical. Instead of simply saying "85% match," it explains what would need to change for the ride to work and helps both students agree on a practical plan.
+
 **Input**:
-•	Rider's and driver's trip information.
-•	Departure and arrival time constraints.
-•	Seats and luggage requirements.
-•	Preferred pickup locations.
-•	Free-text preferences such as "I can leave after my last class" or "I don't mind walking, but I cannot be late."
-•	Existing compatible ride listings.
+1. Rider's and driver's trip information.
+2. Departure and arrival time constraints.
+3. Seats and luggage requirements.
+4. Preferred pickup locations.
+5. Free-text preferences such as "I can leave after my last class" or "I don't mind walking, but I cannot be late."
+6. Existing compatible ride listings.
+
 **Output**:
-•	A plain-language explanation of potential compatibility.
-•	One or two possible coordination plans.
-•	Suggested pickup and departure arrangements.
-•	Constraints that must not be violated.
-•	Questions participants need to resolve before confirming.
-•	A short message that the rider can send to the driver.
+1. A plain-language explanation of potential compatibility.
+2. One or two possible coordination plans.
+3. Suggested pickup and departure arrangements.
+4. Constraints that must not be violated.
+5. Questions participants need to resolve before confirming.
+6. A short message that the rider can send to the driver.
+
 **Failure mode / fallback**:
-•	The LLM may misunderstand vague statements such as "early evening" or "not too much luggage."
-•	It may suggest a departure time that does not satisfy a hard constraint.
-•	It may make unrealistic assumptions about traffic, airport arrival times, or driving detours.
-•	It may produce a plausible-sounding plan even though no viable ride exists.
+1. The LLM may misunderstand vague statements such as "early evening" or "not too much luggage."
+2. It may suggest a departure time that does not satisfy a hard constraint.
+3. It may make unrealistic assumptions about traffic, airport arrival times, or driving detours.
+4. It may produce a plausible-sounding plan even though no viable ride exists.
 <p align="center"> 
 <img width="208" height="441" alt="image" src="https://github.com/user-attachments/assets/8eb4d819-3e11-4a3e-bb98-da29746758c7" />
 </p>
