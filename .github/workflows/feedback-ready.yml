@@ -1,0 +1,64 @@
+name: Request feedback
+
+# When an issue gets the "feedback-ready" label, tag the team in a comment,
+# ask them to review it, and assign them to it.
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  issues: write
+
+jobs:
+  request-feedback:
+    if: github.event.label.name == 'feedback-ready'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      ACTOR: ${{ github.actor }}
+      # GitHub usernames of the team (from docs/mgt656/team.yaml).
+      # The person who added the label is skipped automatically.
+      TEAM: >-
+        acebonkowski
+        Gowribwarrier0609
+        hsrivastava1407
+        Khushbu0709
+        trinhtung1996-netizen
+    steps:
+      - name: Tag, ask for review and assign teammates
+        shell: bash
+        run: |
+          reviewers=()
+          for user in $TEAM; do
+            if [ "${user,,}" != "${ACTOR,,}" ]; then
+              reviewers+=("$user")
+            fi
+          done
+
+          if [ "${#reviewers[@]}" -eq 0 ]; then
+            echo "No teammates to tag."
+            exit 0
+          fi
+
+          mentions=$(printf '@%s ' "${reviewers[@]}")
+          assignees=$(IFS=,; echo "${reviewers[*]}")
+
+          # Comment first, so the request is visible even if assigning fails.
+          gh issue comment "$ISSUE_NUMBER" --body-file - <<EOF
+          ${mentions}this issue is marked \`feedback-ready\`.
+
+          Please review it and reply with your feedback:
+          - Is the user story clear and valuable?
+          - Are the acceptance criteria precise and testable?
+          - Are the scope, dependencies and priority right?
+          - Does anything conflict with the project brief?
+
+          You have been assigned to this issue so it shows up in your list.
+          EOF
+
+          # Assigning only works for repository collaborators.
+          gh issue edit "$ISSUE_NUMBER" --add-assignee "$assignees" \
+            || echo "::warning::Could not assign all teammates. Check that each one is a collaborator on this repository."
