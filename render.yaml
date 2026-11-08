@@ -10,7 +10,7 @@ services:
     name: mgt656-staging
     runtime: python
     plan: free
-    region: virginia
+    region: oregon        # same AWS region as the Supabase projects (us-west-2)
     branch: main
     autoDeployTrigger: commit
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
@@ -30,7 +30,7 @@ services:
     name: mgt656-production
     runtime: python
     plan: free
-    region: virginia
+    region: oregon        # same AWS region as the Supabase projects (us-west-2)
     branch: main
     # Production is promoted deliberately (manual deploy), never on every merge.
     autoDeployTrigger: "off"

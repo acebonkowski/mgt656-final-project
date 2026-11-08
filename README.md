@@ -37,11 +37,13 @@ All configuration comes from environment variables. Nothing secret is committed.
 
 ## Deploying (staging and production)
 
+- **Staging:** https://mgt656-final-project-staging.onrender.com (health check: [/healthz](https://mgt656-final-project-staging.onrender.com/healthz))
+
 [render.yaml](render.yaml) defines two free web services, `mgt656-staging` (auto-deploys on every push to `main`) and `mgt656-production` (manual deploys only). On every start, [bin/start.sh](bin/start.sh) runs `migrate` and then gunicorn on `$PORT`, with access and error logs going to stdout. Render's pre-deploy command needs a paid plan, so migrations run at start instead.
 
 One-time setup (done by a team member with the accounts):
 
-1. **Supabase:** create two projects, e.g. `mgt656-staging` and `mgt656-production`, in region **East US (North Virginia)** to match the Render region. For each one, go to **Connect** and choose **Session pooler**, then copy the URI (`postgresql://postgres.<ref>:<password>@aws-0-us-east-1.pooler.supabase.com:5432/postgres`).
+1. **Supabase:** create two projects, e.g. `mgt656-staging` and `mgt656-production`, in region **West US (Oregon)** (us-west-2), the same region as the Render services. For each one, go to **Connect** and choose **Session pooler**, then copy the URI (`postgresql://postgres.<ref>:<password>@aws-1-us-west-2.pooler.supabase.com:5432/postgres`).
    - Use the session pooler, not the direct connection. Render has no outbound IPv6, and Supabase's direct host is IPv6-only unless you buy the IPv4 add-on.
 2. **Render:** go to **New**, then **Blueprint**, and select this repo. When prompted, paste each service's own `DATABASE_URL`: the staging URL into `mgt656-staging` and the production URL into `mgt656-production`.
 3. Open `https://<service>.onrender.com/healthz`. It should return `{"status": "ok", "database": "ok"}`.
