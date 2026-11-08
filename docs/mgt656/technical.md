@@ -43,5 +43,5 @@
 
 ## How to run the tests
 ```
-<command>
+DJANGO_DEBUG=true .venv/bin/python manage.py test
 ```
