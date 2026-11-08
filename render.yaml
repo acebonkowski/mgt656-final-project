@@ -1,0 +1,48 @@
+# Render Blueprint: one staging and one production web service.
+# Each service gets its own DATABASE_URL pointing at its own Supabase project;
+# enter those in the Render dashboard (sync: false keeps them out of git).
+#
+# Migrations run in the start command because Render's pre-deploy command is
+# only available on paid instance types.
+
+services:
+  - type: web
+    name: mgt656-staging
+    runtime: python
+    plan: free
+    region: virginia
+    branch: main
+    autoDeployTrigger: commit
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    startCommand: ./bin/start.sh
+    healthCheckPath: /healthz
+    envVars:
+      - key: APP_ENV
+        value: staging
+      - key: DJANGO_DEBUG
+        value: "false"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+
+  - type: web
+    name: mgt656-production
+    runtime: python
+    plan: free
+    region: virginia
+    branch: main
+    # Production is promoted deliberately (manual deploy), never on every merge.
+    autoDeployTrigger: "off"
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    startCommand: ./bin/start.sh
+    healthCheckPath: /healthz
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DJANGO_DEBUG
+        value: "false"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
