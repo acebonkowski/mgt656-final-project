@@ -132,6 +132,20 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
+# Where logged-out users are sent. Temporary: Django admin's login (staff accounts
+# only) until the login story (#6) or the welcome screen replaces it.
+LOGIN_URL = "/admin/login/"
+# After login, and after onboarding's "Start discovering" (#7), users land on the map.
+LOGIN_REDIRECT_URL = "map"
+ONBOARDING_SUCCESS_URL = "map"
+
+
+# --- Map (#8) -----------------------------------------------------------------
+# Browser map key, read only from the environment and never committed. It is
+# visible in the page source by design, so restrict it to our domains in the
+# provider's console. Empty means the map screen shows its fallback message.
+MAP_API_KEY = os.environ.get("MAP_API_KEY", "")
+
 
 # --- I18N ---------------------------------------------------------------------
 

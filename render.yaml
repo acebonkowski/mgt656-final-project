@@ -25,6 +25,8 @@ services:
         generateValue: true
       - key: DATABASE_URL
         sync: false
+      - key: MAP_API_KEY       # browser map key, restricted to this domain
+        sync: false
 
   - type: web
     name: mgt656-production
@@ -45,4 +47,6 @@ services:
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
+        sync: false
+      - key: MAP_API_KEY       # browser map key, restricted to this domain
         sync: false
