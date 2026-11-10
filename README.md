@@ -52,17 +52,19 @@ The server never calls MapTiler: the browser fetches the style and tiles directl
 ### Getting a MapTiler key
 
 1. Sign up at [cloud.maptiler.com](https://cloud.maptiler.com/) (the free plan needs no credit card).
-2. Go to **Account → API keys → New key**. Create **one key per environment** so each can be locked down and revoked separately, e.g. `mgt656-local`, `mgt656-staging` and `mgt656-production`.
-3. **Restrict each key to its domain** in the key's settings, under **Allowed HTTP origins**:
-   - local: `localhost` and `127.0.0.1`
-   - staging: `mgt656-final-project-staging.onrender.com`
-   - production: the production `onrender.com` hostname, once that service exists
+2. Go to **Account → API keys**. The free plan allows **only one key**, so local development, staging and (later) production all share it.
+3. **Restrict the key to our domains** in its settings, under **Allowed HTTP origins**:
+   - `localhost` and `127.0.0.1` (local development)
+   - `mgt656-final-project-staging.onrender.com` (staging)
+   - the production `onrender.com` hostname, once that service exists
 
-   A restricted key is rejected (HTTP 403) on any other site, so a copied key is useless elsewhere. The map page sends our origin to MapTiler (`<meta name="referrer" content="strict-origin-when-cross-origin">`) so the restriction can be checked; Django's default `same-origin` policy would send nothing.
-4. In Render, open each service, go to **Environment**, and set `MAP_API_KEY` to that environment's key. Saving restarts the service.
-5. To test locally, set the local key in the same terminal as `runserver` (the app doesn't read `.env` files):
-   - macOS/Linux: `export MAP_API_KEY=<local key>`
-   - Windows PowerShell: `$env:MAP_API_KEY = "<local key>"`
+   A restricted key is rejected (HTTP 403) on any other site, so a copied key is useless elsewhere. The exception is localhost: anyone running the app locally with our key could use it, so share the key only within the team. The map page sends our origin to MapTiler (`<meta name="referrer" content="strict-origin-when-cross-origin">`) so the restriction can be checked; Django's default `same-origin` policy would send nothing.
+4. In Render, open the service, go to **Environment**, and set `MAP_API_KEY` to the key. Saving restarts the service.
+5. To test locally, set the key in the same terminal as `runserver` (the app doesn't read `.env` files):
+   - macOS/Linux: `export MAP_API_KEY=<key>`
+   - Windows PowerShell: `$env:MAP_API_KEY = "<key>"`
+
+Because the key is shared, revoking or regenerating it breaks the map everywhere at once. If it ever leaks, regenerate it in MapTiler and update `MAP_API_KEY` in Render and in each teammate's shell.
 
 Never commit a key, not even the local one. Keep it in your shell or in Render only. The free plan requires the MapTiler and OpenStreetMap attribution, which MapLibre shows in the bottom-right corner; don't hide it.
 
