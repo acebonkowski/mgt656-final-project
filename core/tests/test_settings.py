@@ -27,6 +27,7 @@ print(json.dumps({
     "csrf_origins": settings.CSRF_TRUSTED_ORIGINS,
     "log_stream": handler["stream"],
     "app_env": settings.APP_ENV,
+    "map_api_key": settings.MAP_API_KEY,
 }))
 """
 
@@ -36,7 +37,7 @@ FAKE_URL = "postgresql://postgres.abc123:pw@aws-0-us-east-1.pooler.supabase.com:
 def load_settings(**env):
     clean = {
         k: v for k, v in os.environ.items()
-        if not k.startswith(("DJANGO_", "DATABASE_", "RENDER_", "APP_ENV"))
+        if not k.startswith(("DJANGO_", "DATABASE_", "RENDER_", "APP_ENV", "MAP_"))
     }
     clean["DJANGO_SETTINGS_MODULE"] = "config.settings"
     clean.update(env)
@@ -77,6 +78,18 @@ class DeployedSettingsTests(SimpleTestCase):
         data = json.loads(result.stdout)
         self.assertIn("mgt656-staging.onrender.com", data["allowed_hosts"])
         self.assertIn("https://mgt656-staging.onrender.com", data["csrf_origins"])
+
+    def test_map_api_key_is_read_from_environment(self):
+        result = load_settings(
+            DJANGO_SECRET_KEY="x", DATABASE_URL=FAKE_URL, MAP_API_KEY="fake-map-key"
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["map_api_key"], "fake-map-key")
+
+    def test_map_api_key_defaults_to_empty(self):
+        result = load_settings(DJANGO_SECRET_KEY="x", DATABASE_URL=FAKE_URL)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["map_api_key"], "")
 
     def test_logs_go_to_stdout(self):
         result = load_settings(DJANGO_SECRET_KEY="x", DATABASE_URL=FAKE_URL)
