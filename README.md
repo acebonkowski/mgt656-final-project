@@ -34,13 +34,37 @@ All configuration comes from environment variables. Nothing secret is committed.
 | `DJANGO_DEBUG` | no | Defaults to `false` |
 | `DJANGO_ALLOWED_HOSTS` / `DJANGO_CSRF_TRUSTED_ORIGINS` | no | The Render hostname is added automatically; use these for custom domains |
 | `PORT` | set by Render | gunicorn binds to it |
-| `MAP_API_KEY` | for the map | Browser map key for the home screen (`/map/`). Visible in page source by design, so restrict it to our domains in the provider's console. If empty, `/map/` shows a "map isn't available" message. |
+| `MAP_API_KEY` | for the map | MapTiler key for the home screen (`/map/`). Visible in page source by design, so restrict it to our domains (see below). If empty, `/map/` shows a "map isn't available" message. |
 
 ## Home screen map (`/map/`)
 
 `/map/` is the logged-in home screen: a dark New Haven map with the headline "More coming soon." (#8). Logged-out visitors are sent to `LOGIN_URL`, for now Django admin's login (staff accounts only) until the login story (#6) lands. `LOGIN_REDIRECT_URL` and `ONBOARDING_SUCCESS_URL` both point to `map`.
 
-The map provider is isolated in [templates/core/_map_provider.html](templates/core/_map_provider.html), which is empty until the team picks one. To add it, fill that file and add `core/static/core/map_provider.js` defining `window.renderMap(element, config)`. The provider-neutral [core/static/core/map.js](core/static/core/map.js) calls it, or shows the fallback message if there's no key, no provider, or an error.
+The map is drawn in the browser by [MapLibre GL JS](https://maplibre.org/) (open source, pinned to 5.24.0 from unpkg with Subresource Integrity hashes) using MapTiler's `dataviz-dark` style, tinted blue-black to match the page. The map code is kept in two files:
+
+- [templates/core/_map_provider.html](templates/core/_map_provider.html) loads MapLibre and the provider script. It's only included when `MAP_API_KEY` is set.
+- [core/static/core/map_provider.js](core/static/core/map_provider.js) defines `window.renderMap(element, config)`. It builds the MapTiler style URL from the key, centres the map on New Haven and applies the blue-black tint.
+
+The provider-neutral [core/static/core/map.js](core/static/core/map.js) calls `renderMap`. It shows the fallback message if there's no key, if MapLibre didn't load, if the browser has no WebGL, or if MapTiler rejects the key (HTTP 401/403).
+
+The server never calls MapTiler: the browser fetches the style and tiles directly. Tests only use a fake key, and `NoNetworkTests` fails if rendering the page opens any network connection.
+
+### Getting a MapTiler key
+
+1. Sign up at [cloud.maptiler.com](https://cloud.maptiler.com/) (the free plan needs no credit card).
+2. Go to **Account → API keys → New key**. Create **one key per environment** so each can be locked down and revoked separately, e.g. `mgt656-local`, `mgt656-staging` and `mgt656-production`.
+3. **Restrict each key to its domain** in the key's settings, under **Allowed HTTP origins**:
+   - local: `localhost` and `127.0.0.1`
+   - staging: `mgt656-final-project-staging.onrender.com`
+   - production: the production `onrender.com` hostname, once that service exists
+
+   A restricted key is rejected (HTTP 403) on any other site, so a copied key is useless elsewhere. The map page sends our origin to MapTiler (`<meta name="referrer" content="strict-origin-when-cross-origin">`) so the restriction can be checked; Django's default `same-origin` policy would send nothing.
+4. In Render, open each service, go to **Environment**, and set `MAP_API_KEY` to that environment's key. Saving restarts the service.
+5. To test locally, set the local key in the same terminal as `runserver` (the app doesn't read `.env` files):
+   - macOS/Linux: `export MAP_API_KEY=<local key>`
+   - Windows PowerShell: `$env:MAP_API_KEY = "<local key>"`
+
+Never commit a key, not even the local one. Keep it in your shell or in Render only. The free plan requires the MapTiler and OpenStreetMap attribution, which MapLibre shows in the bottom-right corner; don't hide it.
 
 ## Deploying (staging and production)
 
