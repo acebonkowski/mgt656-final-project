@@ -34,6 +34,13 @@ All configuration comes from environment variables. Nothing secret is committed.
 | `DJANGO_DEBUG` | no | Defaults to `false` |
 | `DJANGO_ALLOWED_HOSTS` / `DJANGO_CSRF_TRUSTED_ORIGINS` | no | The Render hostname is added automatically; use these for custom domains |
 | `PORT` | set by Render | gunicorn binds to it |
+| `MAP_API_KEY` | for the map | Browser map key for the home screen (`/map/`). Visible in page source by design, so restrict it to our domains in the provider's console. If empty, `/map/` shows a "map isn't available" message. |
+
+## Home screen map (`/map/`)
+
+`/map/` is the logged-in home screen: a dark New Haven map with the headline "More coming soon." (#8). Logged-out visitors are sent to `LOGIN_URL`, for now Django admin's login (staff accounts only) until the login story (#6) lands. `LOGIN_REDIRECT_URL` and `ONBOARDING_SUCCESS_URL` both point to `map`.
+
+The map provider is isolated in [templates/core/_map_provider.html](templates/core/_map_provider.html), which is empty until the team picks one. To add it, fill that file and add `core/static/core/map_provider.js` defining `window.renderMap(element, config)`. The provider-neutral [core/static/core/map.js](core/static/core/map.js) calls it, or shows the fallback message if there's no key, no provider, or an error.
 
 ## Deploying (staging and production)
 
