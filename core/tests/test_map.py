@@ -103,6 +103,17 @@ class MapProviderScriptTests(TestCase):
         self.assertIn("config.apiKey", source)  # never a hard-coded key
         self.assertIn("window.showMapFallback", source)
 
+    def test_map_container_rule_outranks_maplibre_position_relative(self):
+        # Regression: MapLibre's .maplibregl-map { position: relative } loads after
+        # map.css, so a single-class .map rule lost and the map was 0px tall.
+        path = finders.find("core/map.css")
+        with open(path, encoding="utf-8") as f:
+            css = f.read()
+        rule = css.split(".map-screen .map {", 1)[1].split("}", 1)[0]
+        self.assertIn("position: absolute;", rule)
+        self.assertIn("height: 100%;", rule)
+        self.assertIn("width: 100%;", rule)
+
 
 @override_settings(MAP_API_KEY=FAKE_KEY)
 class NoNetworkTests(TestCase):

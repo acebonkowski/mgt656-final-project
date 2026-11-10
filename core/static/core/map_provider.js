@@ -65,6 +65,15 @@
       }
     }
 
+    // A 0px-tall container renders nothing and raises no error, so check it
+    // explicitly (the MapLibre stylesheet has loaded by now: it comes before
+    // this script, and scripts wait for earlier stylesheets).
+    if (element.clientHeight === 0 || element.clientWidth === 0) {
+      fail("the map container has no size (check map.css)");
+      map.remove();
+      return null;
+    }
+
     map.on("style.load", function () {
       tintBlueBlack(map);
     });
