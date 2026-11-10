@@ -77,6 +77,31 @@ body {
   display: none;
 }
 
+.map[hidden] {
+  display: none;
+}
+
+/* MapLibre's attribution (required by MapTiler/OpenStreetMap): keep it visible
+   but dark, so it doesn't glare on the blue-black map. */
+.map .maplibregl-ctrl-attrib {
+  background: var(--overlay-bg);
+  color: var(--map-muted);
+}
+
+.map .maplibregl-ctrl-attrib a {
+  color: var(--map-text);
+}
+
+.map .maplibregl-ctrl-attrib-button {
+  filter: invert(1);
+}
+
+.map .maplibregl-ctrl-bottom-right {
+  /* Keep clear of the phone home indicator. */
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-right: env(safe-area-inset-right);
+}
+
 /* Tablets (iPad portrait and landscape) and up: a little more breathing room. */
 @media (min-width: 768px) {
   .overlay {

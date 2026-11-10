@@ -5,6 +5,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1220">
+  {# Django defaults to Referrer-Policy: same-origin, which sends no Referer to  #}
+  {# MapTiler, so its "allowed origins" check could reject our key. This sends  #}
+  {# only our origin (never the path) to other sites, and only over HTTPS.     #}
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>Home · Yale Events</title>
   <link rel="stylesheet" href="{% static 'core/map.css' %}">
 </head>
@@ -19,7 +23,7 @@
     </div>
   </main>
   {{ map_config|json_script:"map-config" }}
-  {% include "core/_map_provider.html" %}
+  {% if map_enabled %}{% include "core/_map_provider.html" %}{% endif %}
   <script src="{% static 'core/map.js' %}"></script>
 </body>
 </html>
