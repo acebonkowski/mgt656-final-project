@@ -45,6 +45,39 @@ The course-required A/B page lives at `/` + the first 7 hex characters of `sha1(
 - Stats: `/e75d81f/stats`. Live JSON with counts and `preferred`, the variant with the higher click rate. With no data or a tie, `preferred` is `kudos`.
 
 The code is in [abtest/](abtest/). Impressions and clicks can be viewed (and test visits deleted) in the Django admin under **A/B test**.
+| `MAP_API_KEY` | for the map | MapTiler key for the home screen (`/map/`). Visible in page source by design, so restrict it to our domains (see below). If empty, `/map/` shows a "map isn't available" message. |
+
+## Home screen map (`/map/`)
+
+`/map/` is the logged-in home screen: a dark New Haven map with the headline "More coming soon." (#8). Logged-out visitors are sent to `LOGIN_URL`, for now Django admin's login (staff accounts only) until the login story (#6) lands. `LOGIN_REDIRECT_URL` and `ONBOARDING_SUCCESS_URL` both point to `map`.
+
+The map is drawn in the browser by [MapLibre GL JS](https://maplibre.org/) (open source, pinned to 5.24.0 from unpkg with Subresource Integrity hashes) using MapTiler's `dataviz-dark` style, tinted blue-black to match the page. The map code is kept in two files:
+
+- [templates/core/_map_provider.html](templates/core/_map_provider.html) loads MapLibre and the provider script. It's only included when `MAP_API_KEY` is set.
+- [core/static/core/map_provider.js](core/static/core/map_provider.js) defines `window.renderMap(element, config)`. It builds the MapTiler style URL from the key, centres the map on New Haven and applies the blue-black tint.
+
+The provider-neutral [core/static/core/map.js](core/static/core/map.js) calls `renderMap`. It shows the fallback message if there's no key, if MapLibre didn't load, if the browser has no WebGL, or if MapTiler rejects the key (HTTP 401/403).
+
+The server never calls MapTiler: the browser fetches the style and tiles directly. Tests only use a fake key, and `NoNetworkTests` fails if rendering the page opens any network connection.
+
+### Getting a MapTiler key
+
+1. Sign up at [cloud.maptiler.com](https://cloud.maptiler.com/) (the free plan needs no credit card).
+2. Go to **Account → API keys**. The free plan allows **only one key**, so local development, staging and (later) production all share it.
+3. **Restrict the key to our domains** in its settings, under **Allowed HTTP origins**:
+   - `localhost` and `127.0.0.1` (local development)
+   - `mgt656-final-project-staging.onrender.com` (staging)
+   - the production `onrender.com` hostname, once that service exists
+
+   A restricted key is rejected (HTTP 403) on any other site, so a copied key is useless elsewhere. The exception is localhost: anyone running the app locally with our key could use it, so share the key only within the team. The map page sends our origin to MapTiler (`<meta name="referrer" content="strict-origin-when-cross-origin">`) so the restriction can be checked; Django's default `same-origin` policy would send nothing.
+4. In Render, open the service, go to **Environment**, and set `MAP_API_KEY` to the key. Saving restarts the service.
+5. To test locally, set the key in the same terminal as `runserver` (the app doesn't read `.env` files):
+   - macOS/Linux: `export MAP_API_KEY=<key>`
+   - Windows PowerShell: `$env:MAP_API_KEY = "<key>"`
+
+Because the key is shared, revoking or regenerating it breaks the map everywhere at once. If it ever leaks, regenerate it in MapTiler and update `MAP_API_KEY` in Render and in each teammate's shell.
+
+Never commit a key, not even the local one. Keep it in your shell or in Render only. The free plan requires the MapTiler and OpenStreetMap attribution, which MapLibre shows in the bottom-right corner; don't hide it.
 
 ## Deploying (staging and production)
 
