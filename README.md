@@ -34,6 +34,17 @@ All configuration comes from environment variables. Nothing secret is committed.
 | `DJANGO_DEBUG` | no | Defaults to `false` |
 | `DJANGO_ALLOWED_HOSTS` / `DJANGO_CSRF_TRUSTED_ORIGINS` | no | The Render hostname is added automatically; use these for custom domains |
 | `PORT` | set by Render | gunicorn binds to it |
+| `TEAM_NICKNAME` | no | Team course nickname; defaults to `holy-dew`. Holds the nickname, never the hash |
+| `TEAM_MEMBER_NICKNAMES` | no | Comma-separated member nicknames shown on the A/B page |
+
+## A/B test page
+
+The course-required A/B page lives at `/` + the first 7 hex characters of `sha1(TEAM_NICKNAME)`, hashed with no trailing newline (`printf %s holy-dew | shasum`, **not** `echo`). For `holy-dew` that's:
+
+- Page: `/e75d81f`. Each new visitor gets `kudos` or `thanks` (50/50, kept in the session). One impression is counted per visitor and at most one click.
+- Stats: `/e75d81f/stats`. Live JSON with counts and `preferred`, the variant with the higher click rate. With no data or a tie, `preferred` is `kudos`.
+
+The code is in [abtest/](abtest/). Impressions and clicks can be viewed (and test visits deleted) in the Django admin under **A/B test**.
 
 ## Deploying (staging and production)
 
