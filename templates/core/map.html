@@ -1,0 +1,25 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220">
+  <title>Home · Yale Events</title>
+  <link rel="stylesheet" href="{% static 'core/map.css' %}">
+</head>
+<body class="map-screen">
+  <main>
+    <div id="map" class="map" role="region" aria-label="Map of New Haven"></div>
+    <div class="overlay">
+      <h1 class="headline">More coming soon.</h1>
+      <p id="map-fallback" class="fallback" role="status"{% if map_enabled %} hidden{% endif %}>
+        The map isn't available right now.
+      </p>
+    </div>
+  </main>
+  {{ map_config|json_script:"map-config" }}
+  {% include "core/_map_provider.html" %}
+  <script src="{% static 'core/map.js' %}"></script>
+</body>
+</html>

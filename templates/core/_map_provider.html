@@ -1,0 +1,15 @@
+{% load static %}{% comment %}
+  Map provider slot (#8). Intentionally empty until the team confirms the provider.
+
+  To add a provider, put its scripts here, for example:
+    1. the provider's SDK <script> (and stylesheet, if any);
+    2. <script src="{% static 'core/map_provider.js' %}"></script>
+
+  core/static/core/map_provider.js must define:
+    window.renderMap = function (element, config) { ... }
+  where config is {"apiKey": "...", "center": [lat, lng], "zoom": 13}.
+  Note: some SDKs take [lng, lat]; convert inside renderMap.
+  Throw an error if the map can't be created; map.js then shows the fallback.
+
+  Nothing else (view, settings, env vars, CSS, tests) needs to change.
+{% endcomment %}
