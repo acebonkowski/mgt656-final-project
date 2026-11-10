@@ -53,6 +53,23 @@ if DEBUG and not ALLOWED_HOSTS:
     ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]"]
 
 
+# --- A/B test page (course requirement) ---------------------------------------
+# The page lives at "/" + first 7 hex chars of sha1(TEAM_NICKNAME). The env var
+# holds the nickname, never the hash. Not a secret, so a default is fine.
+
+TEAM_NICKNAME = os.environ.get("TEAM_NICKNAME", "").strip() or "holy-dew"
+
+# Members' course nicknames, shown on the A/B page. Comma-separated in the env.
+# TODO: replace the TBD placeholders once the team confirms its nicknames.
+TEAM_MEMBER_NICKNAMES = env_list("TEAM_MEMBER_NICKNAMES") or [
+    "adventurous-porcupine",
+    "TBD-member-2",
+    "TBD-member-3",
+    "TBD-member-4",
+    "TBD-member-5",
+]
+
+
 # --- Applications -------------------------------------------------------------
 
 INSTALLED_APPS = [
@@ -63,6 +80,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "core",
+    "abtest",
 ]
 
 MIDDLEWARE = [

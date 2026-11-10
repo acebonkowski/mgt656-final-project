@@ -1,5 +1,5 @@
-# Team nickname (exactly as on the course site): TODO
-# A/B page path = first 7 chars of: printf %s <team-nickname> | shasum
+# Team nickname (exactly as on the course site): holy-dew
+# A/B page path = first 7 chars of: printf %s <team-nickname> | shasum  -> /e75d81f
 
 framework: django # locked
 database: postgres # hosted on Supabase (approved by prof)
@@ -8,7 +8,7 @@ members:
     github: acebonkowski
   - nickname: TODO    # Gowri Balagopal Warrier
     github: Gowribwarrier0609
-  - nickname: TODO    # Harshita Srivastava
+  - nickname: adventurous-porcupine    # Harshita Srivastava
     github: hsrivastava1407
   - nickname: TODO    # Khushbu Dhingra
     github: Khushbu0709
