@@ -1,9 +1,9 @@
-from django.conf import settings
 from django.db import models
 
 
 class School(models.Model):
     name = models.CharField(max_length=200, unique=True)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         ordering = ["name"]
@@ -26,14 +26,11 @@ class Program(models.Model):
         return self.name
 
 
-class Profile(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    display_name = models.CharField(max_length=100)
-    program = models.ForeignKey(Program, on_delete=models.PROTECT)
-    # Store an object-storage key, never a local upload path or expiring signed URL.
-    photo_reference = models.CharField(max_length=500, blank=True)
+class ProfilePhoto(models.Model):
+    """Upload history: removal detaches the photo; objects remain recoverable."""
 
-    @property
-    def school(self):
-        # Derive school from the program so inconsistent pairs cannot be persisted.
-        return self.program.school
+    profile = models.ForeignKey("accounts.Profile", on_delete=models.PROTECT, related_name="photos")
+    object_key = models.CharField(max_length=500, unique=True)
+    content_type = models.CharField(max_length=30)
+    created_at = models.DateTimeField(auto_now_add=True)
+    archived_at = models.DateTimeField(null=True, blank=True)

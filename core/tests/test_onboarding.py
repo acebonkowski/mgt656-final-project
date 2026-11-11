@@ -6,7 +6,9 @@ from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from core.models import Profile, Program, School
+from accounts.models import Profile
+from core.models import Program, School
+from core.yale_catalog import CATALOG
 
 
 class OnboardingTests(TestCase):
@@ -44,12 +46,12 @@ class OnboardingTests(TestCase):
             self.assertIn("display_name", response.context["form"].errors)
         response = self.client.post(reverse("onboarding"), {})
         self.assertEqual(set(response.context["form"].errors), {"display_name", "school", "program"})
-        self.assertFalse(Profile.objects.exists())
+        self.assertFalse(Profile.objects.get(user=self.user).onboarding_complete)
 
     def test_program_must_belong_to_selected_school(self):
         response = self.client.post(reverse("onboarding"), self.payload(program=self.other_program.pk))
         self.assertIn("program", response.context["form"].errors)
-        self.assertFalse(Profile.objects.exists())
+        self.assertFalse(Profile.objects.get(user=self.user).onboarding_complete)
 
     def test_invalid_school_is_a_form_error(self):
         for school in ["invalid", "999999", ""]:
@@ -64,6 +66,7 @@ class OnboardingTests(TestCase):
         self.assertEqual(profile.user, self.user)
         self.assertEqual(profile.display_name, "New name")
         self.assertEqual(profile.school, self.school)
+        self.assertTrue(profile.onboarding_complete)
         self.assertFalse(Profile.objects.filter(user=self.other_user).exists())
 
     def test_existing_profile_preselects_its_school_and_program(self):
@@ -83,8 +86,8 @@ class DemoSeedTests(TestCase):
     def test_seed_is_repeatable(self):
         for _ in range(2):
             call_command("seed_onboarding_demo", stdout=StringIO())
-        self.assertEqual(School.objects.count(), 2)
-        self.assertEqual(Program.objects.count(), 3)
+        self.assertEqual(School.objects.count(), len(CATALOG))
+        self.assertEqual(Program.objects.count(), sum(len(degrees) for degrees in CATALOG.values()))
 
     def test_seed_refused_outside_local_debug(self):
         for debug, environment in [(False, "local"), (True, "staging"), (True, "production")]:

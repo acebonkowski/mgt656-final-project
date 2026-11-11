@@ -3,25 +3,36 @@ import logging
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.db import DatabaseError, connection
+from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 
 from core.forms import OnboardingForm
-from core.models import Profile, Program
+from accounts.models import Profile
+from core.models import Program
+from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_http_methods
 
 
 @login_required
+@never_cache
+@require_http_methods(["GET", "POST"])
 def onboarding(request):
-    profile = Profile.objects.filter(user=request.user).select_related("program").first()
+    profile, _ = Profile.objects.get_or_create(user=request.user)
     form = OnboardingForm(request.POST if request.method == "POST" else None, instance=profile)
     if request.method == "POST" and form.is_valid():
-        profile = form.save(commit=False)
-        profile.user = request.user
-        profile.save()
+        with transaction.atomic():
+            # Update only onboarding fields so a concurrent photo upload is preserved.
+            profile = Profile.objects.select_for_update().get(pk=profile.pk)
+            profile.display_name = form.cleaned_data["display_name"]
+            profile.program = form.cleaned_data["program"]
+            profile.onboarding_complete = True
+            profile.save(update_fields=["display_name", "program", "onboarding_complete", "updated_at"])
         return redirect(getattr(settings, "ONBOARDING_SUCCESS_URL", "home"))
     return render(request, "core/onboarding.html", {
         "form": form,
-        "programs": list(Program.objects.values("id", "school_id", "name")),
+        "profile": profile,
+        "programs": list(Program.objects.filter(school__is_active=True).values("id", "school_id", "name")),
     })
 
 logger = logging.getLogger(__name__)
@@ -29,10 +40,6 @@ logger = logging.getLogger(__name__)
 # Centre of New Haven, CT, as [latitude, longitude].
 NEW_HAVEN_CENTER = [41.3083, -72.9279]
 NEW_HAVEN_ZOOM = 13
-
-
-def home(request):
-    return render(request, "core/home.html", {"app_env": settings.APP_ENV})
 
 
 @login_required

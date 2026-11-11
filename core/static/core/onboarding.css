@@ -5,7 +5,13 @@ body { margin: 0; padding: clamp(20px, 5vw, 64px) 16px; }
 .brand { color: #00356b; font-size: .8rem; font-weight: 750; letter-spacing: .14em; }
 h1 { font-size: clamp(1.8rem, 6vw, 2.35rem); line-height: 1.15; margin: 24px 0 12px; }
 .intro { color: #52647a; line-height: 1.6; }
-.avatar { display: block; margin: 28px auto; border-radius: 50%; }
+.avatar { display: block; margin: 28px auto 12px; border-radius: 50%; object-fit: cover; }
+[hidden] { display: none !important; }
+.photo-controls { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.photo-controls button { width: auto; margin: 0; padding: 10px 14px; }
+.secondary { color: #00356b; background: #eef3f8; border: 1px solid #b7c6d8; }
+.photo-help { text-align: center; color: #52647a; font-size: .875rem; line-height: 1.5; }
+#photo-status.error { color: #ac2430; }
 .field { margin-bottom: 22px; }
 label { display: block; margin-bottom: 8px; font-weight: 600; }
 input, select, button { width: 100%; min-height: 48px; border-radius: 8px; font: inherit; }

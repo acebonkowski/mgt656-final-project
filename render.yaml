@@ -29,6 +29,18 @@ services:
         sync: false
       - key: MAP_API_KEY       # browser map key, restricted to this domain
         sync: false
+      - key: RESEND_API_KEY    # login-code email (#6)
+        sync: false
+      - key: EMAIL_FROM        # sender on the verified Resend domain
+        sync: false
+      - key: GRADER_FIXED_OTP  # fixed code for the seeded grader accounts
+        sync: false
+      - key: SUPABASE_STORAGE_URL
+        sync: false
+      - key: SUPABASE_STORAGE_KEY # server-only service_role key for this project
+        sync: false
+      - key: SUPABASE_PHOTO_BUCKET
+        value: profile-photos
 
   - type: web
     name: mgt656-production
@@ -54,3 +66,15 @@ services:
         sync: false
       - key: MAP_API_KEY       # browser map key, restricted to this domain
         sync: false
+      - key: RESEND_API_KEY    # login-code email (#6)
+        sync: false
+      - key: EMAIL_FROM        # sender on the verified Resend domain
+        sync: false
+      - key: GRADER_FIXED_OTP  # fixed code for the seeded grader accounts
+        sync: false
+      - key: SUPABASE_STORAGE_URL
+        sync: false
+      - key: SUPABASE_STORAGE_KEY # production project, separate from staging
+        sync: false
+      - key: SUPABASE_PHOTO_BUCKET
+        value: profile-photos

@@ -13,8 +13,20 @@
     <p class="brand">YALE EVENTS</p>
     <h1>Let's get to know you better.</h1>
     <p class="intro">A few details to start discovering New Haven.</p>
-    <img class="avatar" src="{% static 'core/bulldog.svg' %}" width="96" height="96" alt="Default Bulldog profile picture">
-    <form method="post" id="onboarding-form" novalidate>
+    <section aria-label="Profile picture" id="photo-section" data-has-photo="{{ profile.photo_reference|yesno:'true,false' }}">
+      <img class="avatar" id="profile-picture" data-default="{% static 'core/bulldog.svg' %}"
+           src="{% if profile.photo_reference %}{% url 'profile_photo' %}{% else %}{% static 'core/bulldog.svg' %}{% endif %}"
+           width="96" height="96" alt="{% if profile.photo_reference %}Your profile picture{% else %}Default Bulldog profile picture{% endif %}">
+      <div class="photo-controls" id="photo-controls" hidden>
+        <button type="button" class="secondary" id="choose-photo">{% if profile.photo_reference %}Edit picture{% else %}Add a picture{% endif %}</button>
+        <input type="file" id="photo-file" accept="image/jpeg,image/png" aria-label="Choose a profile picture" aria-describedby="photo-help photo-status" hidden>
+        <button type="button" class="secondary" id="remove-photo" {% if not profile.photo_reference %}hidden{% endif %}>Delete picture</button>
+      </div>
+      <p class="photo-help" id="photo-help">Optional · JPEG or PNG · maximum 5 MB</p>
+      <p id="photo-status" class="photo-help" role="status" aria-live="polite"></p>
+      <noscript><p>Enable JavaScript to add a photo, or continue with the Bulldog picture.</p></noscript>
+    </section>
+    <form method="post" id="onboarding-form" data-photo-url="{% url 'profile_photo' %}" novalidate>
       {% csrf_token %}
       {{ form.non_field_errors }}
       {% for field in form %}
