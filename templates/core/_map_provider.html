@@ -1,0 +1,18 @@
+{% load static %}{% comment %}
+  Map provider slot (#8): MapLibre GL JS + a MapTiler style.
+
+  The library is pinned to one version and checked with Subresource Integrity,
+  so the CDN can't swap in different code. To upgrade, change the version in
+  both URLs and recompute both hashes:
+    curl -sL <url> | openssl dgst -sha384 -binary | openssl base64 -A
+
+  core/static/core/map_provider.js defines window.renderMap(element, config);
+  the provider-neutral core/static/core/map.js calls it, or shows the fallback.
+{% endcomment %}<link rel="stylesheet"
+      href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css"
+      integrity="sha384-uTttxo/aOKbdE5RlD/SPzSDoDmNvGlUYPjONi2MN/b7c9HPSvW07OIuyP7uL6jxK"
+      crossorigin="anonymous">
+<script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"
+        integrity="sha384-5+cfbwT0iiub6VsQAdn6yz16nr6sDiQoHx6tm4O8OVYXHYOxcffFmCJBL0dgdvGp"
+        crossorigin="anonymous"></script>
+<script src="{% static 'core/map_provider.js' %}"></script>

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 
 from core import views
 
@@ -7,5 +7,7 @@ urlpatterns = [
     path("", views.home, name="home"),
     path("healthz", views.healthz, name="healthz"),
     path("onboarding/", views.onboarding, name="onboarding"),
+    path("map/", views.map_view, name="map"),
     path("admin/", admin.site.urls),
+    path("", include("abtest.urls")),
 ]

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A/B test</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+    #abtest { font-size: 1.25rem; padding: 0.75rem 2rem; min-width: 10rem; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>A/B test</h1>
+    <h2>Team members</h2>
+    <ul>
+      {% for nickname in members %}<li>{{ nickname }}</li>
+      {% endfor %}
+    </ul>
+    <form method="post" action="{% url 'abtest:click' %}">
+      {% csrf_token %}
+      <button id="abtest" type="submit">{{ variant }}</button>
+    </form>
+  </main>
+</body>
+</html>

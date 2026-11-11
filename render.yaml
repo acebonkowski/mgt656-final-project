@@ -19,11 +19,15 @@ services:
     envVars:
       - key: APP_ENV
         value: staging
+      - key: TEAM_NICKNAME
+        value: holy-dew
       - key: DJANGO_DEBUG
         value: "false"
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
+        sync: false
+      - key: MAP_API_KEY       # browser map key, restricted to this domain
         sync: false
 
   - type: web
@@ -40,9 +44,13 @@ services:
     envVars:
       - key: APP_ENV
         value: production
+      - key: TEAM_NICKNAME
+        value: holy-dew
       - key: DJANGO_DEBUG
         value: "false"
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
+        sync: false
+      - key: MAP_API_KEY       # browser map key, restricted to this domain
         sync: false

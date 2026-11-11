@@ -24,13 +24,13 @@ The choices are deliberately fictional, not approved Yale school/program data.
 
 - Authentication owner: establish a Django user session after verification and route
   new users to the named `onboarding` URL. Configure Django's `LOGIN_URL` to the
-  team's sign-in route; until then anonymous requests redirect to Django's default
-  `/accounts/login/`, which this repository does not yet implement.
+  team's sign-in route; until then anonymous requests redirect to the temporary
+  `/admin/login/` route, which requires a staff account.
 - Catalog: populate `School` and `Program` with approved seed data. Programs belong
   to schools. Profile school is derived from its program to avoid inconsistent data.
   No sample catalog is loaded by migrations or deployment.
 - Navigation: set `ONBOARDING_SUCCESS_URL` in Django settings to the agreed route
-  name or URL. It currently falls back to the existing home page.
+  name or URL. It is now configured to send users to the map screen.
 - Photos: `photo_reference` reserves an object-storage key. Upload/edit/removal and
   storage policies are not implemented yet. Do not use the default filesystem
   storage for uploads. The bundled SVG is an original Bulldog placeholder, pending

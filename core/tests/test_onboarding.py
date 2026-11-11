@@ -58,7 +58,7 @@ class OnboardingTests(TestCase):
 
     def test_save_belongs_to_current_user_and_repeated_posts_update(self):
         payload = self.payload(user=self.other_user.pk)
-        self.assertRedirects(self.client.post(reverse("onboarding"), payload), reverse("home"))
+        self.assertRedirects(self.client.post(reverse("onboarding"), payload), reverse("map"))
         self.client.post(reverse("onboarding"), self.payload(display_name="New name"))
         profile = Profile.objects.get()
         self.assertEqual(profile.user, self.user)

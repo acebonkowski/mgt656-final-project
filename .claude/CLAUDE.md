@@ -3,7 +3,7 @@
 MGT656 (Software Management) final project, built by a team of 5. The repo owner is @acebonkowski, and only they can approve PRs into `main`.
 
 ## Source of truth
-@.documentation/prorject-brief.md holds the project brief and grading criteria. It is **always the truth**.
+@.documentation/project-brief.md holds the project brief and grading criteria. It is **always the truth**.
 - Never implement anything that breaks a requirement in the brief.
 - If an issue, PR or instruction conflicts with the brief, stop and point out the conflict. Don't pick one side on your own.
 - Re-read the brief before planning any feature.
@@ -14,21 +14,22 @@ MGT656 (Software Management) final project, built by a team of 5. The repo owner
 - **LLM:** OpenRouter, called server-side only, and always mocked in tests.
 
 ## Issues = user stories
-Implement an issue only if it has every section below. If any are missing, ask for them or draft them for review. Don't start coding.
+An issue needs these sections before implementation. If one is missing, ask for it before coding.
 
 ```
-Title: <short, imperative>
-User story: As a <role>, I want <capability>, so that <benefit>.
-Acceptance criteria:
-  - [ ] Given <context>, when <action>, then <outcome>
-  - [ ] ...
-Brief reference: <which brief requirement / grading criterion this serves>
-Scope: In: ... | Out: ...
-Priority: <P0–P2>
-Dependencies: <linked issues / sub-issues or "none">
-Definition of done: criteria met, tests pass (LLM and external services mocked), works on staging, PR approved
+## User story
+As a <role>, I want <capability>, so that <benefit>.
+
+## Technical approach
+- <stack, constraints, how it should be built>
+
+## Acceptance criteria
+- [ ] **Given** <context>, **when** <action>, **then** <outcome>
+
+## Tasks
+- [ ] <concrete piece of work>
 ```
-- Label: `user story`. Split a story into sub-issues when it needs several pieces of work.
+- Split a story into sub-issues when it needs several pieces of work.
 - Acceptance criteria are the agent's spec. They must be precise and testable.
 - No story points, velocity or burndown charts (the brief forbids them).
 

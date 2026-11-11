@@ -26,9 +26,31 @@ def onboarding(request):
 
 logger = logging.getLogger(__name__)
 
+# Centre of New Haven, CT, as [latitude, longitude].
+NEW_HAVEN_CENTER = [41.3083, -72.9279]
+NEW_HAVEN_ZOOM = 13
+
 
 def home(request):
     return render(request, "core/home.html", {"app_env": settings.APP_ENV})
+
+
+@login_required
+def map_view(request):
+    """Home screen: a dark map of New Haven. The provider plugs in via
+    templates/core/_map_provider.html; without a key, a fallback is shown."""
+    map_enabled = bool(settings.MAP_API_KEY)
+    if not map_enabled:
+        logger.warning("MAP_API_KEY is not set; showing the map fallback message")
+    map_config = {
+        "apiKey": settings.MAP_API_KEY,
+        "center": NEW_HAVEN_CENTER,
+        "zoom": NEW_HAVEN_ZOOM,
+    }
+    return render(request, "core/map.html", {
+        "map_config": map_config,
+        "map_enabled": map_enabled,
+    })
 
 
 def healthz(request):
