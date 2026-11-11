@@ -28,6 +28,13 @@ print(json.dumps({
     "log_stream": handler["stream"],
     "app_env": settings.APP_ENV,
     "map_api_key": settings.MAP_API_KEY,
+    "email_backend": settings.EMAIL_BACKEND,
+    "email_host": getattr(settings, "EMAIL_HOST", None),
+    "email_port": getattr(settings, "EMAIL_PORT", None),
+    "email_user": getattr(settings, "EMAIL_HOST_USER", None),
+    "email_delivery": settings.EMAIL_DELIVERY_ENABLED,
+    "from_email": settings.DEFAULT_FROM_EMAIL,
+    "grader_otp_set": bool(settings.GRADER_FIXED_OTP),
 }))
 """
 
@@ -37,7 +44,7 @@ FAKE_URL = "postgresql://postgres.abc123:pw@aws-0-us-east-1.pooler.supabase.com:
 def load_settings(**env):
     clean = {
         k: v for k, v in os.environ.items()
-        if not k.startswith(("DJANGO_", "DATABASE_", "RENDER_", "APP_ENV", "MAP_"))
+        if not k.startswith(("DJANGO_", "DATABASE_", "RENDER_", "APP_ENV", "MAP_", "RESEND_", "EMAIL_", "GRADER_"))
     }
     clean["DJANGO_SETTINGS_MODULE"] = "config.settings"
     clean.update(env)
@@ -95,3 +102,32 @@ class DeployedSettingsTests(SimpleTestCase):
         result = load_settings(DJANGO_SECRET_KEY="x", DATABASE_URL=FAKE_URL)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout)["log_stream"], "ext://sys.stdout")
+
+
+class EmailAndGraderSettingsTests(SimpleTestCase):
+    def test_resend_key_turns_on_smtp_through_resend(self):
+        result = load_settings(
+            DJANGO_SECRET_KEY="x", DATABASE_URL=FAKE_URL, RESEND_API_KEY="re_fake",
+            EMAIL_FROM="Yale Events <login@mail.example.org>",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        data = json.loads(result.stdout)
+        self.assertEqual(data["email_backend"], "django.core.mail.backends.smtp.EmailBackend")
+        self.assertEqual(data["email_host"], "smtp.resend.com")
+        self.assertEqual(data["email_port"], 587)
+        self.assertEqual(data["email_user"], "resend")
+        self.assertTrue(data["email_delivery"])
+        self.assertEqual(data["from_email"], "Yale Events <login@mail.example.org>")
+
+    def test_deployed_without_resend_key_does_not_deliver_codes(self):
+        result = load_settings(DJANGO_SECRET_KEY="x", DATABASE_URL=FAKE_URL)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        data = json.loads(result.stdout)
+        self.assertFalse(data["email_delivery"])
+        self.assertEqual(data["email_backend"], "django.core.mail.backends.console.EmailBackend")
+
+    def test_grader_code_comes_only_from_environment(self):
+        result = load_settings(DJANGO_SECRET_KEY="x", DATABASE_URL=FAKE_URL)
+        self.assertFalse(json.loads(result.stdout)["grader_otp_set"])
+        result = load_settings(DJANGO_SECRET_KEY="x", DATABASE_URL=FAKE_URL, GRADER_FIXED_OTP="135790")
+        self.assertTrue(json.loads(result.stdout)["grader_otp_set"])
