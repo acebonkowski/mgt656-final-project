@@ -60,13 +60,13 @@ if DEBUG and not ALLOWED_HOSTS:
 TEAM_NICKNAME = os.environ.get("TEAM_NICKNAME", "").strip() or "holy-dew"
 
 # Members' course nicknames, shown on the A/B page. Comma-separated in the env.
-# TODO: replace the TBD placeholders once the team confirms its nicknames.
+# Keep in sync with docs/mgt656/team.yaml (same order).
 TEAM_MEMBER_NICKNAMES = env_list("TEAM_MEMBER_NICKNAMES") or [
-    "adventurous-porcupine",
-    "TBD-member-2",
-    "TBD-member-3",
-    "TBD-member-4",
-    "TBD-member-5",
+    "cautious-stork",         # Ace Bonkowski
+    "excited-cobra",          # Gowri Balagopal Warrier
+    "adventurous-porcupine",  # Harshita Srivastava
+    "super-aardvark",         # Khushbu Dhingra
+    "happy-reindeer",         # Tung Trinh
 ]
 
 

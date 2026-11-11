@@ -4,13 +4,13 @@
 framework: django # locked
 database: postgres # hosted on Supabase (approved by prof)
 members:
-  - nickname: TODO    # course nickname: Ace Bonkowski
+  - nickname: cautious-stork    # Ace Bonkowski
     github: acebonkowski
-  - nickname: TODO    # Gowri Balagopal Warrier
+  - nickname: excited-cobra    # Gowri Balagopal Warrier
     github: Gowribwarrier0609
   - nickname: adventurous-porcupine    # Harshita Srivastava
     github: hsrivastava1407
-  - nickname: TODO    # Khushbu Dhingra
+  - nickname: super-aardvark    # Khushbu Dhingra
     github: Khushbu0709
-  - nickname: TODO    # Tung Trinh
+  - nickname: happy-reindeer    # Tung Trinh
     github: trinhtung1996-netizen
