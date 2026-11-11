@@ -3,19 +3,26 @@ from django.db import models
 
 
 class Profile(models.Model):
-    """Minimal profile from #6. #7 adds the profile fields (name, school,
-    program, photo) to this model instead of creating a new one."""
+    """Shared by OTP login (#6) and onboarding (#7)."""
 
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile"
     )
     # False: the user is sent to onboarding (#7) after login. True: to the map (#8).
     onboarding_complete = models.BooleanField(default=False)
+    display_name = models.CharField(max_length=100, blank=True)
+    # A user exists before onboarding. The form requires a program on completion.
+    program = models.ForeignKey("core.Program", on_delete=models.PROTECT, null=True, blank=True)
+    photo_reference = models.CharField(max_length=500, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"profile of {self.user}"
+
+    @property
+    def school(self):
+        return self.program.school if self.program_id else None
 
 
 class LoginCode(models.Model):

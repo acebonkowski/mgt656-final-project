@@ -15,6 +15,8 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from accounts.models import Profile
+from core.yale_catalog import seed_catalog
+from core.models import Program
 
 
 class Command(BaseCommand):
@@ -22,6 +24,7 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options):
+        seed_catalog()
         graders = [
             (settings.GRADER_ADMIN_EMAIL, True),    # admin: staff + superuser, can open /admin
             (settings.GRADER_MEMBER_EMAIL, False),  # member: a regular student
@@ -45,6 +48,13 @@ class Command(BaseCommand):
         user.is_superuser = is_admin
         user.set_unusable_password()
         user.save()
-        Profile.objects.update_or_create(user=user, defaults={"onboarding_complete": True})
+        profile, _ = Profile.objects.get_or_create(user=user)
+        if not profile.display_name:
+            profile.display_name = "Demo administrator" if is_admin else "Demo student"
+        if not profile.program_id:
+            profile.program = Program.objects.get(
+                school__name="School of Management", name="Master of Business Administration (M.B.A.)")
+        profile.onboarding_complete = True
+        profile.save()
         role = "admin" if is_admin else "member"
         self.stdout.write(f"{'Created' if created else 'Updated'} {role} grader: {email}")

@@ -137,8 +137,9 @@ def resend(request):
 
 @login_required
 def onboarding(request):
-    """Placeholder until #7 replaces it with the real onboarding screen."""
-    return render(request, "accounts/onboarding_placeholder.html")
+    """Compatibility entry point; all routes use the real #7 screen."""
+    from core.views import onboarding as onboarding_view
+    return onboarding_view(request)
 
 
 def admin_login(request):

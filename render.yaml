@@ -35,6 +35,12 @@ services:
         sync: false
       - key: GRADER_FIXED_OTP  # fixed code for the seeded grader accounts
         sync: false
+      - key: SUPABASE_STORAGE_URL
+        sync: false
+      - key: SUPABASE_STORAGE_KEY # server-only service_role key for this project
+        sync: false
+      - key: SUPABASE_PHOTO_BUCKET
+        value: profile-photos
 
   - type: web
     name: mgt656-production
@@ -66,3 +72,9 @@ services:
         sync: false
       - key: GRADER_FIXED_OTP  # fixed code for the seeded grader accounts
         sync: false
+      - key: SUPABASE_STORAGE_URL
+        sync: false
+      - key: SUPABASE_STORAGE_KEY # production project, separate from staging
+        sync: false
+      - key: SUPABASE_PHOTO_BUCKET
+        value: profile-photos

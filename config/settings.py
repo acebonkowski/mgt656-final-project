@@ -158,8 +158,7 @@ LOGOUT_REDIRECT_URL = "accounts:welcome"
 # After login, and after onboarding's "Start discovering" (#7), users land on the map.
 LOGIN_REDIRECT_URL = "map"
 ONBOARDING_SUCCESS_URL = "map"
-# New users (profile not completed) are sent here after login. #7 replaces the
-# placeholder page behind this URL name.
+# New users are sent to the real #7 onboarding screen after login.
 ONBOARDING_URL = "accounts:onboarding"
 
 # Grader accounts (per Kyle): created by `manage.py seed`, they log in with a
@@ -225,6 +224,14 @@ STORAGES = {
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Profile photos use private object storage through Django, never FileSystemStorage.
+SUPABASE_STORAGE_URL = os.environ.get("SUPABASE_STORAGE_URL", "").strip()
+SUPABASE_STORAGE_KEY = os.environ.get("SUPABASE_STORAGE_KEY", "").strip()
+SUPABASE_PHOTO_BUCKET = os.environ.get("SUPABASE_PHOTO_BUCKET", "profile-photos").strip()
+FILE_UPLOAD_HANDLERS = ["core.upload_handlers.ProfilePhotoUploadHandler"]
+DATA_UPLOAD_MAX_NUMBER_FILES = 1
+DATA_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024
 
 
 # --- Security (deployed environments) -----------------------------------------

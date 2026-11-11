@@ -2,6 +2,11 @@
 
 Event discovery app for Yale graduate students (MGT656 final project). Django + PostgreSQL (Supabase), deployed on Render.
 
+Onboarding now shares the authentication profile, seeds provisional Yale degree
+choices, and supports private object-storage photos. See
+[onboarding setup and release checks](docs/onboarding-development.md), including
+the required storage environment variables and `setup_photo_storage` command.
+
 ## Local development
 
 ```bash
