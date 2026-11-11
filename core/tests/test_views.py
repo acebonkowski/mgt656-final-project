@@ -5,9 +5,12 @@ from django.test import TestCase, override_settings
 
 
 class HomeViewTests(TestCase):
+    def test_root_sends_visitors_to_the_welcome_screen(self):
+        self.assertRedirects(self.client.get("/"), "/login/")
+
     @override_settings(APP_ENV="staging")
-    def test_home_is_public_and_shows_environment(self):
-        response = self.client.get("/")
+    def test_welcome_screen_is_public_and_shows_environment(self):
+        response = self.client.get("/login/")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Environment: staging")
 

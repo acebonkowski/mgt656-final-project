@@ -6,14 +6,18 @@ run browser JavaScript, every key used here is fake, and NoNetworkTests fails
 if rendering the page opens any network connection.
 """
 
+import re
 import socket
 from unittest import mock
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.staticfiles import finders
+from django.core import mail
 from django.shortcuts import resolve_url
 from django.test import TestCase, override_settings
+
+from accounts.models import Profile
 
 FAKE_KEY = "fake-test-key"
 FALLBACK_TEXT = "The map isn't available right now."
@@ -25,22 +29,22 @@ class MapAccessTests(TestCase):
     def test_logged_out_user_is_redirected_to_login(self):
         response = self.client.get("/map/")
         self.assertRedirects(
-            response, f"{settings.LOGIN_URL}?next=/map/", fetch_redirect_response=False
+            response, f"{resolve_url(settings.LOGIN_URL)}?next=/map/", fetch_redirect_response=False
         )
 
     def test_login_redirect_and_onboarding_success_point_to_map(self):
         self.assertEqual(resolve_url(settings.LOGIN_REDIRECT_URL), "/map/")
         self.assertEqual(resolve_url(settings.ONBOARDING_SUCCESS_URL), "/map/")
 
+    @override_settings(EMAIL_DELIVERY_ENABLED=True)
     def test_logging_in_from_the_map_lands_back_on_the_map(self):
-        # Uses the temporary admin login (staff only) until #6 adds the real one.
-        get_user_model().objects.create_user(
-            username="student", password="not-a-real-password-123", is_staff=True
-        )
-        response = self.client.post(
-            f"{settings.LOGIN_URL}?next=/map/",
-            {"username": "student", "password": "not-a-real-password-123", "next": "/map/"},
-        )
+        # The login story (#6) replaced the temporary admin password login.
+        user = get_user_model().objects.create_user(username="student@yale.edu")
+        Profile.objects.create(user=user, onboarding_complete=True)
+        self.client.get(f"{resolve_url(settings.LOGIN_URL)}?next=/map/")
+        self.client.post("/login/", {"email": "student@yale.edu"})
+        code = re.search(r"\b(\d{6})\b", mail.outbox[-1].body).group(1)
+        response = self.client.post("/login/code/", {"code": code})
         self.assertRedirects(response, "/map/", fetch_redirect_response=False)
 
 
