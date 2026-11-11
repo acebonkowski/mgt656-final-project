@@ -1,0 +1,25 @@
+{% extends "accounts/base.html" %}
+{% load static %}
+{% block title %}Code was sent · Yale Events{% endblock %}
+{% block content %}
+  <a class="back" href="{% url 'accounts:welcome' %}" aria-label="Back: change your email address">&larr;</a>
+  <h1>Code was sent.</h1>
+  <p>We sent a 6-digit code to <strong>{{ email }}</strong>. It expires in 10 minutes.</p>
+  <form method="post" action="{% url 'accounts:code' %}" novalidate>
+    {% csrf_token %}
+    <label for="code">Code</label>
+    <input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code"
+           pattern="[0-9]*" maxlength="6" required autofocus
+           {% if error %}aria-invalid="true" aria-describedby="code-error"{% endif %}>
+    {% if error %}<p id="code-error" class="error" role="alert">{{ error }}</p>{% endif %}
+    <button id="confirm" type="submit" class="primary" disabled>Confirm</button>
+  </form>
+  <p id="resend-countdown" class="hint" data-seconds="{{ seconds_until_resend }}"{% if not seconds_until_resend %} hidden{% endif %}>
+    You can resend the code in <span id="resend-seconds">{{ seconds_until_resend }}</span> seconds
+  </p>
+  <form id="resend-form" method="post" action="{% url 'accounts:resend' %}"{% if seconds_until_resend %} hidden{% endif %}>
+    {% csrf_token %}
+    <button type="submit" class="link">Resend code</button>
+  </form>
+{% endblock %}
+{% block scripts %}<script src="{% static 'accounts/code.js' %}"></script>{% endblock %}

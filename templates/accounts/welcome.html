@@ -1,0 +1,17 @@
+{% extends "accounts/base.html" %}
+{% block title %}Welcome · Yale Events{% endblock %}
+{% block content %}
+  <h1>Welcome.</h1>
+  <form method="post" action="{% url 'accounts:welcome' %}" novalidate>
+    {% csrf_token %}
+    <label for="email">Your Yale email address</label>
+    <input id="email" name="email" type="email" value="{{ email }}"
+           autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false"
+           required aria-describedby="email-hint{% if error %} email-error{% endif %}"
+           {% if error %}aria-invalid="true" autofocus{% endif %}>
+    <p id="email-hint" class="hint">Only yale.edu addresses are accepted.</p>
+    {% if error %}<p id="email-error" class="error" role="alert">{{ error }}</p>{% endif %}
+    <button type="submit" class="primary">Send code</button>
+  </form>
+  <p class="env">Environment: {{ app_env }}</p>
+{% endblock %}
