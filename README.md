@@ -36,6 +36,7 @@ All configuration comes from environment variables. Nothing secret is committed.
 | `PORT` | set by Render | gunicorn binds to it |
 | `TEAM_NICKNAME` | no | Team course nickname; defaults to `holy-dew`. Holds the nickname, never the hash |
 | `TEAM_MEMBER_NICKNAMES` | no | Comma-separated member nicknames shown on the A/B page |
+| `MAP_API_KEY` | for the map | MapTiler key for the home screen (`/map/`). Visible in page source by design, so restrict it to our domains (see below). If empty, `/map/` shows a "map isn't available" message. |
 
 ## A/B test page
 
@@ -45,7 +46,6 @@ The course-required A/B page lives at `/` + the first 7 hex characters of `sha1(
 - Stats: `/e75d81f/stats`. Live JSON with counts and `preferred`, the variant with the higher click rate. With no data or a tie, `preferred` is `kudos`.
 
 The code is in [abtest/](abtest/). Impressions and clicks can be viewed (and test visits deleted) in the Django admin under **A/B test**.
-| `MAP_API_KEY` | for the map | MapTiler key for the home screen (`/map/`). Visible in page source by design, so restrict it to our domains (see below). If empty, `/map/` shows a "map isn't available" message. |
 
 ## Home screen map (`/map/`)
 
