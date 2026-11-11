@@ -81,6 +81,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "core",
     "abtest",
+    "accounts",
 ]
 
 MIDDLEWARE = [
@@ -150,12 +151,47 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# Where logged-out users are sent. Temporary: Django admin's login (staff accounts
-# only) until the login story (#6) or the welcome screen replaces it.
-LOGIN_URL = "/admin/login/"
+# Login is a one-time code emailed to a Yale address (#6), on top of Django's
+# normal auth and sessions. Logged-out users go to the Welcome screen.
+LOGIN_URL = "accounts:welcome"
+LOGOUT_REDIRECT_URL = "accounts:welcome"
 # After login, and after onboarding's "Start discovering" (#7), users land on the map.
 LOGIN_REDIRECT_URL = "map"
 ONBOARDING_SUCCESS_URL = "map"
+# New users (profile not completed) are sent here after login. #7 replaces the
+# placeholder page behind this URL name.
+ONBOARDING_URL = "accounts:onboarding"
+
+# Grader accounts (per Kyle): created by `manage.py seed`, they log in with a
+# fixed code instead of an emailed one and never receive email. The addresses
+# are not secret; the code is, so it only comes from the environment. Empty
+# means grader login is disabled.
+GRADER_ADMIN_EMAIL = "kyle.jensen@yale.edu"
+GRADER_MEMBER_EMAIL = "mgt656-demo-member@yale.edu"
+GRADER_EMAILS = [GRADER_ADMIN_EMAIL, GRADER_MEMBER_EMAIL]
+GRADER_FIXED_OTP = os.environ.get("GRADER_FIXED_OTP", "").strip()
+
+
+# --- Email (login codes) -------------------------------------------------------
+# Sent through Resend's SMTP relay with Django's built-in SMTP backend. Without
+# RESEND_API_KEY, local development prints emails to the terminal; deployed
+# environments refuse to send (users see an error) rather than log codes.
+
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "").strip()
+DEFAULT_FROM_EMAIL = os.environ.get("EMAIL_FROM", "").strip() or "Yale Events <login@example.com>"
+EMAIL_DELIVERY_ENABLED = bool(RESEND_API_KEY) or DEBUG
+
+if RESEND_API_KEY:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = "smtp.resend.com"
+    # 587 (STARTTLS) by default; Resend also accepts 2587 if a host blocks 587.
+    EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+    EMAIL_USE_TLS = True
+    EMAIL_HOST_USER = "resend"
+    EMAIL_HOST_PASSWORD = RESEND_API_KEY
+    EMAIL_TIMEOUT = 10
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 
 # --- Map (#8) -----------------------------------------------------------------

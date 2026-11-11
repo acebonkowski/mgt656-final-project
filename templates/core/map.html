@@ -14,6 +14,10 @@
 </head>
 <body class="map-screen">
   <main>
+    <form class="logout" method="post" action="{% url 'accounts:logout' %}">
+      {% csrf_token %}
+      <button type="submit">Log out</button>
+    </form>
     <div id="map" class="map" role="region" aria-label="Map of New Haven"></div>
     <div class="overlay">
       <h1 class="headline">More coming soon.</h1>

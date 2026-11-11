@@ -1,0 +1,16 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220">
+  <title>{% block title %}Yale Events{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'accounts/auth.css' %}">
+</head>
+<body class="auth-screen">
+  <main class="auth-card">
+    {% block content %}{% endblock %}
+  </main>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

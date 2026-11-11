@@ -9,6 +9,7 @@ python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 export DJANGO_DEBUG=true          # SQLite + dev secret key, local only
 .venv/bin/python manage.py migrate
+.venv/bin/python manage.py seed   # grader accounts (safe to run again)
 .venv/bin/python manage.py runserver
 ```
 
@@ -20,7 +21,7 @@ To use Postgres locally, also export `DATABASE_URL` (see [.env.example](.env.exa
 DJANGO_DEBUG=true .venv/bin/python manage.py test
 ```
 
-Tests never touch external services: the health check's database failure is mocked, and settings tests only parse fake URLs.
+Tests never touch external services: the health check's database failure is mocked, settings tests only parse fake URLs, and login emails are captured in memory by Django's test runner (send failures are mocked).
 
 ## Configuration
 
@@ -37,6 +38,10 @@ All configuration comes from environment variables. Nothing secret is committed.
 | `TEAM_NICKNAME` | no | Team course nickname; defaults to `holy-dew`. Holds the nickname, never the hash |
 | `TEAM_MEMBER_NICKNAMES` | no | Comma-separated member nicknames shown on the A/B page |
 | `MAP_API_KEY` | for the map | MapTiler key for the home screen (`/map/`). Visible in page source by design, so restrict it to our domains (see below). If empty, `/map/` shows a "map isn't available" message. |
+| `RESEND_API_KEY` | for login emails | Resend API key, used as the SMTP password. Without it, deployed environments don't send codes (students see an error); local development prints emails to the terminal |
+| `EMAIL_FROM` | for login emails | Sender on the team's verified Resend domain, e.g. `Yale Events <login@mail.<domain>>` |
+| `EMAIL_PORT` | no | Defaults to `587`; Resend also accepts `2587` |
+| `GRADER_FIXED_OTP` | for grader login | Fixed 6-digit code for the seeded grader accounts. Same value on staging and production. Never commit it |
 
 ## A/B test page
 
@@ -47,9 +52,36 @@ The course-required A/B page lives at `/` + the first 7 hex characters of `sha1(
 
 The code is in [abtest/](abtest/). Impressions and clicks can be viewed (and test visits deleted) in the Django admin under **A/B test**.
 
+## Login (`/login/`)
+
+Students log in with a one-time code emailed to their Yale address (#6); there are no passwords. It's built on Django's normal auth and sessions; the code is in [accounts/](accounts/).
+
+- `/` sends logged-out visitors to the **Welcome** screen (`/login/`) and logged-in users to the map.
+- Only `@yale.edu` addresses and its subdomains (e.g. `@som.yale.edu`) are accepted, checked on the server.
+- Codes are 6 digits, valid for 10 minutes, work once and stop working after 5 wrong tries. Only a keyed hash is stored. A new code can be sent after 45 seconds (enforced on the server).
+- A new address creates an account and goes to onboarding (`/onboarding/`, a placeholder until #7). An existing user with a completed profile goes to the map.
+- Log out with the button on the map.
+
+### Grader accounts and the seed command
+
+`python manage.py seed` creates or updates the grader accounts. It's safe to run more than once; run it after every database reset and after the first deploy of an environment:
+
+| Account | Role |
+|---------|------|
+| `kyle.jensen@yale.edu` | Admin (staff + superuser, can open `/admin`) |
+| `mgt656-demo-member@yale.edu` | Member (regular student) |
+
+Graders log in on the Welcome screen with the fixed code from `GRADER_FIXED_OTP` (per Kyle). They never receive email, the code works for no other address, and 5 wrong tries lock the address for 15 minutes. The accounts have no password: `/admin`'s login page redirects to the Welcome screen, and Kyle's account opens `/admin` once logged in.
+
+On Render the seed runs automatically on every start, right after `migrate` ([bin/start.sh](bin/start.sh)), so a restart re-creates the accounts after a database reset. To run it by hand, run `python manage.py seed` with that environment's `DATABASE_URL` exported.
+
+### Email (Resend)
+
+Codes are sent through Resend's SMTP relay using Django's built-in SMTP backend (`smtp.resend.com`, user `resend`, the API key as the password). Resend only delivers to any address from a **domain the team controls and has verified** (SPF/DKIM DNS records), so `EMAIL_FROM` must use that domain.
+
 ## Home screen map (`/map/`)
 
-`/map/` is the logged-in home screen: a dark New Haven map with the headline "More coming soon." (#8). Logged-out visitors are sent to `LOGIN_URL`, for now Django admin's login (staff accounts only) until the login story (#6) lands. `LOGIN_REDIRECT_URL` and `ONBOARDING_SUCCESS_URL` both point to `map`.
+`/map/` is the logged-in home screen: a dark New Haven map with the headline "More coming soon." (#8). Logged-out visitors are sent to the Welcome screen (`LOGIN_URL`). `LOGIN_REDIRECT_URL` and `ONBOARDING_SUCCESS_URL` both point to `map`.
 
 The map is drawn in the browser by [MapLibre GL JS](https://maplibre.org/) (open source, pinned to 5.24.0 from unpkg with Subresource Integrity hashes) using MapTiler's `dataviz-dark` style, tinted blue-black to match the page. The map code is kept in two files:
 
@@ -83,7 +115,7 @@ Never commit a key, not even the local one. Keep it in your shell or in Render o
 
 - **Staging:** https://mgt656-final-project-staging.onrender.com (health check: [/healthz](https://mgt656-final-project-staging.onrender.com/healthz))
 
-[render.yaml](render.yaml) defines two free web services, `mgt656-staging` (auto-deploys on every push to `main`) and `mgt656-production` (manual deploys only). On every start, [bin/start.sh](bin/start.sh) runs `migrate` and then gunicorn on `$PORT`, with access and error logs going to stdout. Render's pre-deploy command needs a paid plan, so migrations run at start instead.
+[render.yaml](render.yaml) defines two free web services, `mgt656-staging` (auto-deploys on every push to `main`) and `mgt656-production` (manual deploys only). On every start, [bin/start.sh](bin/start.sh) runs `migrate`, then `seed`, then gunicorn on `$PORT`, with access and error logs going to stdout. Render's pre-deploy command needs a paid plan, so migrations run at start instead.
 
 One-time setup (done by a team member with the accounts):
 

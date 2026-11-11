@@ -13,10 +13,6 @@ NEW_HAVEN_CENTER = [41.3083, -72.9279]
 NEW_HAVEN_ZOOM = 13
 
 
-def home(request):
-    return render(request, "core/home.html", {"app_env": settings.APP_ENV})
-
-
 @login_required
 def map_view(request):
     """Home screen: a dark map of New Haven. The provider plugs in via
