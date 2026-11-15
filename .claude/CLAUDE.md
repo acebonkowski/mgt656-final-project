@@ -8,6 +8,9 @@ MGT656 (Software Management) final project, built by a team of 5. The repo owner
 - If an issue, PR or instruction conflicts with the brief, stop and point out the conflict. Don't pick one side on your own.
 - Re-read the brief before planning any feature.
 
+You derive your event sources for the supplementary aggreation from `aggregator_sources.md` under /.documentation. 
+You derive your event categorization sources & labels fom `event-categories.md` under /.documentation.
+
 ## Tech stack (locked, don't change without team agreement)
 - **Framework:** Django (Python). Use Django's built-in auth, ORM, migrations and admin.
 - **Database:** PostgreSQL hosted on Supabase (approved by the professor). Use it as plain Postgres via `DATABASE_URL`, with no Supabase Auth or Supabase client SDK. Staging and production use **separate** databases.
