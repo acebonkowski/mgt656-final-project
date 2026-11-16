@@ -204,6 +204,11 @@ MAP_API_KEY = os.environ.get("MAP_API_KEY", "")
 # Server-side only: read from the environment, never committed, never rendered
 # into templates or JavaScript. Tests mock every LLM call.
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "").strip()
+# Must be one of the models allowed by the course key (see the key's details on
+# openrouter.ai). Not secret, but kept in the environment so it can change
+# without a deploy.
+OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "").strip()
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 
 # --- I18N ---------------------------------------------------------------------
