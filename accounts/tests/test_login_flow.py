@@ -9,7 +9,6 @@ from unittest import mock
 from django.contrib.auth import get_user_model
 from django.core import mail
 from django.test import TestCase, override_settings
-from django.utils import timezone
 
 from accounts.models import LoginCode, Profile
 from accounts.tests.helpers import assert_error, STUDENT, last_code, send_code
