@@ -1,0 +1,3 @@
+# Linting config for CI (#43). Ruff's default rules (pyflakes + pycodestyle errors).
+target-version = "py312"
+extend-exclude = ["*/migrations/*"]

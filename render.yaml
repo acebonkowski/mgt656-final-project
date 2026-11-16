@@ -12,7 +12,8 @@ services:
     plan: free
     region: oregon        # same AWS region as the Supabase projects (us-west-2)
     branch: main
-    autoDeployTrigger: commit
+    # Deploys after GitHub checks (CI) pass on main; a failing CI blocks the deploy.
+    autoDeployTrigger: checksPass
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
     startCommand: ./bin/start.sh
     healthCheckPath: /healthz

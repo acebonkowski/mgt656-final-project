@@ -1,0 +1,78 @@
+name: Promote to production
+
+# The brief's "deliberate step to promote to production" (#43). Run it by hand
+# from the Actions tab on main. It re-runs CI on that commit, checks staging,
+# then deploys exactly that commit to production via a Render deploy hook.
+#
+# Needs the repo secret RENDER_PRODUCTION_DEPLOY_HOOK (Render -> mgt656-production
+# -> Settings -> Deploy Hook). Never commit the hook URL: anyone with it can deploy.
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "What is being promoted (shown in the run log)"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: promote-production
+  cancel-in-progress: false
+
+env:
+  STAGING_URL: https://mgt656-final-project-staging.onrender.com
+  PRODUCTION_URL: https://mgt656-final-project-y89o.onrender.com
+
+jobs:
+  ci:
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/ci.yml
+
+  promote:
+    name: Deploy to production
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    steps:
+      - name: Log what is being promoted
+        env:
+          REASON: ${{ inputs.reason }}
+        run: echo "Promoting $GITHUB_SHA by $GITHUB_ACTOR - $REASON"
+
+      # Free instances sleep when idle, so allow a cold start.
+      - name: Check staging is healthy
+        run: |
+          for i in $(seq 1 10); do
+            if curl -fsS -m 60 "$STAGING_URL/healthz" | grep -q '"database": "ok"'; then
+              echo "Staging is healthy."; exit 0
+            fi
+            echo "Staging not ready (attempt $i), retrying in 15s..."; sleep 15
+          done
+          echo "::error::Staging /healthz is not ok; not promoting."; exit 1
+
+      - name: Trigger the production deploy
+        env:
+          DEPLOY_HOOK: ${{ secrets.RENDER_PRODUCTION_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "::error::Secret RENDER_PRODUCTION_DEPLOY_HOOK is not set."; exit 1
+          fi
+          # ref= pins the deploy to the commit CI just tested.
+          curl -fsS -X POST -o /dev/null "${DEPLOY_HOOK}&ref=${GITHUB_SHA}"
+          echo "Deploy of $GITHUB_SHA triggered."
+
+      # The old instance keeps serving until the new one passes Render's
+      # health check, so wait for the build before checking.
+      - name: Check production is healthy
+        run: |
+          sleep 240
+          for i in $(seq 1 20); do
+            if curl -fsS -m 60 "$PRODUCTION_URL/healthz" | grep -q '"database": "ok"'; then
+              echo "Production is healthy."; exit 0
+            fi
+            echo "Production not ready (attempt $i), retrying in 20s..."; sleep 20
+          done
+          echo "::error::Production /healthz is not ok. Check the deploy in Render."; exit 1

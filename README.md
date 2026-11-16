@@ -133,3 +133,15 @@ One-time setup (done by a team member with the accounts):
 3. Open `https://<service>.onrender.com/healthz`. It should return `{"status": "ok", "database": "ok"}`.
 
 `/healthz` is also Render's health check. It returns `503` if the database can't be reached, so a deploy with a bad `DATABASE_URL` won't go live.
+
+### CI/CD (#43)
+
+- **CI** ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs on every pull request and every push to `main`: `ruff check`, a missing-migrations check, then the test suite. Branch protection on `main` requires the **Lint and test** check, so a failing PR can't be merged. Run it locally with `.venv/bin/pip install -r requirements-dev.txt && .venv/bin/ruff check . && DJANGO_DEBUG=true .venv/bin/python manage.py test`.
+- **Staging** deploys automatically from `main` once CI passes (`autoDeployTrigger: checksPass` in [render.yaml](render.yaml)). If CI fails on `main`, staging is not deployed.
+- **Production** is promoted deliberately, as the brief requires. Go to **Actions**, open **Promote to production**, click **Run workflow** on `main` and enter a reason. The workflow re-runs CI on that commit, checks staging `/healthz`, triggers the production Render deploy hook for that exact commit, then checks production `/healthz`. Production never deploys on merge.
+
+One-time setup (repo owner):
+
+1. Render → `mgt656-production` → **Settings** → **Deploy Hook**: copy the URL. In GitHub → **Settings** → **Secrets and variables** → **Actions**, add it as `RENDER_PRODUCTION_DEPLOY_HOOK`. Never commit it: anyone with the URL can deploy.
+2. GitHub → **Settings** → **Branches**: protect `main`, require a pull request and the **Lint and test** status check.
+3. Optional: GitHub → **Settings** → **Environments** → `production`: add required reviewers so a promotion needs a second click to approve.
