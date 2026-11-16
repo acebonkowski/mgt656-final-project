@@ -47,6 +47,7 @@ All configuration comes from environment variables. Nothing secret is committed.
 | `EMAIL_FROM` | for login emails | Sender on the team's verified Resend domain, e.g. `Yale Events <login@mail.<domain>>` |
 | `EMAIL_PORT` | no | Defaults to `587`; Resend also accepts `2587` |
 | `GRADER_FIXED_OTP` | for grader login | Fixed 6-digit code for the seeded grader accounts. Same value on staging and production. Never commit it |
+| `OPENROUTER_API_KEY` | for AI features | OpenRouter key from the course credits. Server-side only: never commit it or expose it to browser JavaScript. Tests mock the LLM, so they don't need it |
 
 ## A/B test page
 
@@ -119,6 +120,7 @@ Never commit a key, not even the local one. Keep it in your shell or in Render o
 ## Deploying (staging and production)
 
 - **Staging:** https://mgt656-final-project-staging.onrender.com (health check: [/healthz](https://mgt656-final-project-staging.onrender.com/healthz))
+- **Production:** _TODO (#30): add the URL after the first manual deploy of `mgt656-production`_
 
 [render.yaml](render.yaml) defines two free web services, `mgt656-staging` (auto-deploys on every push to `main`) and `mgt656-production` (manual deploys only). On every start, [bin/start.sh](bin/start.sh) runs `migrate`, then `seed`, then gunicorn on `$PORT`, with access and error logs going to stdout. Render's pre-deploy command needs a paid plan, so migrations run at start instead.
 

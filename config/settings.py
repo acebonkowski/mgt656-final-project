@@ -200,6 +200,12 @@ else:
 MAP_API_KEY = os.environ.get("MAP_API_KEY", "")
 
 
+# --- LLM (OpenRouter) -----------------------------------------------------------
+# Server-side only: read from the environment, never committed, never rendered
+# into templates or JavaScript. Tests mock every LLM call.
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "").strip()
+
+
 # --- I18N ---------------------------------------------------------------------
 
 LANGUAGE_CODE = "en-us"

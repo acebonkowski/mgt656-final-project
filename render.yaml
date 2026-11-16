@@ -41,6 +41,8 @@ services:
         sync: false
       - key: SUPABASE_PHOTO_BUCKET
         value: profile-photos
+      - key: OPENROUTER_API_KEY  # LLM key (course credits), server-side only
+        sync: false
 
   - type: web
     name: mgt656-production
@@ -78,3 +80,5 @@ services:
         sync: false
       - key: SUPABASE_PHOTO_BUCKET
         value: profile-photos
+      - key: OPENROUTER_API_KEY  # LLM key (course credits), server-side only
+        sync: false
