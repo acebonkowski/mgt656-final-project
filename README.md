@@ -48,7 +48,7 @@ All configuration comes from environment variables. Nothing secret is committed.
 | `EMAIL_PORT` | no | Defaults to `587`; Resend also accepts `2587` |
 | `GRADER_FIXED_OTP` | for grader login | Fixed 6-digit code for the seeded grader accounts. Same value on staging and production. Never commit it |
 | `OPENROUTER_API_KEY` | for AI features | OpenRouter key from the course credits. Server-side only: never commit it or expose it to browser JavaScript. Tests mock the LLM, so they don't need it |
-| `OPENROUTER_MODEL` | for AI features | A model allowed by the course key (see the key's details on openrouter.ai). Verify key + model on an environment with `python manage.py check_openrouter` (sends one tiny request, uses credits) |
+| `OPENROUTER_MODEL` | for AI features | Use `google/gemini-3.1-flash-lite` (text, image and audio input, structured output, low cost). Verify key + model on an environment with `python manage.py check_openrouter` (sends one tiny request, uses credits) |
 
 ## A/B test page
 
