@@ -35,6 +35,8 @@ print(json.dumps({
     "email_delivery": settings.EMAIL_DELIVERY_ENABLED,
     "from_email": settings.DEFAULT_FROM_EMAIL,
     "grader_otp_set": bool(settings.GRADER_FIXED_OTP),
+    "openrouter_key": settings.OPENROUTER_API_KEY,
+    "openrouter_model": settings.OPENROUTER_MODEL,
 }))
 """
 
@@ -44,7 +46,7 @@ FAKE_URL = "postgresql://postgres.abc123:pw@aws-0-us-east-1.pooler.supabase.com:
 def load_settings(**env):
     clean = {
         k: v for k, v in os.environ.items()
-        if not k.startswith(("DJANGO_", "DATABASE_", "RENDER_", "APP_ENV", "MAP_", "RESEND_", "EMAIL_", "GRADER_"))
+        if not k.startswith(("DJANGO_", "DATABASE_", "RENDER_", "APP_ENV", "MAP_", "RESEND_", "EMAIL_", "GRADER_", "OPENROUTER_"))
     }
     clean["DJANGO_SETTINGS_MODULE"] = "config.settings"
     clean.update(env)
@@ -97,6 +99,22 @@ class DeployedSettingsTests(SimpleTestCase):
         result = load_settings(DJANGO_SECRET_KEY="x", DATABASE_URL=FAKE_URL)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout)["map_api_key"], "")
+
+    def test_openrouter_key_is_read_from_environment(self):
+        result = load_settings(DJANGO_DEBUG="true", OPENROUTER_API_KEY=" fake-openrouter-key ")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["openrouter_key"], "fake-openrouter-key")
+
+    def test_openrouter_key_defaults_to_empty(self):
+        result = load_settings(DJANGO_DEBUG="true")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["openrouter_key"], "")
+        self.assertEqual(json.loads(result.stdout)["openrouter_model"], "")
+
+    def test_openrouter_model_is_read_from_environment(self):
+        result = load_settings(DJANGO_DEBUG="true", OPENROUTER_MODEL=" vendor/model ")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["openrouter_model"], "vendor/model")
 
     def test_logs_go_to_stdout(self):
         result = load_settings(DJANGO_SECRET_KEY="x", DATABASE_URL=FAKE_URL)
