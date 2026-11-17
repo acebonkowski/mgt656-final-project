@@ -52,21 +52,22 @@ def request(method, path, data=None, content_type="application/json"):
         raise StorageUnavailable("Profile photo storage is temporarily unavailable.") from exc
 
 
-def object_path(object_key):
-    return quote(settings.SUPABASE_PHOTO_BUCKET, safe="") + "/" + quote(object_key, safe="/")
+def object_path(object_key, bucket=None):
+    bucket = bucket or settings.SUPABASE_PHOTO_BUCKET
+    return quote(bucket, safe="") + "/" + quote(object_key, safe="/")
 
 
-def upload(object_key, data, content_type):
-    request("POST", "object/" + object_path(object_key), data, content_type)
+def upload(object_key, data, content_type, bucket=None):
+    request("POST", "object/" + object_path(object_key, bucket), data, content_type)
 
 
-def download(object_key):
-    return request("GET", "object/authenticated/" + object_path(object_key))
+def download(object_key, bucket=None):
+    return request("GET", "object/authenticated/" + object_path(object_key, bucket))
 
 
-def ensure_bucket():
+def ensure_bucket(bucket=None):
     """Explicit setup command only; never called from a user request or migration."""
-    bucket = settings.SUPABASE_PHOTO_BUCKET
+    bucket = bucket or settings.SUPABASE_PHOTO_BUCKET
     try:
         raw = request("GET", "bucket/" + quote(bucket, safe=""))
     except StorageUnavailable as exc:

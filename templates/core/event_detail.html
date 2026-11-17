@@ -1,0 +1,42 @@
+{% load static %}
+{% if not popup %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{{ event.name }} · Yale Events</title>
+  <link rel="stylesheet" href="{% static 'core/map.css' %}">
+</head>
+<body class="event-detail-page">
+<main>
+{% endif %}
+  <article class="event-detail">
+    {% if not popup and user.is_authenticated and user.pk == event.creator_id %}
+      <nav class="event-owner-actions" aria-label="Event actions">
+        <a href="{% url 'edit_event' event.pk %}">Edit</a>
+        <form method="post" action="{% url 'delete_event' event.pk %}">
+          {% csrf_token %}
+          <button type="submit">Delete</button>
+        </form>
+      </nav>
+    {% endif %}
+    {% if event.image %}
+      <img class="event-detail-image" src="{% url 'event_photo' event.image %}" alt="">
+    {% endif %}
+    <h1 id="event-detail-title">{{ event.name }}</h1>
+    <p>{{ event.description }}</p>
+    <dl>
+      <dt>Category</dt><dd>{{ event.get_category_display }}</dd>
+      <dt>Date &amp; time</dt>
+      <dd>{{ event.start_at }}–{{ event.end_at }}</dd>
+      <dt>Location</dt><dd>{{ event.location }}</dd>
+      <dt>Price</dt><dd>{% if event.price == 0 %}Free{% else %}${{ event.price }}{% endif %}</dd>
+      <dt>Link</dt><dd><a href="{{ event.link }}" rel="noopener">{{ event.link }}</a></dd>
+    </dl>
+  </article>
+{% if not popup %}
+</main>
+</body>
+</html>
+{% endif %}
