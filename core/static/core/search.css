@@ -1,0 +1,702 @@
+/* Event search panel (#35). Sits in the map's top-left overlay. #34 turns it
+   into the desktop side panel and phone bottom sheet.
+   Height: it must end above the place legend (bottom left, about 8.5rem with
+   its margin) and, on phones, start below the Log out button. */
+
+:root {
+  --search-panel-width: 24rem;
+}
+
+.search-panel {
+  pointer-events: auto; /* the overlay passes clicks through to the map */
+  width: min(100%, 24rem);
+  max-height: calc(100dvh - 13.5rem);
+  margin-top: 2.75rem; /* phones: below Log out */
+  overflow-y: auto;
+  padding: 0.6rem;
+  border: 1px solid rgba(230, 236, 245, 0.18);
+  border-radius: 0.75rem;
+  background: var(--overlay-bg);
+  color: var(--map-text);
+  font-size: 0.95rem;
+}
+
+.search-panel [hidden] {
+  display: none !important;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.search-panel input[type="search"],
+.search-panel input[type="text"],
+.search-panel input[type="date"],
+.search-panel input[type="time"],
+.search-panel select {
+  min-height: 2.5rem; /* comfortable tap target on phones */
+  padding: 0.4rem 0.6rem;
+  border: 1px solid rgba(230, 236, 245, 0.25);
+  border-radius: 0.5rem;
+  background: #0b1220;
+  color: var(--map-text);
+  font: inherit;
+  color-scheme: dark;
+}
+
+.search-panel button {
+  min-height: 2.5rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid rgba(230, 236, 245, 0.25);
+  border-radius: 0.5rem;
+  background: rgba(230, 236, 245, 0.08);
+  color: var(--map-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.search-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.search-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.search-panel .search-collapse {
+  flex: none;
+  width: 2.5rem;
+  padding: 0;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+/* Collapsed panel: one tappable line summarising the search. */
+.search-panel .search-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.search-summary-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-summary-icon {
+  flex: none;
+  font-size: 1.2rem;
+}
+
+.search-panel .search-this-area {
+  width: 100%;
+  margin-top: 0.5rem;
+  border-color: #4da3ff;
+  color: #9fcbff;
+}
+
+.search-filters-toggle[aria-expanded="true"],
+.search-submit {
+  background: #4da3ff !important;
+  border-color: #4da3ff !important;
+  color: #08111f !important;
+  font-weight: 600 !important;
+}
+
+.search-filters {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.search-field {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.search-field legend,
+.search-field summary {
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+  cursor: default;
+}
+
+.search-field summary {
+  cursor: pointer;
+}
+
+.search-options,
+.search-choices,
+.search-dates {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.search-choices {
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+}
+
+.search-dates {
+  margin-top: 0.5rem;
+}
+
+.search-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+#search-location input[type="text"] {
+  width: 100%;
+}
+
+.search-hint {
+  margin: 0;
+  color: var(--map-muted);
+  font-size: 0.85rem;
+}
+
+.search-results {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.search-results:empty {
+  display: none;
+}
+
+.search-result {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgba(230, 236, 245, 0.18);
+  border-radius: 0.5rem;
+  background: rgba(230, 236, 245, 0.06);
+  color: var(--map-text);
+  text-decoration: none;
+}
+
+.search-result:hover,
+.search-result:focus-visible {
+  border-color: #4da3ff;
+  background: rgba(77, 163, 255, 0.15);
+}
+
+.search-result span {
+  color: var(--map-muted);
+  font-size: 0.85rem;
+}
+
+/* Icon-only buttons (Search, back). */
+.search-panel .search-icon-button {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 2.5rem;
+  padding: 0;
+  font-size: 1.2rem;
+}
+
+/* AI mode (#34). */
+.search-panel .search-ai-toggle {
+  flex: none;
+  border-color: rgba(176, 140, 255, 0.6);
+  color: #d7c8ff;
+}
+
+.search-panel .search-ai-toggle[aria-pressed="true"] {
+  background: rgba(176, 140, 255, 0.25);
+}
+
+.search-ai-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.search-ai-title {
+  flex: 1;
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.search-ai-body {
+  margin-top: 0.75rem;
+}
+
+/* AI chat (#36). */
+.search-ai-log {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.search-ai-message {
+  max-width: 92%;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.75rem;
+  line-height: 1.4;
+}
+
+.search-ai-message p {
+  margin: 0;
+}
+
+.search-ai-message--ai {
+  justify-self: start;
+  border: 1px solid rgba(176, 140, 255, 0.35);
+  background: rgba(176, 140, 255, 0.12);
+}
+
+.search-ai-message--user {
+  justify-self: end;
+  background: #4da3ff;
+  color: #08111f;
+}
+
+.search-ai-message--error {
+  justify-self: start;
+  border: 1px solid rgba(255, 180, 168, 0.5);
+  background: rgba(255, 120, 100, 0.12);
+  color: #ffd2ca;
+}
+
+.search-ai-note {
+  margin-top: 0.4rem !important;
+  color: var(--map-muted);
+  font-size: 0.85rem;
+}
+
+.search-ai-message .search-chips {
+  margin-top: 0.5rem;
+}
+
+.search-chip--static {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+.search-ai-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  color: var(--map-muted);
+  font-size: 0.9rem;
+}
+
+.search-panel .search-ai-footer button {
+  min-height: 2rem;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+#search-ai-results {
+  margin-top: 0.75rem;
+}
+
+.search-ai-form {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+.search-ai-form textarea {
+  width: 100%;
+  min-height: 3.2rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid rgba(230, 236, 245, 0.25);
+  border-radius: 0.5rem;
+  background: #0b1220;
+  color: var(--map-text);
+  font: inherit;
+  resize: vertical;
+}
+
+.search-ai-form-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.search-ai-count {
+  flex: 1;
+  margin-left: 0.6rem;
+  color: var(--map-muted);
+  font-size: 0.8rem;
+}
+
+/* Attach a poster (#36): a round button at the bottom left of the message box. */
+.search-ai-attach {
+  display: inline-grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid rgba(230, 236, 245, 0.25);
+  border-radius: 50%;
+  background: rgba(230, 236, 245, 0.08);
+  font-size: 1.15rem;
+  cursor: pointer;
+}
+
+.search-ai-attach:focus-within {
+  outline: 2px solid #4da3ff;
+  outline-offset: 2px;
+}
+
+.search-ai-attachment {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid rgba(230, 236, 245, 0.18);
+  border-radius: 0.5rem;
+}
+
+.search-ai-attachment img {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.35rem;
+  object-fit: cover;
+}
+
+.search-ai-attachment img:not([src]) {
+  display: none;
+}
+
+.search-ai-attachment-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.85rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-panel .search-ai-attachment button {
+  min-height: 2rem;
+  padding: 0 0.6rem;
+  font-size: 1.1rem;
+}
+
+/* Start and voice modes (#36): attach | large microphone | type or volume. */
+.search-ai-tray {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+
+.search-ai-tray:empty {
+  display: none;
+}
+
+.search-ai-controls {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  margin-top: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.search-ai-controls .search-ai-attach {
+  justify-self: start;
+}
+
+.search-ai-controls .search-ai-round {
+  justify-self: end;
+}
+
+.search-panel .search-ai-round {
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  color: var(--map-text);
+  border-radius: 50%;
+  font-size: 1.2rem;
+}
+
+.search-panel .search-ai-mic {
+  width: 4.5rem;
+  height: 4.5rem;
+  padding: 0;
+  border: 2px solid rgba(176, 140, 255, 0.7);
+  border-radius: 50%;
+  background: rgba(176, 140, 255, 0.2);
+  font-size: 1.9rem;
+}
+
+.search-panel .search-ai-mic.is-listening {
+  border-color: #ff8a7a;
+  background: rgba(255, 120, 100, 0.25);
+  animation: search-ai-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes search-ai-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 120, 100, 0.45); }
+  50% { box-shadow: 0 0 0 0.6rem rgba(255, 120, 100, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-panel .search-ai-mic.is-listening {
+    animation: none;
+  }
+}
+
+.search-ai-transcript {
+  margin: 0;
+  padding: 0.5rem 0.7rem;
+  border: 1px dashed rgba(230, 236, 245, 0.3);
+  border-radius: 0.6rem;
+  font-style: italic;
+}
+
+.search-ai-transcript:empty::before {
+  content: "\2026";
+  color: var(--map-muted);
+}
+
+.search-ai-attached {
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+/* Result cards (#34). */
+.search-result {
+  grid-template-columns: 3.5rem 1fr;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.search-result-text {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.search-result-text strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-result-thumb {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  overflow: hidden;
+  border-radius: 0.45rem;
+  background: rgba(77, 163, 255, 0.18);
+  color: #9fcbff;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.search-result-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Event pins open the event dialog. */
+.event-marker {
+  cursor: pointer;
+}
+
+/* Event dialog (#34): reuses #31's .event-detail-popup look, plus a nav bar. */
+.search-event-dialog::backdrop {
+  background: rgba(5, 9, 18, 0.55);
+}
+
+.search-event-nav {
+  position: sticky;
+  top: -1rem;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: -1rem -1rem 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid rgba(230, 236, 245, 0.15);
+  background: #111b2d;
+}
+
+.search-event-nav button {
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  border: 1px solid rgba(230, 236, 245, 0.25);
+  border-radius: 0.5rem;
+  background: rgba(230, 236, 245, 0.08);
+  color: var(--map-text);
+  font: inherit;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.search-event-nav button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.search-event-position {
+  flex: 1;
+  color: var(--map-muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.search-event-content {
+  min-height: 6rem;
+}
+
+.search-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.search-chips:empty {
+  display: none;
+}
+
+.search-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(77, 163, 255, 0.6);
+  border-radius: 999px;
+  background: rgba(77, 163, 255, 0.15);
+}
+
+.search-panel .search-chip button {
+  min-height: 2rem;
+  border: 0;
+  background: transparent;
+}
+
+.search-panel .search-chip-label {
+  padding-right: 0.25rem;
+}
+
+.search-panel .search-chip-remove {
+  padding-left: 0.25rem;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.search-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.search-status {
+  margin: 0;
+  color: var(--map-muted);
+}
+
+.search-status:empty {
+  display: none;
+}
+
+.search-message {
+  margin: 0.4rem 0 0;
+  color: var(--map-muted);
+  font-size: 0.85rem;
+}
+
+.search-error {
+  color: #ffb4a8;
+}
+
+/* Tablets and desktops (#34): a full-height side panel on the left, and the
+   map fills the rest of the width. Collapsed, the panel becomes a floating
+   one-line summary and the map takes the full width again. */
+@media (min-width: 768px) {
+  .search-panel {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    width: var(--search-panel-width);
+    max-height: none;
+    margin: 0;
+    padding: max(1rem, env(safe-area-inset-top)) 1rem 1rem max(1rem, env(safe-area-inset-left));
+    overflow: hidden;
+    border-width: 0 1px 0 0;
+    border-radius: 0;
+    background: #0f1828;
+  }
+
+  .search-panel .search-form {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /* AI view: the conversation scrolls, the message box stays at the bottom. */
+  .search-panel .search-ai:not([hidden]) {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .search-panel .search-ai-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  body.map-screen:not(.search-collapsed) .map {
+    left: var(--search-panel-width);
+    width: auto;
+  }
+
+  body.map-screen:not(.search-collapsed) .poi-legend {
+    left: calc(var(--search-panel-width) + 0.75rem);
+  }
+
+  .search-collapsed .search-panel {
+    top: max(1rem, env(safe-area-inset-top));
+    bottom: auto;
+    left: max(1rem, env(safe-area-inset-left));
+    padding: 0.6rem;
+    border-width: 1px;
+    border-radius: 0.75rem;
+    background: var(--overlay-bg);
+  }
+}

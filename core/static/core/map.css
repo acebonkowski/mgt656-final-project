@@ -133,7 +133,8 @@ body {
 .create-event-button {
   position: absolute;
   right: max(1rem, env(safe-area-inset-right));
-  bottom: max(5rem, calc(env(safe-area-inset-bottom) + 4.5rem));
+  /* Just above the map attribution (the ⓘ button on phones); #35. */
+  bottom: max(2.75rem, calc(env(safe-area-inset-bottom) + 2.5rem));
   z-index: 3;
   width: 3.25rem;
   height: 3.25rem;

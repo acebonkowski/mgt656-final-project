@@ -24,7 +24,7 @@ from decimal import Decimal
 from zoneinfo import ZoneInfo
 from base64 import b64decode
 from unittest import mock
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from accounts.models import Profile
@@ -67,7 +67,7 @@ class MapScreenTests(TestCase):
         response = self.client.get("/map/")
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "core/map.html")
-        self.assertContains(response, "More coming soon.")
+        self.assertContains(response, '<h1 class="visually-hidden">Find events in New Haven</h1>')
         self.assertContains(response, 'id="map"')
         self.assertEqual(response.context["map_config"]["center"], [41.3083, -72.9279])
         self.assertEqual(
@@ -118,8 +118,8 @@ class MapEventTests(TestCase):
         self.addCleanup(mock.patch.stopall)
 
     def event_values(self, **overrides):
-        new_york_date = (timezone.now().astimezone(ZoneInfo("America/New_York"))
-                         + timezone.timedelta(days=1)).date()
+        # Tomorrow, so the 18:00-20:00 event hasn't ended whenever the test runs.
+        new_york_date = timezone.now().astimezone(ZoneInfo("America/New_York")).date() + timedelta(days=1)
         png = b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=")
         values = {
             "image": SimpleUploadedFile("event.png", png, content_type="image/png"),
@@ -583,7 +583,7 @@ class MapScreenWithoutKeyTests(TestCase):
     def test_missing_maptiler_key_does_not_disable_local_basemap(self):
         response = self.client.get("/map/")
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "More coming soon.")
+        self.assertContains(response, '<h1 class="visually-hidden">Find events in New Haven</h1>')
         self.assertTrue(response.context["map_enabled"])
         self.assertContains(response, '<p id="map-fallback" class="fallback" role="status" hidden>')
         self.assertContains(response, "core/map_provider.js")

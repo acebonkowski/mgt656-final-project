@@ -1,15 +1,39 @@
-{% load static %}
+{% load static tz %}
 {% if not popup %}
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220">
   <title>{{ event.name }} · Yale Events</title>
   <link rel="stylesheet" href="{% static 'core/map.css' %}">
+  <link rel="stylesheet" href="{% static 'core/event.css' %}">
 </head>
 <body class="event-detail-page">
-<main>
+<header class="event-topbar">
+  {% if user.is_authenticated %}
+    <a class="event-back" href="{% url 'map' %}">← Map</a>
+  {% else %}
+    <span class="event-brand">Yale Events</span>
+  {% endif %}
+  <button id="share-event" class="event-share" type="button"
+          data-share-url="{{ share_url }}" data-share-title="{{ event.name }}"
+          aria-label="Share this event" title="Share this event">
+    <svg aria-hidden="true" focusable="false" width="22" height="22" viewBox="0 0 24 24"
+         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/>
+      <polyline points="16 6 12 2 8 6"/>
+      <line x1="12" y1="2" x2="12" y2="15"/>
+    </svg>
+  </button>
+</header>
+<p id="share-status" class="event-share-status" role="status" aria-live="polite"></p>
+<p id="share-fallback" class="event-share-fallback" hidden>
+  <label for="share-fallback-url">Copy this link:</label>
+  <input id="share-fallback-url" type="text" readonly value="{{ share_url }}">
+</p>
+<main class="event-main">
 {% endif %}
   <article class="event-detail">
     {% if not popup and user.is_authenticated and user.pk == event.creator_id %}
@@ -21,25 +45,41 @@
         </form>
       </nav>
     {% endif %}
+    {# Field order is fixed by #32: image, name + description, category, date & time, location, price, link. #}
     {% if event.image %}
       <img class="event-detail-image" src="{% url 'event_photo' event.image %}" alt="">
     {% else %}
       <p class="event-image-placeholder">Image unavailable</p>
     {% endif %}
     <h1 id="event-detail-title">{{ event.name }}</h1>
-    <p>{{ event.description }}</p>
+    <p class="event-description">{{ event.description }}</p>
     <dl>
-      <dt>Category</dt><dd>{{ event.get_category_display }}</dd>
+      <dt>Category</dt><dd data-field="category">{{ event.get_category_display }}</dd>
       <dt>Date &amp; time</dt>
-      <dd>{{ event.start_at }}–{{ event.end_at }}</dd>
-      <dt>Location</dt><dd>{{ event.location }}</dd>
-      {% if event.source %}<dt>Source</dt><dd>{{ event.source_label }}</dd>{% endif %}
-      <dt>Price</dt><dd>{% if event.price == None %}Price not listed{% elif event.price == 0 %}Free{% else %}${{ event.price }}{% endif %}</dd>
-      <dt>Link</dt><dd><a href="{{ event.link }}" rel="noopener">{{ event.link }}</a></dd>
+      {% timezone "America/New_York" %}
+      <dd data-field="datetime">
+        <time datetime="{{ event.start_at|date:'c' }}">{{ event.start_at|date:"D, M j, Y · g:i A" }}</time>–<time datetime="{{ event.end_at|date:'c' }}">{% if event.start_at|date:"Ymd" == event.end_at|date:"Ymd" %}{{ event.end_at|date:"g:i A" }}{% else %}{{ event.end_at|date:"D, M j, Y · g:i A" }}{% endif %}</time>
+      </dd>
+      {% endtimezone %}
+      <dt>Location</dt><dd data-field="location">{{ event.location }}</dd>
+      <dt>Price</dt><dd data-field="price">{{ event.price_label }}</dd>
+      <dt>Link</dt><dd data-field="link"><a href="{{ event.link }}" target="_blank" rel="noopener">{{ event.link }}</a></dd>
+      {% if event.source %}<dt>Source</dt><dd data-field="source">{{ event.source_label }}</dd>{% endif %}
     </dl>
   </article>
 {% if not popup %}
 </main>
+<footer class="event-footer">
+  <a id="save-to-calendar" class="event-calendar-button"
+     href="{% url 'event_calendar' event.pk %}" download>Save to calendar</a>
+  {% if not user.is_authenticated %}
+    <section class="event-join" aria-label="Join Yale Events">
+      <p>See every event happening around Yale on one map.</p>
+      <a id="join-cta" class="event-join-button" href="{{ join_url }}">Join to discover more</a>
+    </section>
+  {% endif %}
+</footer>
+<script src="{% static 'core/event.js' %}"></script>
 </body>
 </html>
 {% endif %}

@@ -1,4 +1,4 @@
-{% load static %}
+{% load static search_tags %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -6,7 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1220">
   <title>Home · Yale Events</title>
-  <link rel="stylesheet" href="{% static 'core/map.css' %}?v=event-links-4">
+  <link rel="stylesheet" href="{% static 'core/map.css' %}?v=osm-local-3">
+  <link rel="stylesheet" href="{% static 'core/search.css' %}?v=search-11">
 </head>
 <body class="map-screen">
   <main>
@@ -83,14 +84,17 @@
       <span><span class="poi-legend-icon poi-marker--bar" aria-hidden="true">🍸</span> Bars</span>
     </aside>
     <div class="overlay">
-      <h1 class="headline">More coming soon.</h1>
+      <!-- The placeholder headline (#8) made way for the search panel (#35). -->
+      <h1 class="visually-hidden">Find events in New Haven</h1>
       <p id="map-fallback" class="fallback" role="status"{% if map_enabled %} hidden{% endif %}>
         The map isn't available right now.
       </p>
+      {% search_panel %}
     </div>
   </main>
   {{ map_config|json_script:"map-config" }}
   {% if map_enabled %}{% include "core/_map_provider.html" %}{% endif %}
-  <script src="{% static 'core/map.js' %}?v=event-links-4"></script>
+  <script src="{% static 'core/map.js' %}?v=osm-local-1"></script>
+  <script src="{% static 'core/search.js' %}?v=search-11"></script>
 </body>
 </html>

@@ -99,6 +99,13 @@ class Event(models.Model):
         return self.name
 
     @property
+    def price_label(self):
+        # Imported events (#33) may have no price.
+        if self.price is None:
+            return "Price not listed"
+        return "Free" if self.price == 0 else f"${self.price:.2f}"
+
+    @property
     def source_label(self):
         return {"yale_connect": "Yale Connect", "som": "Yale SOM",
                 "ticketmaster": "Ticketmaster"}.get(self.source, self.source)
@@ -126,6 +133,34 @@ class Event(models.Model):
     @end.setter
     def end(self, value):
         self.end_at = value
+
+
+class AIUsage(models.Model):
+    """
+    One row per OpenRouter call made for a user (#36), including failed calls,
+    since they still use credits. Counted by core.ai_limits.
+    """
+
+    class Kind(models.TextChoices):
+        SEARCH = "search", "AI search message"
+        IMAGE_SEARCH = "image_search", "AI search with an image"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,  # keep the row so the global daily cap still counts it
+        null=True,
+        related_name="ai_usage",
+    )
+    kind = models.CharField(max_length=20, choices=Kind.choices)
+    created_at = models.DateTimeField(db_index=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["user", "created_at"], name="core_aiusage_user_time_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.kind} by {self.user_id} at {self.created_at:%Y-%m-%d %H:%M}"
 
 
 class EventImportLock(models.Model):
