@@ -102,7 +102,9 @@ When #32 merges, reconcile the detail-page placeholder and its `icalendar`
 version with this branch. Unknown-price policy still needs a team decision;
 this integration does not change #31's non-null price schema.
 
-Validation on this branch: importer tests, lint and migration consistency pass.
-The full suite cannot pass in the current Python 3.15 virtual environment:
-Pillow is absent and pillow-heif cannot build without libheif. The repository
-specifies Python 3.12; CI should verify the complete suite in that environment.
+Local image dependencies were installed after adding Homebrew libheif.
+Building pillow-heif on this machine required setting SDKROOT to the installed
+MacOSX26.5.sdk for the pip command; the default MacOSX27.0.sdk failed at linking.
+The virtual environment still uses Python 3.15; the repository and CI specify
+Python 3.12. The map creation fixture uses tomorrow to avoid expiring at 8 PM
+on the day the test runs.
