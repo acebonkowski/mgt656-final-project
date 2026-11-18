@@ -104,11 +104,11 @@ class SearchEndpointTests(TestCase):
 
     def test_invalid_parameters_return_400_with_field_errors(self):
         response = self.client.get(self.url, {
-            "date_from": "not-a-date", "category": "nope", "bbox": "1,2,3",
+            "date_from": "not-a-date", "category": "nope", "area": "1,2",
         })
         self.assertEqual(response.status_code, 400)
         errors = response.json()["errors"]
-        self.assertEqual(set(errors), {"date_from", "category", "bbox"})
+        self.assertEqual(set(errors), {"date_from", "category", "area"})
         self.assertTrue(all(isinstance(m, str) for msgs in errors.values() for m in msgs))
 
     def test_end_date_before_start_date_returns_400(self):

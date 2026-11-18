@@ -26,6 +26,9 @@ EARTH_RADIUS_MI = 3958.8
 MILES_PER_DEGREE_LAT = 69.0
 RADIUS_CHOICES = [("0.5", "0.5 mi"), ("1", "1 mi"), ("2", "2 mi"), ("5", "5 mi")]
 DEFAULT_RADIUS_MI = 1.0
+# "Search this area": a circle around the map centre, sized by the zoom level.
+AREA_MIN_RADIUS_MI = 0.1
+AREA_MAX_RADIUS_MI = 10.0
 WHEN_CHOICES = [("today", "Today"), ("tomorrow", "Tomorrow"), ("weekend", "This weekend")]
 SEARCH_CONFIG = "english"
 WORD_RE = re.compile(r"[^\W_]+")
@@ -66,23 +69,27 @@ class EventSearchForm(forms.Form):
     radius_mi = forms.TypedChoiceField(
         choices=RADIUS_CHOICES, coerce=float, required=False, empty_value=None
     )
-    bbox = forms.CharField(required=False)
+    area = forms.CharField(required=False)  # "lat,lng,radius_mi" from Search this area
 
     def __init__(self, *args, now=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.now = now
 
-    def clean_bbox(self):
-        raw = self.cleaned_data.get("bbox")
+    def clean_area(self):
+        raw = self.cleaned_data.get("area")
         if not raw:
             return None
         try:
-            west, south, east, north = (float(part) for part in raw.split(","))
+            lat, lng, radius = (float(part) for part in raw.split(","))
         except ValueError:
-            raise forms.ValidationError("Map area must be west,south,east,north.")
-        if not (-180 <= west < east <= 180 and -90 <= south < north <= 90):
-            raise forms.ValidationError("Map area is not a valid box.")
-        return west, south, east, north
+            raise forms.ValidationError("Map area must be latitude,longitude,radius.")
+        if not (-90 <= lat <= 90 and -180 <= lng <= 180):
+            raise forms.ValidationError("Map area centre is not a valid location.")
+        if not AREA_MIN_RADIUS_MI <= radius <= AREA_MAX_RADIUS_MI:
+            raise forms.ValidationError(
+                f"Map area radius must be {AREA_MIN_RADIUS_MI:g}–{AREA_MAX_RADIUS_MI:g} mi."
+            )
+        return lat, lng, radius
 
     def clean(self):
         data = super().clean()
@@ -220,11 +227,9 @@ def search_events(filters, now=None):
     if filters.get("time_to"):
         events = events.filter(start_at__time__lte=filters["time_to"])
 
-    bbox = filters.get("bbox")
-    if bbox:
-        west, south, east, north = bbox
-        events = events.filter(latitude__gte=south, latitude__lte=north,
-                               longitude__gte=west, longitude__lte=east)
+    if filters.get("area"):
+        area_lat, area_lng, area_radius = filters["area"]
+        events = _filter_distance(events, area_lat, area_lng, area_radius)
 
     if filters.get("near_lat") is not None and filters.get("near_lng") is not None:
         events = _filter_distance(events, filters["near_lat"], filters["near_lng"],

@@ -248,16 +248,18 @@ class LocationTests(SearchTestCase):
     def test_unsupported_radius_is_rejected(self):
         self.assertIn("radius_mi", self.errors(near_lat=YALE[0], near_lng=YALE[1], radius_mi="3"))
 
-    def test_map_area(self):
-        make_event("Inside")
-        make_event("Outside", longitude="-72.800000")
-        bbox = "-72.95,41.29,-72.90,41.33"
-        self.assertEqual(self.names(bbox=bbox), ["Inside"])
+    def test_map_area_circle(self):
+        make_event("0.9 mi", latitude=f"{YALE[0] + 0.0130:.6f}")
+        make_event("1.1 mi", latitude=f"{YALE[0] + 0.0160:.6f}")
+        self.assertEqual(self.names(area=f"{YALE[0]},{YALE[1]},1"), ["0.9 mi"])
+        self.assertCountEqual(self.names(area=f"{YALE[0]},{YALE[1]},1.5"), ["0.9 mi", "1.1 mi"])
 
-    def test_malformed_or_inverted_map_area_is_rejected(self):
-        self.assertIn("bbox", self.errors(bbox="-72.95,41.29,-72.90"))
-        self.assertIn("bbox", self.errors(bbox="abc,41.29,-72.90,41.33"))
-        self.assertIn("bbox", self.errors(bbox="-72.90,41.29,-72.95,41.33"))
+    def test_malformed_or_out_of_range_map_area_is_rejected(self):
+        self.assertIn("area", self.errors(area="41.3,-72.9"))
+        self.assertIn("area", self.errors(area="abc,-72.9,1"))
+        self.assertIn("area", self.errors(area="141.3,-72.9,1"))
+        self.assertIn("area", self.errors(area="41.3,-72.9,0.05"))
+        self.assertIn("area", self.errors(area="41.3,-72.9,11"))
 
 
 class CombinedTests(SearchTestCase):
