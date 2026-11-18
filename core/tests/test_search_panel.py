@@ -328,3 +328,28 @@ class AiChatPanelTests(TestCase):
 
     def test_errors_show_the_server_message(self):
         self.assertIn('chat.push({ role: "error", text: result.payload.error', self.source)
+
+
+class AiImageAttachTests(TestCase):
+    """#36: attaching a poster in the AI chat."""
+
+    def setUp(self):
+        user = get_user_model().objects.create_user(username="ai-attach@yale.edu")
+        self.client.force_login(user)
+        self.response = self.client.get("/map/")
+        self.source = static_source("core/search.js")
+
+    def test_attach_control_accepts_the_supported_types(self):
+        self.assertContains(self.response, 'id="search-ai-image" class="visually-hidden" type="file" name="image"')
+        self.assertContains(self.response, 'accept="image/png,image/jpeg,image/heic,image/heif"')
+        self.assertContains(self.response, 'aria-label="Remove attached image"')
+        self.assertContains(self.response, 'id="search-ai-attachment" class="search-ai-attachment" hidden')
+
+    def test_image_is_checked_in_the_browser_and_sent_with_the_message(self):
+        self.assertIn("var MAX_IMAGE_BYTES = 5 * 1024 * 1024;", self.source)
+        self.assertIn('if (image) body.append("image", image);', self.source)
+        self.assertIn("if (aiBusy || (!message && !image)) return;", self.source)
+
+    def test_the_chat_shows_which_image_was_sent(self):
+        self.assertIn('imageName: image ? image.name : ""', self.source)
+        self.assertIn('attached.className = "search-ai-attached"', self.source)

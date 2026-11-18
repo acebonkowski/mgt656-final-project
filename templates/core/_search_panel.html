@@ -122,7 +122,19 @@
       <label class="visually-hidden" for="search-ai-input">Message</label>
       <textarea id="search-ai-input" name="message" rows="2" maxlength="300"
                 placeholder="Describe what you're looking for"></textarea>
+      <div id="search-ai-attachment" class="search-ai-attachment" hidden>
+        <img id="search-ai-attachment-preview" alt="">
+        <span id="search-ai-attachment-name" class="search-ai-attachment-name"></span>
+        <button id="search-ai-attachment-remove" type="button" aria-label="Remove attached image">&times;</button>
+      </div>
+      <p id="search-ai-attachment-error" class="search-message search-error" role="alert" hidden></p>
       <div class="search-ai-form-row">
+        <label class="search-ai-attach" title="Attach a poster or flyer (PNG, JPEG or HEIC, up to 5 MB)">
+          <span aria-hidden="true">&#128206;</span>
+          <span class="visually-hidden">Attach an image</span>
+          <input id="search-ai-image" class="visually-hidden" type="file" name="image"
+                 accept="image/png,image/jpeg,image/heic,image/heif">
+        </label>
         <span id="search-ai-count" class="search-ai-count" aria-live="polite">0/300</span>
         <button id="search-ai-send" class="search-submit" type="submit">Send</button>
       </div>

@@ -54,6 +54,14 @@
   var aiCount = byId("search-ai-count");
   var aiSend = byId("search-ai-send");
   var aiNew = byId("search-ai-new");
+  var aiImage = byId("search-ai-image");
+  var aiAttachment = byId("search-ai-attachment");
+  var aiAttachmentPreview = byId("search-ai-attachment-preview");
+  var aiAttachmentName = byId("search-ai-attachment-name");
+  var aiAttachmentError = byId("search-ai-attachment-error");
+  var IMAGE_TYPES = ["image/png", "image/jpeg", "image/heic", "image/heif"];
+  var MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+  var attachedImage = null;  // the File the user picked, sent with the next message
   var collapsed = false;
   var phone = window.matchMedia("(max-width: 767px)");
   var popupUrl = panel.dataset.popupUrl;  // "/events/0/popup/"
@@ -669,9 +677,17 @@
   function aiEntry(entry) {
     var item = document.createElement("li");
     item.className = "search-ai-message search-ai-message--" + entry.role;
-    var text = document.createElement("p");
-    text.textContent = entry.text;
-    item.appendChild(text);
+    if (entry.imageName) {
+      var attached = document.createElement("p");
+      attached.className = "search-ai-attached";
+      attached.textContent = "\ud83d\udcce " + entry.imageName;
+      item.appendChild(attached);
+    }
+    if (entry.text) {
+      var text = document.createElement("p");
+      text.textContent = entry.text;
+      item.appendChild(text);
+    }
     if (entry.role === "error") item.setAttribute("role", "alert");
     if (entry.role !== "ai") return item;
 
@@ -743,17 +759,61 @@
     return null;
   }
 
+  // --- Attached image (a poster, for example) --------------------------------------
+
+  function showAttachmentError(message) {
+    aiAttachmentError.textContent = message || "";
+    aiAttachmentError.hidden = !message;
+  }
+
+  function clearAttachment() {
+    if (aiAttachmentPreview.src) URL.revokeObjectURL(aiAttachmentPreview.src);
+    aiAttachmentPreview.removeAttribute("src");
+    attachedImage = null;
+    aiImage.value = "";
+    aiAttachment.hidden = true;
+  }
+
+  aiImage.addEventListener("change", function () {
+    var file = aiImage.files && aiImage.files[0];
+    clearAttachment();
+    showAttachmentError("");
+    if (!file) return;
+    // Same rules as the server, checked first so the user isn't kept waiting.
+    var type = file.type || (/\.hei[cf]$/i.test(file.name) ? "image/heic" : "");
+    if (IMAGE_TYPES.indexOf(type) === -1) {
+      showAttachmentError("Choose a PNG, JPEG or HEIC image.");
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      showAttachmentError("Choose an image no larger than 5 MB.");
+      return;
+    }
+    attachedImage = file;
+    aiAttachmentName.textContent = file.name;
+    aiAttachmentPreview.src = URL.createObjectURL(file);  // HEIC may not preview; the name still shows
+    aiAttachment.hidden = false;
+  });
+  byId("search-ai-attachment-remove").addEventListener("click", function () {
+    clearAttachment();
+    aiInput.focus();
+  });
+
   function sendToAi(message) {
-    if (aiBusy || !message) return;
-    chat.push({ role: "user", text: message });
+    var image = attachedImage;
+    if (aiBusy || (!message && !image)) return;
+    chat.push({ role: "user", text: message, imageName: image ? image.name : "" });
     renderChat();
     scrollChatToEnd();
     aiInput.value = "";
     aiCount.textContent = "0/300";
+    clearAttachment();
+    showAttachmentError("");
     setAiBusy(true);
 
     var body = new FormData();
     body.append("message", message);
+    if (image) body.append("image", image);
     fetch(aiUrl, {
       method: "POST",
       credentials: "same-origin",
@@ -806,6 +866,8 @@
     }).catch(function () { /* the server forgets it at the end of the session anyway */ });
     chat = [];
     aiEvents = [];
+    clearAttachment();
+    showAttachmentError("");
     saveChat();
     renderChat();
     renderResults([], aiResults);

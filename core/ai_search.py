@@ -8,6 +8,7 @@ come from search_events(), so the AI can never add events that aren't in the
 database.
 """
 
+import base64
 import json
 from zoneinfo import ZoneInfo
 
@@ -24,6 +25,7 @@ MAX_MESSAGE_CHARS = 300
 MAX_HISTORY_MESSAGES = 12  # the last 6 turns (student + AI)
 MAX_REPLY_CHARS = 500
 DEFAULT_REPLY = "Here's what I found."
+DEFAULT_IMAGE_MESSAGE = "Find events like the one in this image."
 
 RADIUS_VALUES = [value for value, _ in RADIUS_CHOICES]
 WHEN_VALUES = [value for value, _ in WHEN_CHOICES]
@@ -83,6 +85,9 @@ def system_prompt(now):
         '"0.5", "1", "2" or "5" (use "1" if they didn\'t say).\n'
         "- reply: one or two friendly sentences saying what you searched for. Never name, "
         "list or invent specific events: the app shows the real results.\n"
+        "- If an image is attached (for example a poster or flyer), read what it shows: the "
+        "kind of event, keywords, date, time and place. Use those for the filters, and say in "
+        "the reply what you read from it.\n"
         "- If the request isn't about finding events, set all filters to null and say "
         "briefly that you can only help find events.\n"
         "- Later messages may refine the previous search (for example \"what about "
@@ -159,16 +164,27 @@ def validated_form(data, now):
     return form, {}
 
 
-def search(message, history, now=None, geocode=None):
+def search(message, history, now=None, geocode=None, image=None):
     """
     Ask the model for filters, validate them and search.
+    `image` is an optional (bytes, content_type) pair, already validated and
+    converted in memory; it is sent to the model and never stored.
     Returns a dict with reply, filters (query-parameter shape), notes, events
     and the two history entries to append. Raises llm.LLMUnavailable.
     """
     now = now or timezone.now()
+    message = message or (DEFAULT_IMAGE_MESSAGE if image else "")
     messages = [{"role": "system", "content": system_prompt(now)}]
     messages += history[-MAX_HISTORY_MESSAGES:]
-    messages.append({"role": "user", "content": message})
+    if image:
+        data, content_type = image
+        url = f"data:{content_type};base64,{base64.b64encode(data).decode('ascii')}"
+        messages.append({"role": "user", "content": [
+            {"type": "text", "text": message},
+            {"type": "image_url", "image_url": {"url": url}},
+        ]})
+    else:
+        messages.append({"role": "user", "content": message})
 
     output = llm.chat_json(messages, "event_search", RESPONSE_SCHEMA,
                            model=settings.OPENROUTER_SEARCH_MODEL or None)
@@ -183,7 +199,8 @@ def search(message, history, now=None, geocode=None):
         "notes": notes,
         "events": list(form.search()),
         "history": [
-            {"role": "user", "content": message},
+            # Only the text is remembered; the image is never stored, even in the session.
+            {"role": "user", "content": f"[Image attached] {message}" if image else message},
             # The model sees its earlier filters, so follow-ups can refine them.
             {"role": "assistant", "content": json.dumps({"reply": reply, "filters": raw_filters})},
         ],

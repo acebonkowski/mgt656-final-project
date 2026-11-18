@@ -343,8 +343,68 @@
 }
 
 .search-ai-count {
+  flex: 1;
+  margin-left: 0.6rem;
   color: var(--map-muted);
   font-size: 0.8rem;
+}
+
+/* Attach a poster (#36): a round button at the bottom left of the message box. */
+.search-ai-attach {
+  display: inline-grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid rgba(230, 236, 245, 0.25);
+  border-radius: 50%;
+  background: rgba(230, 236, 245, 0.08);
+  font-size: 1.15rem;
+  cursor: pointer;
+}
+
+.search-ai-attach:focus-within {
+  outline: 2px solid #4da3ff;
+  outline-offset: 2px;
+}
+
+.search-ai-attachment {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid rgba(230, 236, 245, 0.18);
+  border-radius: 0.5rem;
+}
+
+.search-ai-attachment img {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.35rem;
+  object-fit: cover;
+}
+
+.search-ai-attachment img:not([src]) {
+  display: none;
+}
+
+.search-ai-attachment-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.85rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-panel .search-ai-attachment button {
+  min-height: 2rem;
+  padding: 0 0.6rem;
+  font-size: 1.1rem;
+}
+
+.search-ai-attached {
+  font-size: 0.85rem;
+  opacity: 0.85;
 }
 
 /* Result cards (#34). */

@@ -264,3 +264,114 @@ class PromptTests(TestCase):
         filters = ai_search.RESPONSE_SCHEMA["properties"]["filters"]["properties"]
         self.assertEqual(filters["categories"]["items"]["enum"], list(Event.Category.values))
         self.assertEqual(filters["radius_mi"]["enum"], ["0.5", "1", "2", "5", None])
+
+
+def image_file(name="poster.png", fmt="PNG", content_type="image/png", size=(40, 30)):
+    from io import BytesIO
+
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    from PIL import Image
+
+    buffer = BytesIO()
+    Image.new("RGB", size, (200, 40, 40)).save(buffer, format=fmt)
+    return SimpleUploadedFile(name, buffer.getvalue(), content_type=content_type)
+
+
+@override_settings(**CONFIGURED)
+class AiImageSearchTests(TestCase):
+    """Poster/flyer images (#36): validated and converted in memory, never stored."""
+
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(username="poster@yale.edu",
+                                                         email="poster@yale.edu")
+        self.client.force_login(self.user)
+        patcher = mock.patch("core.ai_search.llm.chat_json", return_value=model_output(
+            reply="The poster is for a jazz concert.", q="jazz"))
+        self.chat_json = patcher.start()
+        self.addCleanup(patcher.stop)
+        storage = mock.patch("core.photo_storage.upload")
+        self.storage_upload = storage.start()
+        self.addCleanup(storage.stop)
+
+    def last_user_content(self):
+        return self.chat_json.call_args.args[0][-1]["content"]
+
+    def test_image_is_sent_to_the_model_as_a_data_url(self):
+        make_event("Jazz Night")
+        response = self.client.post(URL, {"message": "like this", "image": image_file()})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([e["name"] for e in response.json()["events"]], ["Jazz Night"])
+        text, picture = self.last_user_content()
+        self.assertEqual(text, {"type": "text", "text": "like this"})
+        self.assertTrue(picture["image_url"]["url"].startswith("data:image/png;base64,"))
+
+    def test_image_without_text_uses_a_default_message(self):
+        self.client.post(URL, {"image": image_file()})
+        self.assertEqual(self.last_user_content()[0]["text"], ai_search.DEFAULT_IMAGE_MESSAGE)
+
+    def test_jpeg_stays_jpeg_and_large_images_are_scaled_down(self):
+        import base64
+        from io import BytesIO
+
+        from PIL import Image
+
+        self.client.post(URL, {"image": image_file("big.jpg", "JPEG", "image/jpeg", (3000, 1500))})
+        url = self.last_user_content()[1]["image_url"]["url"]
+        self.assertTrue(url.startswith("data:image/jpeg;base64,"))
+        with Image.open(BytesIO(base64.b64decode(url.split(",", 1)[1]))) as sent:
+            self.assertLessEqual(max(sent.size), 1024)
+
+    def test_heic_is_converted_to_jpeg(self):
+        try:
+            import pillow_heif
+            pillow_heif.register_heif_opener()
+            heic = image_file("poster.heic", "HEIF", "image/heic")
+        except Exception as exc:  # no HEIF encoder in this environment
+            self.skipTest(f"HEIC encoding unavailable: {exc}")
+        self.client.post(URL, {"image": heic})
+        self.assertTrue(self.last_user_content()[1]["image_url"]["url"].startswith("data:image/jpeg;base64,"))
+
+    def test_image_is_never_stored(self):
+        self.client.post(URL, {"image": image_file()})
+        self.storage_upload.assert_not_called()
+        history = self.client.session[ai_search.HISTORY_SESSION_KEY]
+        self.assertEqual(history[0]["content"], f"[Image attached] {ai_search.DEFAULT_IMAGE_MESSAGE}")
+        self.assertNotIn("base64", json.dumps(history))
+
+    def test_counts_as_an_image_search(self):
+        self.client.post(URL, {"image": image_file()})
+        self.assertEqual(AIUsage.objects.get().kind, AIUsage.Kind.IMAGE_SEARCH)
+
+    def test_wrong_type_is_rejected_without_calling_the_ai_or_using_quota(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        bad = SimpleUploadedFile("notes.txt", b"hello", content_type="text/plain")
+        response = self.client.post(URL, {"message": "hi", "image": bad})
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("PNG, JPEG or HEIC", response.json()["error"])
+        self.chat_json.assert_not_called()
+        self.assertFalse(AIUsage.objects.exists())
+
+    def test_fake_image_with_an_image_content_type_is_rejected(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        fake = SimpleUploadedFile("poster.png", b"not really a png", content_type="image/png")
+        self.assertEqual(self.client.post(URL, {"image": fake}).status_code, 400)
+        self.chat_json.assert_not_called()
+
+    def test_over_five_megabytes_is_rejected(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        huge = SimpleUploadedFile("huge.png", b"0" * (5 * 1024 * 1024 + 1), content_type="image/png")
+        response = self.client.post(URL, {"image": huge})
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("5 MB", response.json()["error"])
+        self.chat_json.assert_not_called()
+
+    @override_settings(AI_IMAGE_SEARCH_DAILY_LIMIT=1, AI_SEARCH_PER_MINUTE_LIMIT=10)
+    def test_image_limit_still_allows_typing(self):
+        self.client.post(URL, {"image": image_file()})
+        response = self.client.post(URL, {"image": image_file()})
+        self.assertEqual(response.status_code, 429)
+        self.assertIn("image searches", response.json()["error"])
+        self.assertEqual(self.client.post(URL, {"message": "jazz"}).status_code, 200)
