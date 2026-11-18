@@ -22,10 +22,28 @@ jobs:
     name: Lint and test
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      # Throwaway Postgres for the test run, same engine as Supabase. Full-text
+      # search (#35) is Postgres-only. Trust auth on a container that exists
+      # only for this job, so no password is needed or committed.
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: mgt656
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     env:
-      # SQLite + dev secret key, same as local tests. Tests mock the LLM and
-      # every external service, so no secrets are needed here.
+      # Dev secret key and no SSL (DJANGO_DEBUG), Postgres from the service
+      # above. Tests mock the LLM and every external service, so no secrets
+      # are needed here.
       DJANGO_DEBUG: "true"
+      DATABASE_URL: postgres://postgres@localhost:5432/mgt656
     steps:
       - uses: actions/checkout@v4
 

@@ -1,0 +1,311 @@
+/* Event search panel (#35). Sits in the map's top-left overlay. #34 turns it
+   into the desktop side panel and phone bottom sheet.
+   Height: it must end above the place legend (bottom left, about 8.5rem with
+   its margin) and, on phones, start below the Log out button. */
+
+.search-panel {
+  pointer-events: auto; /* the overlay passes clicks through to the map */
+  width: min(100%, 24rem);
+  max-height: calc(100dvh - 13.5rem);
+  margin-top: 2.75rem; /* phones: below Log out */
+  overflow-y: auto;
+  padding: 0.6rem;
+  border: 1px solid rgba(230, 236, 245, 0.18);
+  border-radius: 0.75rem;
+  background: var(--overlay-bg);
+  color: var(--map-text);
+  font-size: 0.95rem;
+}
+
+.search-panel [hidden] {
+  display: none !important;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.search-panel input[type="search"],
+.search-panel input[type="text"],
+.search-panel input[type="date"],
+.search-panel input[type="time"],
+.search-panel select {
+  min-height: 2.5rem; /* comfortable tap target on phones */
+  padding: 0.4rem 0.6rem;
+  border: 1px solid rgba(230, 236, 245, 0.25);
+  border-radius: 0.5rem;
+  background: #0b1220;
+  color: var(--map-text);
+  font: inherit;
+  color-scheme: dark;
+}
+
+.search-panel button {
+  min-height: 2.5rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid rgba(230, 236, 245, 0.25);
+  border-radius: 0.5rem;
+  background: rgba(230, 236, 245, 0.08);
+  color: var(--map-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.search-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.search-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.search-panel .search-collapse {
+  flex: none;
+  width: 2.5rem;
+  padding: 0;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+/* Collapsed panel: one tappable line summarising the search. */
+.search-panel .search-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.search-summary-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-summary-icon {
+  flex: none;
+  font-size: 1.2rem;
+}
+
+.search-panel .search-this-area {
+  width: 100%;
+  margin-top: 0.5rem;
+  border-color: #4da3ff;
+  color: #9fcbff;
+}
+
+.search-filters-toggle[aria-expanded="true"],
+.search-submit {
+  background: #4da3ff !important;
+  border-color: #4da3ff !important;
+  color: #08111f !important;
+  font-weight: 600 !important;
+}
+
+.search-filters {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.search-field {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.search-field legend,
+.search-field summary {
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+  cursor: default;
+}
+
+.search-field summary {
+  cursor: pointer;
+}
+
+.search-options,
+.search-choices,
+.search-dates {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.search-choices {
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+}
+
+.search-dates {
+  margin-top: 0.5rem;
+}
+
+.search-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+#search-location input[type="text"] {
+  width: 100%;
+}
+
+.search-hint {
+  margin: 0;
+  color: var(--map-muted);
+  font-size: 0.85rem;
+}
+
+.search-results {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.search-results:empty {
+  display: none;
+}
+
+.search-result {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgba(230, 236, 245, 0.18);
+  border-radius: 0.5rem;
+  background: rgba(230, 236, 245, 0.06);
+  color: var(--map-text);
+  text-decoration: none;
+}
+
+.search-result:hover,
+.search-result:focus-visible {
+  border-color: #4da3ff;
+  background: rgba(77, 163, 255, 0.15);
+}
+
+.search-result span {
+  color: var(--map-muted);
+  font-size: 0.85rem;
+}
+
+/* Event marker popups: dark text on MapLibre's white popup. */
+.event-popup .maplibregl-popup-content {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 12rem;
+  padding: 0.75rem 1.75rem 0.75rem 0.85rem;
+  border-radius: 0.6rem;
+  color: #1c2533;
+  font: 0.9rem/1.35 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.event-popup .event-popup-name {
+  color: #0b1220;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.event-popup .event-popup-link {
+  margin-top: 0.35rem;
+  color: #1f6fd1;
+  font-weight: 600;
+}
+
+.event-popup .maplibregl-popup-close-button {
+  padding: 0.2rem 0.5rem;
+  color: #1c2533;
+  font-size: 1.2rem;
+}
+
+.search-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.search-chips:empty {
+  display: none;
+}
+
+.search-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(77, 163, 255, 0.6);
+  border-radius: 999px;
+  background: rgba(77, 163, 255, 0.15);
+}
+
+.search-panel .search-chip button {
+  min-height: 2rem;
+  border: 0;
+  background: transparent;
+}
+
+.search-panel .search-chip-label {
+  padding-right: 0.25rem;
+}
+
+.search-panel .search-chip-remove {
+  padding-left: 0.25rem;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.search-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.search-status {
+  margin: 0;
+  color: var(--map-muted);
+}
+
+.search-status:empty {
+  display: none;
+}
+
+.search-message {
+  margin: 0.4rem 0 0;
+  color: var(--map-muted);
+  font-size: 0.85rem;
+}
+
+.search-error {
+  color: #ffb4a8;
+}
+
+/* Tablets and up: Log out is far to the right, so the panel starts at the top. */
+@media (min-width: 768px) {
+  .search-panel {
+    max-height: calc(100dvh - 12rem);
+    margin-top: 0;
+  }
+}
+
+@media (min-width: 1280px) {
+  .search-panel {
+    max-height: calc(100dvh - 13rem);
+  }
+}

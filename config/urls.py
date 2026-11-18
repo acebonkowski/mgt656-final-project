@@ -4,6 +4,7 @@ from django.urls import include, path
 from accounts import views as accounts_views
 from core import views
 from core.photo_views import profile_photo
+from core.search_views import search_events_view
 
 urlpatterns = [
     path("", accounts_views.home, name="home"),
@@ -16,6 +17,7 @@ urlpatterns = [
     path("event-image/generate/", views.generate_event_image, name="generate_event_image"),
     path("map/geocode/", views.geocode_address, name="geocode_address"),
     path("map/duplicate/", views.duplicate_event, name="duplicate_event"),
+    path("events/search/", search_events_view, name="search_events"),
     path("events/<int:event_id>/", views.event_detail, name="event_detail"),
     path("events/<int:event_id>/popup/", views.event_detail_popup, name="event_detail_popup"),
     path("events/<int:event_id>/calendar.ics", views.event_calendar, name="event_calendar"),

@@ -142,34 +142,152 @@
       return null;
     }
 
+    var eventMarkers = [];
+    var pendingEvents = null;
+
+    function eventMarker(event) {
+      if (typeof event.latitude !== "number" || typeof event.longitude !== "number") {
+        return null;
+      }
+      var popup = new window.maplibregl.Popup({ offset: 16, className: "event-popup" });
+      var content = document.createElement("div");
+      var title = document.createElement("strong");
+      title.className = "event-popup-name";
+      title.textContent = event.name;
+      content.appendChild(title);
+      if (event.start_at) {
+        var when = document.createElement("div");
+        when.textContent = new Date(event.start_at).toLocaleString("en-US", {
+          timeZone: "America/New_York", weekday: "short", month: "short",
+          day: "numeric", hour: "numeric", minute: "2-digit",
+        });
+        content.appendChild(when);
+      }
+      var price = document.createElement("div");
+      price.textContent = event.price;
+      content.appendChild(price);
+      var link = document.createElement("a");
+      link.className = "event-popup-link";
+      link.href = event.detail_url || event.url || "/events/" + event.id + "/";
+      link.textContent = "View event";
+      content.appendChild(link);
+      popup.setDOMContent(content);
+      return new window.maplibregl.Marker({ color: "#4da3ff" })
+        .setLngLat([event.longitude, event.latitude])
+        .setPopup(popup);
+    }
+
+    // Replaces all event markers (search results, #35). Before the map has
+    // loaded, the latest list is kept and drawn on load.
+    function setEvents(events) {
+      if (!loaded) {
+        pendingEvents = events;
+        return;
+      }
+      eventMarkers.forEach(function (entry) { entry.marker.remove(); });
+      eventMarkers = [];
+      (events || []).forEach(function (event) {
+        var marker = eventMarker(event);
+        if (marker) eventMarkers.push({ id: event.id, marker: marker.addTo(map) });
+      });
+    }
+
+    // "Search this area" (#35): a circle around the map centre whose radius
+    // follows the zoom. Dashed while it is only a preview, solid once searched.
+    var MILES_PER_DEGREE = 69.0;
+    var area = null;  // { lat, lng, radius, preview }
+
+    function circlePolygon(lat, lng, radius) {
+      var points = [];
+      var latStep = radius / MILES_PER_DEGREE;
+      var lngStep = radius / (MILES_PER_DEGREE * Math.cos(lat * Math.PI / 180));
+      for (var i = 0; i <= 64; i++) {
+        var angle = (i / 64) * 2 * Math.PI;
+        points.push([lng + lngStep * Math.cos(angle), lat + latStep * Math.sin(angle)]);
+      }
+      return points;
+    }
+
+    function drawArea() {
+      var data = { type: "FeatureCollection", features: [] };
+      if (area) {
+        data.features.push({
+          type: "Feature",
+          properties: { preview: Boolean(area.preview) },
+          geometry: { type: "Polygon", coordinates: [circlePolygon(area.lat, area.lng, area.radius)] },
+        });
+      }
+      var source = map.getSource("search-area");
+      if (source) {
+        source.setData(data);
+        return;
+      }
+      map.addSource("search-area", { type: "geojson", data: data });
+      map.addLayer({
+        id: "search-area-fill", type: "fill", source: "search-area",
+        paint: {
+          "fill-color": "#4da3ff",
+          "fill-opacity": ["case", ["get", "preview"], 0.06, 0.12],
+        },
+      });
+      map.addLayer({
+        id: "search-area-preview", type: "line", source: "search-area",
+        filter: ["==", ["get", "preview"], true],
+        paint: { "line-color": "#1f6fd1", "line-width": 2, "line-dasharray": [3, 2] },
+      });
+      map.addLayer({
+        id: "search-area-line", type: "line", source: "search-area",
+        filter: ["==", ["get", "preview"], false],
+        paint: { "line-color": "#1f6fd1", "line-width": 2.5 },
+      });
+    }
+
+    function setArea(value) {
+      area = value;
+      if (loaded) drawArea();
+    }
+
+    // Circle for the current view: 80% of the distance from the centre to the
+    // nearest edge, so it always fits on screen; 0.1 to 10 miles.
+    function viewCircle() {
+      var center = map.getCenter();
+      var bounds = map.getBounds();
+      var halfHeight = (bounds.getNorth() - bounds.getSouth()) / 2 * MILES_PER_DEGREE;
+      var halfWidth = (bounds.getEast() - bounds.getWest()) / 2 * MILES_PER_DEGREE *
+        Math.cos(center.lat * Math.PI / 180);
+      var radius = Math.min(10, Math.max(0.1, 0.8 * Math.min(halfHeight, halfWidth)));
+      return { lat: center.lat, lng: center.lng, radius: Math.round(radius * 10) / 10 };
+    }
+
+    window.eventMap = {
+      setEvents: setEvents,
+      setArea: setArea,
+      viewCircle: viewCircle,
+      // Centres the map on an event marker and opens its popup.
+      focusEvent: function (id) {
+        var entry = eventMarkers.filter(function (item) { return item.id === id; })[0];
+        if (!entry) return;
+        map.flyTo({ center: entry.marker.getLngLat(), zoom: Math.min(map.getMaxZoom(), Math.max(map.getZoom(), 15)) });
+        if (!entry.marker.getPopup().isOpen()) entry.marker.togglePopup();
+      },
+      // Calls back when the user (not code) starts to pan or zoom the map.
+      onUserMoveStart: function (callback) {
+        map.on("movestart", function (event) {
+          if (event && event.originalEvent) callback();
+        });
+      },
+      // Calls back after the user (not code) pans or zooms the map.
+      onUserMove: function (callback) {
+        map.on("moveend", function (event) {
+          if (event && event.originalEvent) callback();
+        });
+      },
+    };
+
     map.on("load", function () {
       loaded = true;
-      (config.events || []).forEach(function (event) {
-        if (typeof event.latitude !== "number" || typeof event.longitude !== "number") {
-          return;
-        }
-        var popup = new window.maplibregl.Popup({ offset: 16 });
-        var content = document.createElement("div");
-        var title = document.createElement("strong");
-        title.textContent = event.name;
-        var price = document.createElement("div");
-        price.textContent = event.price;
-        content.appendChild(title);
-        content.appendChild(price);
-        if (event.url) {
-          // Event page (#32): same view the duplicate popup uses.
-          var view = document.createElement("a");
-          view.href = event.url;
-          view.textContent = "View event";
-          view.className = "event-marker-link";
-          content.appendChild(view);
-        }
-        popup.setDOMContent(content);
-        new window.maplibregl.Marker({ color: "#4da3ff" })
-          .setLngLat([event.longitude, event.latitude])
-          .setPopup(popup)
-          .addTo(map);
-      });
+      setEvents(pendingEvents || config.events);
+      if (area) drawArea();
       (config.places || []).forEach(function (place) {
         if (typeof place.latitude !== "number" || typeof place.longitude !== "number") {
           return;
