@@ -6,6 +6,7 @@ check the markup it relies on; the click behaviour is checked by hand.
 
 from datetime import datetime
 from decimal import Decimal
+from unittest import mock
 from zoneinfo import ZoneInfo
 
 from django.contrib.auth import get_user_model
@@ -190,6 +191,28 @@ class EventCalendarDownloadTests(TestCase):
     def test_download_works_logged_out(self):
         event = make_event()
         self.assertEqual(self.client.get(f"/events/{event.pk}/calendar.ics").status_code, 200)
+
+
+class PublicEventImageTests(TestCase):
+    """Team decision (#32): event images are public so shared pages show them."""
+
+    def test_logged_out_visitor_can_load_the_event_image(self):
+        event = make_event(image="events/1/public.png")
+        page = self.client.get(f"/events/{event.pk}/")
+        self.assertContains(page, 'src="/event-photo/events/1/public.png"')
+        with mock.patch("core.views.photo_storage.download", return_value=b"png-bytes") as download:
+            response = self.client.get("/event-photo/events/1/public.png")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, b"png-bytes")
+        self.assertEqual(response["Content-Type"], "image/png")
+        self.assertEqual(response["Cache-Control"], "public, max-age=3600")
+        download.assert_called_once()
+
+    def test_keys_that_are_not_event_images_are_still_404(self):
+        with mock.patch("core.views.photo_storage.download") as download:
+            response = self.client.get("/event-photo/profiles/someone.png")
+        self.assertEqual(response.status_code, 404)
+        download.assert_not_called()
 
 
 class MissingEventTests(TestCase):

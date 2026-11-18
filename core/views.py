@@ -173,9 +173,9 @@ def map_tile(request, z, x, y):
     return response
 
 
-@login_required
-@never_cache
 def event_photo(request, object_key):
+    # Public (#32, team decision): shared event pages are viewable logged out,
+    # so their image must be too. Only keys that belong to an event are served.
     event = Event.objects.filter(image=object_key).first()
     if not event:
         raise Http404
@@ -189,7 +189,7 @@ def event_photo(request, object_key):
     content_type = "image/jpeg" if object_key.lower().endswith(".jpg") else "image/png"
     response = HttpResponse(data, content_type=content_type)
     response["X-Content-Type-Options"] = "nosniff"
-    response["Cache-Control"] = "private, no-store"
+    response["Cache-Control"] = "public, max-age=3600"
     return response
 
 
