@@ -76,6 +76,11 @@ class Event(models.Model):
     class Meta:
         ordering = ["start_at"]
         constraints = [
+            models.UniqueConstraint(
+                fields=["source", "external_id"],
+                condition=~models.Q(source="") & ~models.Q(external_id=""),
+                name="event_source_external_id_unique",
+            ),
             models.CheckConstraint(
                 condition=models.Q(price__gte=0),
                 name="event_price_gte_zero",
