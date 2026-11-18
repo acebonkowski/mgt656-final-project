@@ -22,9 +22,15 @@ To use Postgres locally, also export `DATABASE_URL` (see [.env.example](.env.exa
 
 ## Tests
 
+CI runs the tests on Postgres (a service container in [.github/workflows/ci.yml](.github/workflows/ci.yml)), because event search (#35) uses Postgres full-text search. Run them the same way locally against a local Postgres, for example [Postgres.app](https://postgresapp.com) on macOS. Never point tests at the staging or production database.
+
 ```bash
-DJANGO_DEBUG=true .venv/bin/python manage.py test
+createdb mgt656_dev               # once
+DJANGO_DEBUG=true DATABASE_URL=postgres://$USER@localhost:5432/mgt656_dev \
+  .venv/bin/python manage.py test
 ```
+
+Without `DATABASE_URL` the tests run on SQLite. That still works, but Postgres-only search tests are skipped.
 
 Tests never touch external services: the health check's database failure is mocked, settings tests only parse fake URLs, and login emails are captured in memory by Django's test runner (send failures are mocked).
 
@@ -131,7 +137,7 @@ One-time setup (done by a team member with the accounts):
 
 ### CI/CD (#43)
 
-- **CI** ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs on every pull request and every push to `main`: `ruff check`, a missing-migrations check, then the test suite. Branch protection on `main` requires the **Lint and test** check, so a failing PR can't be merged. Run it locally with `.venv/bin/pip install -r requirements-dev.txt && .venv/bin/ruff check . && DJANGO_DEBUG=true .venv/bin/python manage.py test`.
+- **CI** ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs on every pull request and every push to `main`: `ruff check`, a missing-migrations check, then the test suite against a throwaway Postgres 17 service container. Branch protection on `main` requires the **Lint and test** check, so a failing PR can't be merged. Run it locally with `.venv/bin/pip install -r requirements-dev.txt && .venv/bin/ruff check .`, then the Postgres test command under [Tests](#tests).
 - **Staging** deploys automatically from `main` once CI passes (`autoDeployTrigger: checksPass` in [render.yaml](render.yaml)). If CI fails on `main`, staging is not deployed.
 - **Production** is promoted deliberately, as the brief requires. Go to **Actions**, open **Promote to production**, click **Run workflow** on `main` and enter a reason. The workflow re-runs CI on that commit, checks staging `/healthz`, triggers the production Render deploy hook for that exact commit, then checks production `/healthz`. Production never deploys on merge.
 
