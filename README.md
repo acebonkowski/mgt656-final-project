@@ -55,6 +55,11 @@ All configuration comes from environment variables. Nothing secret is committed.
 | `GRADER_FIXED_OTP` | for grader login | Fixed 6-digit code for the seeded grader accounts. Same value on staging and production. Never commit it |
 | `OPENROUTER_API_KEY` | for AI features | OpenRouter key from the course credits. Server-side only: never commit it or expose it to browser JavaScript. Tests mock the LLM, so they don't need it |
 | `OPENROUTER_MODEL` | for AI features | Use `google/gemini-3.1-flash-lite` (text, image and audio input, structured output, low cost). Verify key + model on an environment with `python manage.py check_openrouter` (sends one tiny request, uses credits) |
+| `OPENROUTER_SEARCH_MODEL` | no | Optional model for AI search only (must read images and support structured output). Defaults to `OPENROUTER_MODEL` |
+| `AI_SEARCH_DAILY_LIMIT` | no | AI search messages per user per day (America/New_York). Defaults to `15` |
+| `AI_SEARCH_PER_MINUTE_LIMIT` | no | AI search messages per user per minute. Defaults to `3` |
+| `AI_IMAGE_SEARCH_DAILY_LIMIT` | no | AI searches with an image per user per day. Defaults to `3` |
+| `AI_GLOBAL_DAILY_LIMIT` | no | AI calls per day for the whole app (protects the course credits; applies to graders too). Defaults to `200` |
 
 ## A/B test page
 
@@ -94,7 +99,7 @@ Codes are sent through Resend's SMTP relay using Django's built-in SMTP backend 
 
 ## Home screen map (`/map/`)
 
-`/map/` is the logged-in home screen: a New Haven map with the headline "More coming soon." (#8). Logged-out visitors are sent to the Welcome screen (`LOGIN_URL`). `LOGIN_REDIRECT_URL` and `ONBOARDING_SUCCESS_URL` both point to `map`.
+`/map/` is the logged-in home screen: a New Haven map with the event search panel (see [Event search](#event-search-34-35-36)). Logged-out visitors are sent to the Welcome screen (`LOGIN_URL`). `LOGIN_REDIRECT_URL` and `ONBOARDING_SUCCESS_URL` both point to `map`.
 
 The map uses locally stored OpenStreetMap vector tiles in [core/data/new-haven.mbtiles](core/data/new-haven.mbtiles), covering New Haven at zoom levels 8–16. The archive was generated from the Connecticut Geofabrik OSM extract (2026-11-17) with the Planetiler OpenMapTiles profile. It is rendered by the locally vendored MapLibre GL JS 5.24.0 library. The app serves tiles from the local MBTiles archive, so displaying the map does not require MapTiler, a map API key, or external tile requests. The visible attribution credits © OpenMapTiles and © OpenStreetMap contributors. OSM data is available under ODbL 1.0; the generated vector tiles are reusable under CC-BY as granted by OpenMapTiles.
 
@@ -118,6 +123,20 @@ The map also shows a curated Yale-area place layer: Yale facilities (including Y
    - Windows PowerShell: `$env:MAP_API_KEY = "<key>"`
 
 Without this key, the local map still works but location autocomplete is unavailable. Never commit a key; keep it in your shell or in Render only.
+
+## Event search (#34, #35, #36)
+
+The panel on `/map/` (a side panel on desktop, a collapsible top panel on phones) searches upcoming events two ways. Both use the same filter form and query ([core/search.py](core/search.py)), so results always come from our database.
+
+- **Manual search (#35):** text (Postgres full-text search with prefix matching), categories, dates (Today, Tomorrow, This weekend or a range), a start-time window, distance from an address or the user's location, and **Search this area** (a circle around the map centre sized by the zoom). `GET /events/search/` returns JSON; filters live in the URL, so links can be shared.
+- **Panel (#34):** result cards, an event dialog with previous/next (cards and pins open it), and an **✨ AI** button (`?mode=ai`).
+- **AI search (#36):** type, speak or attach a poster. `POST /events/search/ai/` sends the message (and the last 6 turns from the session) to OpenRouter **from the server only**, asks for structured JSON filters, validates them with the manual search form and runs the normal search. The AI never adds events; it only proposes filters and a short reply. Code: [core/ai_search.py](core/ai_search.py), [core/ai_search_views.py](core/ai_search_views.py).
+  - **Images** (PNG, JPEG, HEIC up to 5 MB) are read in memory, checked, scaled and converted by `validate_event_photo`, sent to the model and never stored.
+  - **Voice** uses the browser's own speech recognition and speech output (Web Speech API): Chrome, Edge and Safari support it; Firefox shows a message and typing still works. Note that Chrome/Edge (Google) and Safari (Apple) send the speech audio to their own services to transcribe it; our server only receives the text.
+  - **Usage limits** ([core/ai_limits.py](core/ai_limits.py), table `AIUsage`): per user 15 messages a day, 3 a minute and 3 image searches a day; 200 calls a day for the whole app. Every OpenRouter call counts, including failed ones. Graders and staff skip the per-user limits but not the daily total. All limits are environment variables (see [Configuration](#configuration)); delete `AIUsage` rows in the admin to reset a user.
+  - **Failures** return friendly messages (400 bad input, 429 limit, 502 unreadable answer, 503 AI unavailable) and manual search keeps working.
+
+**Trying AI search for real** needs `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` on the environment (staging or production in Render, or exported in your local terminal; never committed). Tests mock OpenRouter and never need them. Each real message uses course credits.
 
 ## Deploying (staging and production)
 
