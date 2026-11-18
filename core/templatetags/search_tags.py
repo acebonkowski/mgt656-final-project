@@ -13,9 +13,11 @@ from core.search import DEFAULT_RADIUS_MI, RADIUS_CHOICES, WHEN_CHOICES
 register = template.Library()
 
 
-@register.inclusion_tag("core/_search_panel.html")
-def search_panel():
+@register.inclusion_tag("core/_search_panel.html", takes_context=True)
+def search_panel(context):
     return {
+        # AI search (#36) posts with Django's CSRF token.
+        "csrf_token": context.get("csrf_token"),
         "categories": Event.Category.choices,
         "when_choices": WHEN_CHOICES,
         "radius_choices": RADIUS_CHOICES,

@@ -277,3 +277,54 @@ class AiModeTests(TestCase):
         self.assertNotIn("writeFilters", body)
         self.assertNotIn("runSearch", body)
         self.assertIn("form.hidden = collapsed || mode === \"ai\";", self.source)
+
+
+class AiChatPanelTests(TestCase):
+    """#36: the text chat in the AI view."""
+
+    def setUp(self):
+        user = get_user_model().objects.create_user(username="ai-chat@yale.edu")
+        self.client.force_login(user)
+        self.response = self.client.get("/map/")
+        self.html = self.response.content.decode()
+        self.source = static_source("core/search.js")
+
+    def test_chat_markup(self):
+        self.assertContains(self.response, 'data-ai-url="/events/search/ai/"')
+        self.assertContains(self.response, 'data-ai-reset-url="/events/search/ai/reset/"')
+        self.assertContains(self.response, 'id="search-ai-log" class="search-ai-log" role="log"')
+        self.assertContains(self.response, 'id="search-ai-input" name="message" rows="2" maxlength="300"')
+        self.assertContains(self.response, 'id="search-ai-send"')
+        self.assertContains(self.response, 'id="search-ai-new"')
+        self.assertContains(self.response, 'id="search-ai-results"')
+
+    def test_chat_form_carries_the_csrf_token(self):
+        ai_form = self.html.split('id="search-ai-form"', 1)[1].split("</form>", 1)[0]
+        self.assertIn('name="csrfmiddlewaretoken"', ai_form)
+
+    def test_messages_are_posted_with_the_csrf_header(self):
+        self.assertIn('"X-CSRFToken": csrfToken()', self.source)
+        self.assertIn('method: "POST"', self.source)
+
+    def test_enter_sends_and_shift_enter_does_not(self):
+        self.assertIn('event.key === "Enter" && !event.shiftKey', self.source)
+
+    def test_chat_text_is_never_inserted_as_html(self):
+        body = self.source.split("function aiEntry(entry) {", 1)[1].split("\n  }\n", 1)[0]
+        self.assertIn("text.textContent = entry.text;", body)
+        self.assertNotIn("innerHTML", body)
+
+    def test_transcript_survives_a_refresh_and_new_chat_clears_it(self):
+        self.assertIn("window.sessionStorage.setItem(CHAT_KEY", self.source)
+        new_chat = self.source.split('aiNew.addEventListener("click"', 1)[1].split("\n  });\n", 1)[0]
+        self.assertIn("aiResetUrl", new_chat)
+        self.assertIn("chat = [];", new_chat)
+
+    def test_edit_in_filters_applies_the_ai_filters(self):
+        body = self.source.split("function editInFilters(filters) {", 1)[1].split("\n  }\n", 1)[0]
+        self.assertIn("writeFilters(fromParams(filtersToParams(filters)))", body)
+        self.assertIn('setMode("filters")', body)
+        self.assertIn("runSearch()", body)
+
+    def test_errors_show_the_server_message(self):
+        self.assertIn('chat.push({ role: "error", text: result.payload.error', self.source)

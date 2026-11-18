@@ -244,6 +244,109 @@
   margin-top: 0.75rem;
 }
 
+/* AI chat (#36). */
+.search-ai-log {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.search-ai-message {
+  max-width: 92%;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.75rem;
+  line-height: 1.4;
+}
+
+.search-ai-message p {
+  margin: 0;
+}
+
+.search-ai-message--ai {
+  justify-self: start;
+  border: 1px solid rgba(176, 140, 255, 0.35);
+  background: rgba(176, 140, 255, 0.12);
+}
+
+.search-ai-message--user {
+  justify-self: end;
+  background: #4da3ff;
+  color: #08111f;
+}
+
+.search-ai-message--error {
+  justify-self: start;
+  border: 1px solid rgba(255, 180, 168, 0.5);
+  background: rgba(255, 120, 100, 0.12);
+  color: #ffd2ca;
+}
+
+.search-ai-note {
+  margin-top: 0.4rem !important;
+  color: var(--map-muted);
+  font-size: 0.85rem;
+}
+
+.search-ai-message .search-chips {
+  margin-top: 0.5rem;
+}
+
+.search-chip--static {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+.search-ai-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  color: var(--map-muted);
+  font-size: 0.9rem;
+}
+
+.search-panel .search-ai-footer button {
+  min-height: 2rem;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+#search-ai-results {
+  margin-top: 0.75rem;
+}
+
+.search-ai-form {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+.search-ai-form textarea {
+  width: 100%;
+  min-height: 3.2rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid rgba(230, 236, 245, 0.25);
+  border-radius: 0.5rem;
+  background: #0b1220;
+  color: var(--map-text);
+  font: inherit;
+  resize: vertical;
+}
+
+.search-ai-form-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.search-ai-count {
+  color: var(--map-muted);
+  font-size: 0.8rem;
+}
+
 /* Result cards (#34). */
 .search-result {
   grid-template-columns: 3.5rem 1fr;
@@ -420,8 +523,21 @@
     background: #0f1828;
   }
 
-  .search-panel .search-form,
-  .search-panel .search-ai {
+  .search-panel .search-form {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /* AI view: the conversation scrolls, the message box stays at the bottom. */
+  .search-panel .search-ai:not([hidden]) {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .search-panel .search-ai-body {
     flex: 1;
     min-height: 0;
     overflow-y: auto;

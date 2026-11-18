@@ -1,7 +1,9 @@
 <section id="search-panel" class="search-panel" aria-label="Search events"
          data-search-url="{% url 'search_events' %}"
          data-geocode-url="{% url 'geocode_address' %}"
-         data-popup-url="{% url 'event_detail_popup' 0 %}">
+         data-popup-url="{% url 'event_detail_popup' 0 %}"
+         data-ai-url="{% url 'ai_search' %}"
+         data-ai-reset-url="{% url 'ai_search_reset' %}">
   {# Collapsed: one line summarising the search; tap to open the panel again. #}
   <button id="search-summary" class="search-summary" type="button"
           aria-controls="search-form" aria-expanded="false" hidden>
@@ -101,13 +103,30 @@
       <button id="search-ai-back" class="search-icon-button" type="button"
               aria-label="Back to filters" title="Back to filters">&#8592;</button>
       <h2 id="search-ai-title" class="search-ai-title">&#10024; Ask AI</h2>
+      <button id="search-ai-new" type="button" title="Start a new conversation">New chat</button>
       <button id="search-ai-collapse" class="search-collapse" type="button"
               aria-controls="search-ai" aria-expanded="true"
               aria-label="Collapse search panel" title="Collapse">&#8963;</button>
     </div>
     <div id="search-ai-body" class="search-ai-body">
-      <p class="search-hint">Describe what you're looking for, and the AI will find matching events. Coming soon.</p>
+      <ol id="search-ai-log" class="search-ai-log" role="log" aria-live="polite" aria-label="Conversation">
+        <li class="search-ai-message search-ai-message--ai search-ai-intro">
+          Hi! Tell me what you're in the mood for, like &ldquo;live music this weekend&rdquo; or
+          &ldquo;free food near campus tomorrow&rdquo;, and I'll find matching events.
+        </li>
+      </ol>
+      <ol id="search-ai-results" class="search-results" aria-label="AI search results"></ol>
     </div>
+    <form id="search-ai-form" class="search-ai-form" novalidate>
+      {% csrf_token %}
+      <label class="visually-hidden" for="search-ai-input">Message</label>
+      <textarea id="search-ai-input" name="message" rows="2" maxlength="300"
+                placeholder="Describe what you're looking for"></textarea>
+      <div class="search-ai-form-row">
+        <span id="search-ai-count" class="search-ai-count" aria-live="polite">0/300</span>
+        <button id="search-ai-send" class="search-submit" type="submit">Send</button>
+      </div>
+    </form>
   </section>
 
   {# Outside the form so it also shows while the panel is collapsed. #}
