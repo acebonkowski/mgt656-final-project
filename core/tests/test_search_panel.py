@@ -159,3 +159,32 @@ class SearchScriptTests(TestCase):
         provider = static_source("core/map_provider.js")
         self.assertIn("focusEvent: function (id)", provider)
         self.assertIn("onUserMoveStart: function (callback)", provider)
+
+
+class SidePanelLayoutTests(TestCase):
+    """#34: full-height side panel on tablets and desktops."""
+
+    def setUp(self):
+        self.css = static_source("core/search.css")
+        desktop = self.css.split("@media (min-width: 768px) {", 1)
+        self.assertEqual(len(desktop), 2, "desktop rules missing")
+        self.desktop = desktop[1]
+
+    def test_panel_is_full_height_on_the_left(self):
+        rule = self.desktop.split(".search-panel {", 1)[1].split("}", 1)[0]
+        for declaration in ("position: fixed;", "top: 0;", "bottom: 0;", "left: 0;",
+                            "width: var(--search-panel-width);"):
+            self.assertIn(declaration, rule)
+
+    def test_map_and_legend_sit_beside_the_open_panel(self):
+        self.assertIn("body.map-screen:not(.search-collapsed) .map {\n    left: var(--search-panel-width);",
+                      self.desktop)
+        self.assertIn("body.map-screen:not(.search-collapsed) .poi-legend {\n"
+                      "    left: calc(var(--search-panel-width) + 0.75rem);", self.desktop)
+
+    def test_collapsing_gives_the_map_full_width(self):
+        self.assertIn(".search-collapsed .search-panel {", self.desktop)
+        source = static_source("core/search.js")
+        self.assertIn('document.body.classList.toggle("search-collapsed", collapsed)', source)
+        self.assertIn("window.eventMap.resize()", source)
+        self.assertIn("resize: function () { map.resize(); }", static_source("core/map_provider.js"))

@@ -300,6 +300,9 @@
       summary.hidden = !collapsed;
       collapseButton.setAttribute("aria-expanded", String(!collapsed));
       summary.setAttribute("aria-expanded", String(!collapsed));
+      // Desktop: the map widens into the space the side panel used (#34).
+      document.body.classList.toggle("search-collapsed", collapsed);
+      if (window.eventMap) window.eventMap.resize();
     }
   }
 

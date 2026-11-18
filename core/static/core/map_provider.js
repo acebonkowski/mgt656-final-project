@@ -263,6 +263,8 @@
       setEvents: setEvents,
       setArea: setArea,
       viewCircle: viewCircle,
+      // Call after the map container changes size (search panel, #34).
+      resize: function () { map.resize(); },
       // Centres the map on an event marker and opens its popup.
       focusEvent: function (id) {
         var entry = eventMarkers.filter(function (item) { return item.id === id; })[0];
