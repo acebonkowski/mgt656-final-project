@@ -162,7 +162,7 @@
       element.setAttribute("aria-label", "Event: " + event.name);
       function open() {
         if (eventClickHandler) eventClickHandler(event.id);
-        else window.location.href = event.detail_url || "/events/" + event.id + "/";
+        else window.location.href = event.detail_url || event.url || "/events/" + event.id + "/";
       }
       element.addEventListener("click", function (clickEvent) {
         clickEvent.stopPropagation();

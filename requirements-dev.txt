@@ -1,3 +1,5 @@
 # Development and CI tools (not installed on Render).
 -r requirements.txt
 ruff==0.8.6
+# Parses the event .ics download in tests (#32); not needed at runtime.
+icalendar==7.3.0

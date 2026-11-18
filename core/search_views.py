@@ -35,6 +35,8 @@ def event_json(event):
         "start_at": event.start_at.astimezone(NEW_YORK).isoformat(),
         "end_at": event.end_at.astimezone(NEW_YORK).isoformat(),
         "image_url": reverse("event_photo", kwargs={"object_key": event.image}),
+        # Same key the map's own event list uses (#32).
+        "url": reverse("event_detail", kwargs={"event_id": event.pk}),
         "detail_url": reverse("event_detail", kwargs={"event_id": event.pk}),
         "popup_url": reverse("event_detail_popup", kwargs={"event_id": event.pk}),
     }

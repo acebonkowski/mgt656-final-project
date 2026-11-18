@@ -229,7 +229,7 @@ class EventDialogTests(TestCase):
     def test_pins_are_keyboard_accessible_and_fall_back_to_the_page(self):
         self.assertIn('element.setAttribute("role", "button")', self.provider)
         self.assertIn('element.setAttribute("tabindex", "0")', self.provider)
-        self.assertIn('window.location.href = event.detail_url || "/events/" + event.id + "/"',
+        self.assertIn('window.location.href = event.detail_url || event.url || "/events/" + event.id + "/"',
                       self.provider)
 
     def test_cards_have_a_thumbnail_with_initial_fallback(self):

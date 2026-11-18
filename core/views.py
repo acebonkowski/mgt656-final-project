@@ -15,8 +15,11 @@ from django.db import transaction
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.http import urlencode
+from django.utils.text import slugify
 
 from core.forms import EventForm, OnboardingForm
+from core.ics import build_ics
 from accounts.models import Profile
 from core.models import Event, Program
 from core.map_places import YALE_AREA_PLACES
@@ -118,6 +121,7 @@ def map_view(request):
             "latitude": float(event.latitude),
             "longitude": float(event.longitude),
             "price": "Free" if event.price == 0 else f"${event.price:.2f}",
+            "url": reverse("event_detail", kwargs={"event_id": event.pk}),
         }
         for event in active_events
     ]
@@ -169,9 +173,9 @@ def map_tile(request, z, x, y):
     return response
 
 
-@login_required
-@never_cache
 def event_photo(request, object_key):
+    # Public (#32, team decision): shared event pages are viewable logged out,
+    # so their image must be too. Only keys that belong to an event are served.
     event = Event.objects.filter(image=object_key).first()
     if not event:
         raise Http404
@@ -185,7 +189,7 @@ def event_photo(request, object_key):
     content_type = "image/jpeg" if object_key.lower().endswith(".jpg") else "image/png"
     response = HttpResponse(data, content_type=content_type)
     response["X-Content-Type-Options"] = "nosniff"
-    response["Cache-Control"] = "private, no-store"
+    response["Cache-Control"] = "public, max-age=3600"
     return response
 
 
@@ -266,13 +270,28 @@ def duplicate_event(request):
 
 @never_cache
 def event_detail(request, event_id):
+    """Shareable event page (#32): public, so a shared link works logged out."""
     event = Event.objects.filter(pk=event_id).first()
     if not event:
         raise Http404
+    page_path = reverse("event_detail", kwargs={"event_id": event.pk})
     return render(request, "core/event_detail.html", {
         "event": event,
         "popup": False,
+        "share_url": request.build_absolute_uri(page_path),
+        # Visitors who join from a shared link come back to this event.
+        "join_url": f"{reverse('accounts:welcome')}?{urlencode({'next': page_path})}",
     })
+
+
+@never_cache
+def event_calendar(request, event_id):
+    """Download one event as an .ics file (America/New_York times)."""
+    event = get_object_or_404(Event, pk=event_id)
+    response = HttpResponse(build_ics(event), content_type="text/calendar; charset=utf-8")
+    filename = f"{slugify(event.name) or 'event'}.ics"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
 
 
 @never_cache
