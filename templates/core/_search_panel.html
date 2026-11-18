@@ -1,7 +1,9 @@
 <section id="search-panel" class="search-panel" aria-label="Search events"
          data-search-url="{% url 'search_events' %}"
          data-geocode-url="{% url 'geocode_address' %}"
-         data-popup-url="{% url 'event_detail_popup' 0 %}">
+         data-popup-url="{% url 'event_detail_popup' 0 %}"
+         data-ai-url="{% url 'ai_search' %}"
+         data-ai-reset-url="{% url 'ai_search_reset' %}">
   {# Collapsed: one line summarising the search; tap to open the panel again. #}
   <button id="search-summary" class="search-summary" type="button"
           aria-controls="search-form" aria-expanded="false" hidden>
@@ -101,13 +103,67 @@
       <button id="search-ai-back" class="search-icon-button" type="button"
               aria-label="Back to filters" title="Back to filters">&#8592;</button>
       <h2 id="search-ai-title" class="search-ai-title">&#10024; Ask AI</h2>
+      <button id="search-ai-mic-small" class="search-icon-button" type="button"
+              aria-label="Speak instead" title="Speak instead" hidden>&#127908;</button>
+      <button id="search-ai-voice-exit" class="search-icon-button" type="button"
+              aria-label="Leave voice mode" title="Leave voice mode" hidden>&#10005;</button>
+      <button id="search-ai-new" type="button" title="Start a new conversation">New chat</button>
       <button id="search-ai-collapse" class="search-collapse" type="button"
               aria-controls="search-ai" aria-expanded="true"
               aria-label="Collapse search panel" title="Collapse">&#8963;</button>
     </div>
     <div id="search-ai-body" class="search-ai-body">
-      <p class="search-hint">Describe what you're looking for, and the AI will find matching events. Coming soon.</p>
+      <ol id="search-ai-log" class="search-ai-log" role="log" aria-live="polite" aria-label="Conversation">
+        <li class="search-ai-message search-ai-message--ai search-ai-intro">
+          Hi! Tell me what you're in the mood for, like &ldquo;live music this weekend&rdquo; or
+          &ldquo;free food near campus tomorrow&rdquo;, and I'll find matching events.
+        </li>
+      </ol>
+      <ol id="search-ai-results" class="search-results" aria-label="AI search results"></ol>
     </div>
+    {# Shared by all input modes: attached image, notices, live transcript (#36). #}
+    <div class="search-ai-tray">
+      <div id="search-ai-attachment" class="search-ai-attachment" hidden>
+        <img id="search-ai-attachment-preview" alt="">
+        <span id="search-ai-attachment-name" class="search-ai-attachment-name"></span>
+        <button id="search-ai-attachment-remove" type="button" aria-label="Remove attached image">&times;</button>
+      </div>
+      <p id="search-ai-notice" class="search-message search-error" role="alert" hidden></p>
+      <p id="search-ai-voice-status" class="search-message" role="status" hidden></p>
+      <p id="search-ai-transcript" class="search-ai-transcript" aria-live="polite" hidden></p>
+      <input id="search-ai-image" class="visually-hidden" type="file" name="image"
+             accept="image/png,image/jpeg,image/heic,image/heif" tabindex="-1">
+    </div>
+
+    {# Start and voice modes: attach (left), large microphone (centre), type or volume (right). #}
+    <div id="search-ai-controls" class="search-ai-controls">
+      <label class="search-ai-attach" for="search-ai-image"
+             title="Attach a poster or flyer (PNG, JPEG or HEIC, up to 5 MB)">
+        <span aria-hidden="true">&#128206;</span><span class="visually-hidden">Attach an image</span>
+      </label>
+      <button id="search-ai-mic" class="search-ai-mic" type="button" aria-pressed="false"
+              aria-label="Speak your request">&#127908;</button>
+      <button id="search-ai-keyboard" class="search-ai-round" type="button"
+              aria-label="Type instead" title="Type instead">&#9000;</button>
+      <button id="search-ai-volume" class="search-ai-round" type="button" aria-pressed="false"
+              aria-label="Mute spoken replies" title="Mute spoken replies" hidden><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg></button>
+    </div>
+
+    {# Text mode. #}
+    <form id="search-ai-form" class="search-ai-form" novalidate hidden>
+      {% csrf_token %}
+      <label class="visually-hidden" for="search-ai-input">Message</label>
+      <textarea id="search-ai-input" name="message" rows="2" maxlength="300"
+                placeholder="Describe what you're looking for"></textarea>
+      <div class="search-ai-form-row">
+        <label class="search-ai-attach" for="search-ai-image"
+               title="Attach a poster or flyer (PNG, JPEG or HEIC, up to 5 MB)">
+          <span aria-hidden="true">&#128206;</span><span class="visually-hidden">Attach an image</span>
+        </label>
+        <span id="search-ai-count" class="search-ai-count" aria-live="polite">0/300</span>
+        <button id="search-ai-send" class="search-submit" type="submit">Send</button>
+      </div>
+    </form>
   </section>
 
   {# Outside the form so it also shows while the panel is collapsed. #}

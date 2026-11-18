@@ -277,3 +277,153 @@ class AiModeTests(TestCase):
         self.assertNotIn("writeFilters", body)
         self.assertNotIn("runSearch", body)
         self.assertIn("form.hidden = collapsed || mode === \"ai\";", self.source)
+
+
+class AiChatPanelTests(TestCase):
+    """#36: the text chat in the AI view."""
+
+    def setUp(self):
+        user = get_user_model().objects.create_user(username="ai-chat@yale.edu")
+        self.client.force_login(user)
+        self.response = self.client.get("/map/")
+        self.html = self.response.content.decode()
+        self.source = static_source("core/search.js")
+
+    def test_chat_markup(self):
+        self.assertContains(self.response, 'data-ai-url="/events/search/ai/"')
+        self.assertContains(self.response, 'data-ai-reset-url="/events/search/ai/reset/"')
+        self.assertContains(self.response, 'id="search-ai-log" class="search-ai-log" role="log"')
+        self.assertContains(self.response, 'id="search-ai-input" name="message" rows="2" maxlength="300"')
+        self.assertContains(self.response, 'id="search-ai-send"')
+        self.assertContains(self.response, 'id="search-ai-new"')
+        self.assertContains(self.response, 'id="search-ai-results"')
+
+    def test_chat_form_carries_the_csrf_token(self):
+        ai_form = self.html.split('id="search-ai-form"', 1)[1].split("</form>", 1)[0]
+        self.assertIn('name="csrfmiddlewaretoken"', ai_form)
+
+    def test_messages_are_posted_with_the_csrf_header(self):
+        self.assertIn('"X-CSRFToken": csrfToken()', self.source)
+        self.assertIn('method: "POST"', self.source)
+
+    def test_enter_sends_and_shift_enter_does_not(self):
+        self.assertIn('event.key === "Enter" && !event.shiftKey', self.source)
+
+    def test_chat_text_is_never_inserted_as_html(self):
+        body = self.source.split("function aiEntry(entry) {", 1)[1].split("\n  }\n", 1)[0]
+        self.assertIn("text.textContent = entry.text;", body)
+        self.assertNotIn("innerHTML", body)
+
+    def test_transcript_survives_a_refresh_and_new_chat_clears_it(self):
+        self.assertIn("window.sessionStorage.setItem(CHAT_KEY", self.source)
+        new_chat = self.source.split('aiNew.addEventListener("click"', 1)[1].split("\n  });\n", 1)[0]
+        self.assertIn("aiResetUrl", new_chat)
+        self.assertIn("chat = [];", new_chat)
+
+    def test_edit_in_filters_applies_the_ai_filters(self):
+        body = self.source.split("function editInFilters(filters) {", 1)[1].split("\n  }\n", 1)[0]
+        self.assertIn("writeFilters(fromParams(filtersToParams(filters)))", body)
+        self.assertIn('setMode("filters")', body)
+        self.assertIn("runSearch()", body)
+
+    def test_errors_show_the_server_message(self):
+        self.assertIn('chat.push({ role: "error", text: result.payload.error', self.source)
+
+
+class AiImageAttachTests(TestCase):
+    """#36: attaching a poster in the AI chat."""
+
+    def setUp(self):
+        user = get_user_model().objects.create_user(username="ai-attach@yale.edu")
+        self.client.force_login(user)
+        self.response = self.client.get("/map/")
+        self.source = static_source("core/search.js")
+
+    def test_attach_control_accepts_the_supported_types(self):
+        self.assertContains(self.response, 'id="search-ai-image" class="visually-hidden" type="file" name="image"')
+        self.assertContains(self.response, 'accept="image/png,image/jpeg,image/heic,image/heif"')
+        self.assertContains(self.response, 'aria-label="Remove attached image"')
+        self.assertContains(self.response, 'id="search-ai-attachment" class="search-ai-attachment" hidden')
+
+    def test_image_is_checked_in_the_browser_and_sent_with_the_message(self):
+        self.assertIn("var MAX_IMAGE_BYTES = 5 * 1024 * 1024;", self.source)
+        self.assertIn('if (image) body.append("image", image);', self.source)
+        self.assertIn("if (aiBusy || (!message && !image)) return;", self.source)
+
+    def test_the_chat_shows_which_image_was_sent(self):
+        self.assertIn('imageName: image ? image.name : ""', self.source)
+        self.assertIn('attached.className = "search-ai-attached"', self.source)
+
+
+class AiVoiceTests(TestCase):
+    """#36: start, text and voice input modes (browser Web Speech API)."""
+
+    def setUp(self):
+        user = get_user_model().objects.create_user(username="ai-voice@yale.edu")
+        self.client.force_login(user)
+        self.response = self.client.get("/map/")
+        self.html = self.response.content.decode()
+        self.source = static_source("core/search.js")
+
+    def test_start_controls_attach_left_microphone_centre_type_right(self):
+        controls = self.html.split('id="search-ai-controls"', 1)[1].split("</div>", 1)[0]
+        attach = controls.index('class="search-ai-attach"')
+        mic = controls.index('id="search-ai-mic"')
+        keyboard = controls.index('id="search-ai-keyboard"')
+        self.assertLess(attach, mic)
+        self.assertLess(mic, keyboard)
+        self.assertIn('aria-label="Speak your request"', controls)
+        self.assertIn('id="search-ai-volume" class="search-ai-round" type="button" aria-pressed="false"', controls)
+
+    def test_text_box_small_mic_and_voice_exit_start_hidden(self):
+        self.assertContains(self.response, 'id="search-ai-form" class="search-ai-form" novalidate hidden')
+        self.assertContains(self.response, 'aria-label="Speak instead" title="Speak instead" hidden')
+        self.assertContains(self.response, 'aria-label="Leave voice mode" title="Leave voice mode" hidden')
+
+    def test_modes_show_the_right_controls(self):
+        body = self.source.split("function setInputMode(value) {", 1)[1].split("\n  }\n", 1)[0]
+        self.assertIn('aiMicSmall.hidden = value !== "text";', body)   # mic top right in text mode
+        self.assertIn('aiVolume.hidden = value !== "voice";', body)    # volume only in voice mode
+        self.assertIn('aiVoiceExit.hidden = value !== "voice";', body)  # X only in voice mode
+        self.assertIn("stopSpeaking();", body)                          # text mode never speaks
+
+    def test_uses_the_browser_speech_api_with_a_fallback_message(self):
+        self.assertIn("window.SpeechRecognition || window.webkitSpeechRecognition", self.source)
+        self.assertIn("Voice isn't supported in this browser. You can type instead.", self.source)
+        unsupported = self.source.split("if (!Recognition) {", 1)[1].split("}", 1)[0]
+        self.assertIn('setInputMode("text")', unsupported)
+
+    def test_live_transcript_is_sent_as_a_message(self):
+        self.assertIn("current.interimResults = true;", self.source)
+        self.assertIn("aiTranscript.textContent = (heard + interim).trim();", self.source)
+        self.assertIn("sendToAi(text);  // the transcript becomes a chat message", self.source)
+
+    def test_replies_are_spoken_only_in_voice_mode_and_when_not_muted(self):
+        speak = self.source.split("function speak(text) {", 1)[1].split("\n  }\n", 1)[0]
+        self.assertIn('if (aiInputMode !== "voice" || muted || !text || !window.speechSynthesis) return;', speak)
+        self.assertIn("if (answer && answer.role !== \"user\") speak(answer.text);", self.source)
+
+    def test_mute_toggle_and_exit(self):
+        self.assertIn("muted = !muted;", self.source)
+        self.assertIn('aiVolume.setAttribute("aria-pressed", String(muted));', self.source)
+        self.assertIn('aiVoiceExit.addEventListener("click", function () {\n    setInputMode("text");', self.source)
+
+    def test_volume_button_uses_a_visible_outline_icon(self):
+        volume = self.html.split('id="search-ai-volume"', 1)[1].split("</button>", 1)[0]
+        self.assertIn('stroke="currentColor"', volume)
+        self.assertIn("aiVolume.innerHTML = muted ? VOLUME_OFF_ICON : VOLUME_ON_ICON;", self.source)
+
+    def test_microphone_permission_denied_is_explained(self):
+        self.assertIn('event.error === "not-allowed"', self.source)
+        self.assertIn("Microphone access is blocked", self.source)
+
+    def test_voice_stops_when_leaving_ai_mode_or_starting_a_new_chat(self):
+        back = self.source.split('aiBack.addEventListener("click", function () {', 1)[1].split("});", 1)[0]
+        self.assertIn("stopVoice();", back)
+        new_chat = self.source.split('aiNew.addEventListener("click"', 1)[1].split("\n  });\n", 1)[0]
+        self.assertIn("stopVoice();", new_chat)
+
+    def test_listening_pulse_respects_reduced_motion(self):
+        css = static_source("core/search.css")
+        self.assertIn(".search-panel .search-ai-mic.is-listening", css)
+        self.assertIn("@media (prefers-reduced-motion: reduce)", css)

@@ -5,6 +5,7 @@ pass the key or raw provider responses to the browser. Tests must mock
 `get_client` (or `chat`) and never reach the real API.
 """
 
+import json
 import logging
 import base64
 import binascii
@@ -57,6 +58,47 @@ def chat(messages, max_tokens=256, **kwargs):
     if not response.choices or response.choices[0].message.content is None:
         raise LLMUnavailable("The AI service returned an empty response.")
     return response.choices[0].message.content
+
+
+class LLMInvalidResponse(LLMUnavailable):
+    """The model answered, but not with the JSON we asked for."""
+
+
+def chat_json(messages, schema_name, schema, max_tokens=500, model=None, timeout=20):
+    """Ask for structured output matching `schema` and return it as a dict.
+
+    Raises LLMUnavailable if the request fails and LLMInvalidResponse if the
+    reply isn't a JSON object. The caller must still validate every field.
+    """
+    client = get_client()
+    try:
+        response = client.chat.completions.create(
+            model=model or settings.OPENROUTER_MODEL,
+            messages=messages,
+            max_tokens=max_tokens,
+            response_format={
+                "type": "json_schema",
+                "json_schema": {"name": schema_name, "strict": True, "schema": schema},
+            },
+            timeout=timeout,
+        )
+    except OpenAIError as exc:
+        logger.warning("OpenRouter structured request failed (%s)", type(exc).__name__)
+        raise LLMUnavailable("The AI service is temporarily unavailable.") from exc
+    if not response.choices or not response.choices[0].message.content:
+        raise LLMInvalidResponse("The AI service returned an empty response.")
+    content = response.choices[0].message.content.strip()
+    # Some models wrap JSON in a Markdown code fence despite the schema.
+    if content.startswith("```"):
+        content = content.strip("`").removeprefix("json").strip()
+    try:
+        data = json.loads(content)
+    except ValueError as exc:
+        logger.warning("OpenRouter returned output that is not JSON")
+        raise LLMInvalidResponse("The AI returned an answer we couldn't read.") from exc
+    if not isinstance(data, dict):
+        raise LLMInvalidResponse("The AI returned an answer we couldn't read.")
+    return data
 
 
 def generate_image(prompt):

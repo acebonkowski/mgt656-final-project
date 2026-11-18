@@ -45,6 +45,23 @@
   var aiBack = byId("search-ai-back");
   var aiCollapse = byId("search-ai-collapse");
   var mode = "filters";     // or "ai" (#34); kept in the URL as ?mode=ai
+  var aiUrl = panel.dataset.aiUrl;
+  var aiResetUrl = panel.dataset.aiResetUrl;
+  var aiLog = byId("search-ai-log");
+  var aiResults = byId("search-ai-results");
+  var aiForm = byId("search-ai-form");
+  var aiInput = byId("search-ai-input");
+  var aiCount = byId("search-ai-count");
+  var aiSend = byId("search-ai-send");
+  var aiNew = byId("search-ai-new");
+  var aiImage = byId("search-ai-image");
+  var aiAttachment = byId("search-ai-attachment");
+  var aiAttachmentPreview = byId("search-ai-attachment-preview");
+  var aiAttachmentName = byId("search-ai-attachment-name");
+  var aiAttachmentError = byId("search-ai-notice");  // attachment and voice notices
+  var IMAGE_TYPES = ["image/png", "image/jpeg", "image/heic", "image/heif"];
+  var MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+  var attachedImage = null;  // the File the user picked, sent with the next message
   var collapsed = false;
   var phone = window.matchMedia("(max-width: 767px)");
   var popupUrl = panel.dataset.popupUrl;  // "/events/0/popup/"
@@ -283,8 +300,9 @@
   }
 
   // Result cards (#34): thumbnail, name, date and time, price and category.
-  function renderResults(events) {
-    results.replaceChildren();
+  function renderResults(events, target) {
+    target = target || results;
+    target.replaceChildren();
     events.forEach(function (event, index) {
       var item = document.createElement("li");
       var link = document.createElement("a");
@@ -311,7 +329,7 @@
       link.appendChild(thumbnail(event));
       link.appendChild(text);
       item.appendChild(link);
-      results.appendChild(item);
+      target.appendChild(item);
     });
   }
 
@@ -447,8 +465,11 @@
         return;
       }
       var events = result.payload.events || [];
-      if (window.eventMap) window.eventMap.setEvents(events);
-      currentEvents = events;
+      // In AI mode the pins show the AI's results once there are any.
+      if (mode === "filters" || !lastFilters()) {
+        if (window.eventMap) window.eventMap.setEvents(events);
+        currentEvents = events;
+      }
       renderResults(events);
       if (events.length === 0) {
         statusBox.textContent = "No events found";
@@ -517,10 +538,13 @@
   });
   aiToggle.addEventListener("click", function () {
     setMode("ai");
-    aiBack.focus();
+    showAiResults();
+    setInputMode(aiInputMode);
   });
   aiBack.addEventListener("click", function () {
+    stopVoice();
     setMode("filters");
+    runSearch();  // the pins go back to the manual filters
     aiToggle.focus();
   });
 
@@ -613,6 +637,416 @@
     areaButton.hidden = true;
     runSearch();
   });
+
+  // --- AI chat (#36) ------------------------------------------------------------
+  // The server keeps the conversation the AI sees (session); the tab keeps the
+  // same transcript (sessionStorage) so a refresh shows it again.
+
+  var CHAT_KEY = "ai-search-chat";
+  var chat = [];       // {role: "user"|"ai"|"error", text, notes, filters, count}
+  var aiEvents = [];   // results of the latest AI answer
+  var aiBusy = false;
+
+  function csrfToken() {
+    var input = aiForm.querySelector('input[name="csrfmiddlewaretoken"]');
+    return input ? input.value : "";
+  }
+
+  function saveChat() {
+    try { window.sessionStorage.setItem(CHAT_KEY, JSON.stringify(chat)); } catch (e) { /* private mode */ }
+  }
+
+  function loadChat() {
+    try { chat = JSON.parse(window.sessionStorage.getItem(CHAT_KEY)) || []; } catch (e) { chat = []; }
+    if (!Array.isArray(chat)) chat = [];
+  }
+
+  function filtersToParams(filters) {
+    return toParams(filters || {});
+  }
+
+  function editInFilters(filters) {
+    writeFilters(fromParams(filtersToParams(filters)));
+    previewArea = null;
+    areaButton.hidden = true;
+    setMode("filters");
+    openFilters(true);
+    runSearch();
+    qInput.focus();
+  }
+
+  function aiEntry(entry) {
+    var item = document.createElement("li");
+    item.className = "search-ai-message search-ai-message--" + entry.role;
+    if (entry.imageName) {
+      var attached = document.createElement("p");
+      attached.className = "search-ai-attached";
+      attached.textContent = "\ud83d\udcce " + entry.imageName;
+      item.appendChild(attached);
+    }
+    if (entry.text) {
+      var text = document.createElement("p");
+      text.textContent = entry.text;
+      item.appendChild(text);
+    }
+    if (entry.role === "error") item.setAttribute("role", "alert");
+    if (entry.role !== "ai") return item;
+
+    (entry.notes || []).forEach(function (note) {
+      var p = document.createElement("p");
+      p.className = "search-ai-note";
+      p.textContent = note;
+      item.appendChild(p);
+    });
+    var labels = chipList(fromParams(filtersToParams(entry.filters)))
+      .map(function (chip) { return chip.label; });
+    if (labels.length) {
+      var list = document.createElement("ul");
+      list.className = "search-chips";
+      list.setAttribute("aria-label", "Filters the AI used");
+      labels.forEach(function (label) {
+        var chip = document.createElement("li");
+        chip.className = "search-chip search-chip--static";
+        chip.textContent = label;
+        list.appendChild(chip);
+      });
+      item.appendChild(list);
+    }
+    var footer = document.createElement("div");
+    footer.className = "search-ai-footer";
+    var count = document.createElement("span");
+    count.textContent = entry.count === 0 ? "No events found"
+      : (entry.count === 1 ? "1 event" : entry.count + " events");
+    footer.appendChild(count);
+    var edit = document.createElement("button");
+    edit.type = "button";
+    edit.textContent = "Edit in filters";
+    edit.addEventListener("click", function () { editInFilters(entry.filters); });
+    footer.appendChild(edit);
+    item.appendChild(footer);
+    return item;
+  }
+
+  function renderChat() {
+    var intro = aiLog.querySelector(".search-ai-intro");
+    aiLog.replaceChildren(intro);
+    chat.forEach(function (entry) { aiLog.appendChild(aiEntry(entry)); });
+  }
+
+  function scrollChatToEnd() {
+    var last = aiLog.lastElementChild;
+    if (last && last.scrollIntoView) last.scrollIntoView({ block: "nearest" });
+  }
+
+  // Cards and pins show the latest AI results while in AI mode.
+  // Before the first answer, the pins and the dialog keep the manual results.
+  function showAiResults() {
+    renderResults(aiEvents, aiResults);
+    if (mode !== "ai" || !lastFilters()) return;
+    currentEvents = aiEvents;
+    if (window.eventMap) window.eventMap.setEvents(aiEvents);
+  }
+
+  function setAiBusy(busy) {
+    aiBusy = busy;
+    aiSend.disabled = busy;
+    aiSend.textContent = busy ? "Searching\u2026" : "Send";
+  }
+
+  function lastFilters() {
+    for (var i = (chat || []).length - 1; i >= 0; i--) {
+      if (chat[i].role === "ai") return chat[i].filters;
+    }
+    return null;
+  }
+
+  // --- Attached image (a poster, for example) --------------------------------------
+
+  function showAttachmentError(message) {
+    aiAttachmentError.textContent = message || "";
+    aiAttachmentError.hidden = !message;
+  }
+
+  function clearAttachment() {
+    if (aiAttachmentPreview.src) URL.revokeObjectURL(aiAttachmentPreview.src);
+    aiAttachmentPreview.removeAttribute("src");
+    attachedImage = null;
+    aiImage.value = "";
+    aiAttachment.hidden = true;
+  }
+
+  aiImage.addEventListener("change", function () {
+    var file = aiImage.files && aiImage.files[0];
+    clearAttachment();
+    showAttachmentError("");
+    if (!file) return;
+    // Same rules as the server, checked first so the user isn't kept waiting.
+    var type = file.type || (/\.hei[cf]$/i.test(file.name) ? "image/heic" : "");
+    if (IMAGE_TYPES.indexOf(type) === -1) {
+      showAttachmentError("Choose a PNG, JPEG or HEIC image.");
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      showAttachmentError("Choose an image no larger than 5 MB.");
+      return;
+    }
+    attachedImage = file;
+    aiAttachmentName.textContent = file.name;
+    aiAttachmentPreview.src = URL.createObjectURL(file);  // HEIC may not preview; the name still shows
+    aiAttachment.hidden = false;
+  });
+  byId("search-ai-attachment-remove").addEventListener("click", function () {
+    clearAttachment();
+    aiInput.focus();
+  });
+
+  function sendToAi(message) {
+    var image = attachedImage;
+    if (aiBusy || (!message && !image)) return;
+    chat.push({ role: "user", text: message, imageName: image ? image.name : "" });
+    renderChat();
+    scrollChatToEnd();
+    aiInput.value = "";
+    aiCount.textContent = "0/300";
+    clearAttachment();
+    showAttachmentError("");
+    setAiBusy(true);
+
+    var body = new FormData();
+    body.append("message", message);
+    if (image) body.append("image", image);
+    fetch(aiUrl, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Accept": "application/json", "X-CSRFToken": csrfToken() },
+      body: body,
+    }).then(function (response) {
+      return response.json().catch(function () { return {}; }).then(function (payload) {
+        return { ok: response.ok, payload: payload };
+      });
+    }).then(function (result) {
+      if (!result.ok) {
+        chat.push({ role: "error", text: result.payload.error ||
+          "AI search isn't available right now. Manual search still works." });
+        return;
+      }
+      var data = result.payload;
+      chat.push({ role: "ai", text: data.reply, notes: data.notes || [],
+        filters: data.filters || {}, count: data.count });
+      aiEvents = data.events || [];
+      showAiResults();
+    }).catch(function () {
+      chat.push({ role: "error", text: "Couldn't reach the server. Check your connection and try again." });
+    }).then(function () {
+      setAiBusy(false);
+      saveChat();
+      renderChat();
+      scrollChatToEnd();
+      var answer = chat[chat.length - 1];
+      if (answer && answer.role !== "user") speak(answer.text);
+    });
+  }
+
+  aiForm.addEventListener("submit", function (event) {
+    event.preventDefault();
+    sendToAi(aiInput.value.trim());
+  });
+  aiInput.addEventListener("input", function () {
+    aiCount.textContent = aiInput.value.length + "/300";
+  });
+  aiInput.addEventListener("keydown", function (event) {
+    // Enter sends; Shift+Enter starts a new line.
+    if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+      event.preventDefault();
+      sendToAi(aiInput.value.trim());
+    }
+  });
+  aiNew.addEventListener("click", function () {
+    var body = new FormData();
+    fetch(aiResetUrl, {
+      method: "POST", credentials: "same-origin",
+      headers: { "X-CSRFToken": csrfToken() }, body: body,
+    }).catch(function () { /* the server forgets it at the end of the session anyway */ });
+    chat = [];
+    aiEvents = [];
+    stopVoice();
+    clearAttachment();
+    showAttachmentError("");
+    saveChat();
+    renderChat();
+    renderResults([], aiResults);
+    runSearch();  // the pins go back to the manual filters
+    aiInput.focus();
+  });
+
+  // --- Input modes and voice (#36) --------------------------------------------------
+  // start: attach | large microphone | type.  text: message box, small microphone
+  // at the top right, nothing spoken.  voice: live transcript, replies read aloud,
+  // volume/mute at the bottom right, X at the top right back to text.
+  // Speech recognition and speech output are the browser's own (Web Speech API).
+
+  var aiControls = byId("search-ai-controls");
+  var aiMic = byId("search-ai-mic");
+  var aiMicSmall = byId("search-ai-mic-small");
+  var aiVoiceExit = byId("search-ai-voice-exit");
+  var aiKeyboard = byId("search-ai-keyboard");
+  var aiVolume = byId("search-ai-volume");
+  var aiVoiceStatus = byId("search-ai-voice-status");
+  var aiTranscript = byId("search-ai-transcript");
+  var Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var VOICE_UNSUPPORTED = "Voice isn't supported in this browser. You can type instead.";
+  // Light outline icons (emoji speakers were too dark to see on the panel).
+  var VOLUME_ON_ICON = aiVolume.innerHTML;
+  var VOLUME_OFF_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
+  var aiInputMode = "start";
+  var recognizer = null;
+  var muted = false;
+
+  function setVoiceStatus(message) {
+    aiVoiceStatus.textContent = message || "";
+    aiVoiceStatus.hidden = !message;
+  }
+
+  function setInputMode(value) {
+    aiInputMode = value;
+    aiControls.hidden = value === "text";
+    aiForm.hidden = value !== "text";
+    aiMicSmall.hidden = value !== "text";
+    aiVoiceExit.hidden = value !== "voice";
+    aiKeyboard.hidden = value !== "start";
+    aiVolume.hidden = value !== "voice";
+    if (value !== "voice") {
+      stopListening();
+      stopSpeaking();
+      setVoiceStatus("");
+      aiTranscript.hidden = true;
+    }
+    if (value === "text" && mode === "ai") aiInput.focus();
+  }
+
+  function stopSpeaking() {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+  }
+
+  function speak(text) {
+    if (aiInputMode !== "voice" || muted || !text || !window.speechSynthesis) return;
+    stopSpeaking();
+    var utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-US";
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function stopListening() {
+    if (recognizer) {
+      var current = recognizer;
+      recognizer = null;  // so its end event doesn't send anything
+      try { current.abort(); } catch (e) { /* already stopped */ }
+    }
+    aiMic.classList.remove("is-listening");
+    aiMic.setAttribute("aria-pressed", "false");
+  }
+
+  function stopVoice() {
+    stopListening();
+    stopSpeaking();
+  }
+
+  function startListening() {
+    if (!Recognition) {
+      setInputMode("text");
+      showAttachmentError(VOICE_UNSUPPORTED);
+      return;
+    }
+    showAttachmentError("");
+    setInputMode("voice");
+    stopSpeaking();
+    var heard = "";
+    var current = new Recognition();
+    current.lang = "en-US";
+    current.interimResults = true;
+    current.continuous = false;
+    current.maxAlternatives = 1;
+    current.onstart = function () {
+      aiMic.classList.add("is-listening");
+      aiMic.setAttribute("aria-pressed", "true");
+      setVoiceStatus("Listening\u2026 speak now. Tap the microphone to stop.");
+      aiTranscript.textContent = "";
+      aiTranscript.hidden = false;
+    };
+    current.onresult = function (event) {
+      var interim = "";
+      heard = "";
+      for (var i = 0; i < event.results.length; i++) {
+        if (event.results[i].isFinal) heard += event.results[i][0].transcript;
+        else interim += event.results[i][0].transcript;
+      }
+      aiTranscript.textContent = (heard + interim).trim();
+    };
+    current.onerror = function (event) {
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        showAttachmentError("Microphone access is blocked. Allow it in your browser, or type instead.");
+      } else if (event.error === "no-speech") {
+        setVoiceStatus("I didn't hear anything. Tap the microphone to try again.");
+      } else if (event.error !== "aborted") {
+        setVoiceStatus("Voice input stopped. Tap the microphone to try again.");
+      }
+    };
+    current.onend = function () {
+      if (recognizer !== current) return;  // stopped on purpose
+      recognizer = null;
+      aiMic.classList.remove("is-listening");
+      aiMic.setAttribute("aria-pressed", "false");
+      var text = heard.trim().slice(0, 300);
+      if (text) {
+        setVoiceStatus("");
+        aiTranscript.hidden = true;
+        sendToAi(text);  // the transcript becomes a chat message
+      } else if (!aiVoiceStatus.textContent || /Listening/.test(aiVoiceStatus.textContent)) {
+        setVoiceStatus("Tap the microphone and say what you're looking for.");
+      }
+    };
+    recognizer = current;
+    try {
+      current.start();
+    } catch (e) {
+      recognizer = null;
+      setVoiceStatus("Voice input couldn't start. Tap the microphone to try again.");
+    }
+  }
+
+  aiMic.addEventListener("click", function () {
+    if (recognizer) {
+      recognizer.stop();  // finish now; what was heard is sent
+      return;
+    }
+    startListening();
+  });
+  aiMicSmall.addEventListener("click", startListening);
+  aiKeyboard.addEventListener("click", function () { setInputMode("text"); });
+  aiVoiceExit.addEventListener("click", function () {
+    setInputMode("text");
+  });
+  aiVolume.addEventListener("click", function () {
+    muted = !muted;
+    if (muted) stopSpeaking();
+    aiVolume.setAttribute("aria-pressed", String(muted));
+    aiVolume.setAttribute("aria-label", muted ? "Turn spoken replies on" : "Mute spoken replies");
+    aiVolume.title = aiVolume.getAttribute("aria-label");
+    aiVolume.innerHTML = muted ? VOLUME_OFF_ICON : VOLUME_ON_ICON;  // constant SVG markup
+  });
+
+  // Restore the transcript and fetch fresh results for its latest filters.
+  loadChat();
+  renderChat();
+  if (lastFilters()) {
+    fetch(searchUrl + "?" + filtersToParams(lastFilters()).toString(), {
+      credentials: "same-origin", headers: { "Accept": "application/json" },
+    }).then(function (response) { return response.ok ? response.json() : { events: [] }; })
+      .then(function (payload) {
+        aiEvents = payload.events || [];
+        showAiResults();
+      }).catch(function () { /* the cards stay empty; the next message refreshes them */ });
+  }
 
   prevButton.addEventListener("click", function () { showEvent(openIndex - 1); });
   nextButton.addEventListener("click", function () { showEvent(openIndex + 1); });
