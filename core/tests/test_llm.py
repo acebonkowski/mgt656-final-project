@@ -89,3 +89,47 @@ class CheckOpenRouterCommandTests(SimpleTestCase):
         with mock.patch("core.management.commands.check_openrouter.chat", side_effect=llm.LLMUnavailable("down.")):
             with self.assertRaises(CommandError):
                 call_command("check_openrouter")
+
+
+@override_settings(**CONFIGURED)
+class ChatJsonTests(SimpleTestCase):
+    """Structured output for AI search (#36)."""
+
+    SCHEMA = {"type": "object", "properties": {"reply": {"type": "string"}}}
+
+    def setUp(self):
+        patcher = mock.patch("core.llm.OpenAI")
+        self.create = patcher.start().return_value.chat.completions.create
+        self.addCleanup(patcher.stop)
+
+    def test_sends_a_strict_json_schema_and_parses_the_reply(self):
+        self.create.return_value = fake_response('{"reply": "Hi"}')
+        self.assertEqual(llm.chat_json([], "test", self.SCHEMA), {"reply": "Hi"})
+        response_format = self.create.call_args.kwargs["response_format"]
+        self.assertEqual(response_format["json_schema"],
+                         {"name": "test", "strict": True, "schema": self.SCHEMA})
+        self.assertEqual(self.create.call_args.kwargs["timeout"], 20)
+
+    def test_accepts_json_in_a_code_fence(self):
+        self.create.return_value = fake_response('```json\n{"reply": "Hi"}\n```')
+        self.assertEqual(llm.chat_json([], "test", self.SCHEMA), {"reply": "Hi"})
+
+    def test_model_can_be_overridden(self):
+        self.create.return_value = fake_response("{}")
+        llm.chat_json([], "test", self.SCHEMA, model="other/model")
+        self.assertEqual(self.create.call_args.kwargs["model"], "other/model")
+
+    def test_non_json_is_invalid_and_logged(self):
+        self.create.return_value = fake_response("Sure! Here are some events")
+        with self.assertRaises(llm.LLMInvalidResponse), self.assertLogs("core.llm", "WARNING"):
+            llm.chat_json([], "test", self.SCHEMA)
+
+    def test_empty_or_non_object_is_invalid(self):
+        for content in ("[1, 2]", ""):
+            self.create.return_value = fake_response(content)
+            with self.subTest(content=content), self.assertRaises(llm.LLMInvalidResponse):
+                llm.chat_json([], "test", self.SCHEMA)
+
+    def test_invalid_response_is_still_an_llm_unavailable(self):
+        self.assertTrue(issubclass(llm.LLMInvalidResponse, llm.LLMUnavailable))
+

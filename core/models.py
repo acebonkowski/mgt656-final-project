@@ -112,3 +112,31 @@ class Event(models.Model):
     @end.setter
     def end(self, value):
         self.end_at = value
+
+
+class AIUsage(models.Model):
+    """
+    One row per OpenRouter call made for a user (#36), including failed calls,
+    since they still use credits. Counted by core.ai_limits.
+    """
+
+    class Kind(models.TextChoices):
+        SEARCH = "search", "AI search message"
+        IMAGE_SEARCH = "image_search", "AI search with an image"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,  # keep the row so the global daily cap still counts it
+        null=True,
+        related_name="ai_usage",
+    )
+    kind = models.CharField(max_length=20, choices=Kind.choices)
+    created_at = models.DateTimeField(db_index=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["user", "created_at"], name="core_aiusage_user_time_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.kind} by {self.user_id} at {self.created_at:%Y-%m-%d %H:%M}"

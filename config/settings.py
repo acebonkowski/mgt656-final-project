@@ -209,6 +209,15 @@ OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "").strip()
 # without a deploy.
 OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "").strip()
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+# AI search (#36) uses OPENROUTER_MODEL unless this overrides it (vision-capable).
+OPENROUTER_SEARCH_MODEL = os.environ.get("OPENROUTER_SEARCH_MODEL", "").strip()
+
+# Per-user AI usage limits (#36). Graders and staff are exempt from the per-user
+# limits; the global daily cap protects the course credits for everyone.
+AI_SEARCH_DAILY_LIMIT = int(os.environ.get("AI_SEARCH_DAILY_LIMIT", "15"))
+AI_SEARCH_PER_MINUTE_LIMIT = int(os.environ.get("AI_SEARCH_PER_MINUTE_LIMIT", "3"))
+AI_IMAGE_SEARCH_DAILY_LIMIT = int(os.environ.get("AI_IMAGE_SEARCH_DAILY_LIMIT", "3"))
+AI_GLOBAL_DAILY_LIMIT = int(os.environ.get("AI_GLOBAL_DAILY_LIMIT", "200"))
 
 
 # --- I18N ---------------------------------------------------------------------
