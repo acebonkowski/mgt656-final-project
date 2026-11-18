@@ -118,7 +118,8 @@ class MapEventTests(TestCase):
         self.addCleanup(mock.patch.stopall)
 
     def event_values(self, **overrides):
-        new_york_date = timezone.now().astimezone(ZoneInfo("America/New_York")).date()
+        # Tomorrow, so the 18:00-20:00 event hasn't ended whenever the test runs.
+        new_york_date = (timezone.now().astimezone(ZoneInfo("America/New_York")) + timezone.timedelta(days=1)).date()
         png = b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=")
         values = {
             "image": SimpleUploadedFile("event.png", png, content_type="image/png"),

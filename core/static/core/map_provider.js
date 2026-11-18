@@ -156,6 +156,14 @@
         price.textContent = event.price;
         content.appendChild(title);
         content.appendChild(price);
+        if (event.url) {
+          // Event page (#32): same view the duplicate popup uses.
+          var view = document.createElement("a");
+          view.href = event.url;
+          view.textContent = "View event";
+          view.className = "event-marker-link";
+          content.appendChild(view);
+        }
         popup.setDOMContent(content);
         new window.maplibregl.Marker({ color: "#4da3ff" })
           .setLngLat([event.longitude, event.latitude])
