@@ -402,6 +402,84 @@
   font-size: 1.1rem;
 }
 
+/* Start and voice modes (#36): attach | large microphone | type or volume. */
+.search-ai-tray {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+
+.search-ai-tray:empty {
+  display: none;
+}
+
+.search-ai-controls {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  margin-top: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.search-ai-controls .search-ai-attach {
+  justify-self: start;
+}
+
+.search-ai-controls .search-ai-round {
+  justify-self: end;
+}
+
+.search-panel .search-ai-round {
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  color: var(--map-text);
+  border-radius: 50%;
+  font-size: 1.2rem;
+}
+
+.search-panel .search-ai-mic {
+  width: 4.5rem;
+  height: 4.5rem;
+  padding: 0;
+  border: 2px solid rgba(176, 140, 255, 0.7);
+  border-radius: 50%;
+  background: rgba(176, 140, 255, 0.2);
+  font-size: 1.9rem;
+}
+
+.search-panel .search-ai-mic.is-listening {
+  border-color: #ff8a7a;
+  background: rgba(255, 120, 100, 0.25);
+  animation: search-ai-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes search-ai-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 120, 100, 0.45); }
+  50% { box-shadow: 0 0 0 0.6rem rgba(255, 120, 100, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-panel .search-ai-mic.is-listening {
+    animation: none;
+  }
+}
+
+.search-ai-transcript {
+  margin: 0;
+  padding: 0.5rem 0.7rem;
+  border: 1px dashed rgba(230, 236, 245, 0.3);
+  border-radius: 0.6rem;
+  font-style: italic;
+}
+
+.search-ai-transcript:empty::before {
+  content: "\2026";
+  color: var(--map-muted);
+}
+
 .search-ai-attached {
   font-size: 0.85rem;
   opacity: 0.85;

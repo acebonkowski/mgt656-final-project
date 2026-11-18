@@ -58,7 +58,7 @@
   var aiAttachment = byId("search-ai-attachment");
   var aiAttachmentPreview = byId("search-ai-attachment-preview");
   var aiAttachmentName = byId("search-ai-attachment-name");
-  var aiAttachmentError = byId("search-ai-attachment-error");
+  var aiAttachmentError = byId("search-ai-notice");  // attachment and voice notices
   var IMAGE_TYPES = ["image/png", "image/jpeg", "image/heic", "image/heif"];
   var MAX_IMAGE_BYTES = 5 * 1024 * 1024;
   var attachedImage = null;  // the File the user picked, sent with the next message
@@ -539,9 +539,10 @@
   aiToggle.addEventListener("click", function () {
     setMode("ai");
     showAiResults();
-    aiInput.focus();
+    setInputMode(aiInputMode);
   });
   aiBack.addEventListener("click", function () {
+    stopVoice();
     setMode("filters");
     runSearch();  // the pins go back to the manual filters
     aiToggle.focus();
@@ -841,6 +842,8 @@
       saveChat();
       renderChat();
       scrollChatToEnd();
+      var answer = chat[chat.length - 1];
+      if (answer && answer.role !== "user") speak(answer.text);
     });
   }
 
@@ -866,6 +869,7 @@
     }).catch(function () { /* the server forgets it at the end of the session anyway */ });
     chat = [];
     aiEvents = [];
+    stopVoice();
     clearAttachment();
     showAttachmentError("");
     saveChat();
@@ -873,6 +877,162 @@
     renderResults([], aiResults);
     runSearch();  // the pins go back to the manual filters
     aiInput.focus();
+  });
+
+  // --- Input modes and voice (#36) --------------------------------------------------
+  // start: attach | large microphone | type.  text: message box, small microphone
+  // at the top right, nothing spoken.  voice: live transcript, replies read aloud,
+  // volume/mute at the bottom right, X at the top right back to text.
+  // Speech recognition and speech output are the browser's own (Web Speech API).
+
+  var aiControls = byId("search-ai-controls");
+  var aiMic = byId("search-ai-mic");
+  var aiMicSmall = byId("search-ai-mic-small");
+  var aiVoiceExit = byId("search-ai-voice-exit");
+  var aiKeyboard = byId("search-ai-keyboard");
+  var aiVolume = byId("search-ai-volume");
+  var aiVoiceStatus = byId("search-ai-voice-status");
+  var aiTranscript = byId("search-ai-transcript");
+  var Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var VOICE_UNSUPPORTED = "Voice isn't supported in this browser. You can type instead.";
+  // Light outline icons (emoji speakers were too dark to see on the panel).
+  var VOLUME_ON_ICON = aiVolume.innerHTML;
+  var VOLUME_OFF_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
+  var aiInputMode = "start";
+  var recognizer = null;
+  var muted = false;
+
+  function setVoiceStatus(message) {
+    aiVoiceStatus.textContent = message || "";
+    aiVoiceStatus.hidden = !message;
+  }
+
+  function setInputMode(value) {
+    aiInputMode = value;
+    aiControls.hidden = value === "text";
+    aiForm.hidden = value !== "text";
+    aiMicSmall.hidden = value !== "text";
+    aiVoiceExit.hidden = value !== "voice";
+    aiKeyboard.hidden = value !== "start";
+    aiVolume.hidden = value !== "voice";
+    if (value !== "voice") {
+      stopListening();
+      stopSpeaking();
+      setVoiceStatus("");
+      aiTranscript.hidden = true;
+    }
+    if (value === "text" && mode === "ai") aiInput.focus();
+  }
+
+  function stopSpeaking() {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+  }
+
+  function speak(text) {
+    if (aiInputMode !== "voice" || muted || !text || !window.speechSynthesis) return;
+    stopSpeaking();
+    var utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-US";
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function stopListening() {
+    if (recognizer) {
+      var current = recognizer;
+      recognizer = null;  // so its end event doesn't send anything
+      try { current.abort(); } catch (e) { /* already stopped */ }
+    }
+    aiMic.classList.remove("is-listening");
+    aiMic.setAttribute("aria-pressed", "false");
+  }
+
+  function stopVoice() {
+    stopListening();
+    stopSpeaking();
+  }
+
+  function startListening() {
+    if (!Recognition) {
+      setInputMode("text");
+      showAttachmentError(VOICE_UNSUPPORTED);
+      return;
+    }
+    showAttachmentError("");
+    setInputMode("voice");
+    stopSpeaking();
+    var heard = "";
+    var current = new Recognition();
+    current.lang = "en-US";
+    current.interimResults = true;
+    current.continuous = false;
+    current.maxAlternatives = 1;
+    current.onstart = function () {
+      aiMic.classList.add("is-listening");
+      aiMic.setAttribute("aria-pressed", "true");
+      setVoiceStatus("Listening\u2026 speak now. Tap the microphone to stop.");
+      aiTranscript.textContent = "";
+      aiTranscript.hidden = false;
+    };
+    current.onresult = function (event) {
+      var interim = "";
+      heard = "";
+      for (var i = 0; i < event.results.length; i++) {
+        if (event.results[i].isFinal) heard += event.results[i][0].transcript;
+        else interim += event.results[i][0].transcript;
+      }
+      aiTranscript.textContent = (heard + interim).trim();
+    };
+    current.onerror = function (event) {
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        showAttachmentError("Microphone access is blocked. Allow it in your browser, or type instead.");
+      } else if (event.error === "no-speech") {
+        setVoiceStatus("I didn't hear anything. Tap the microphone to try again.");
+      } else if (event.error !== "aborted") {
+        setVoiceStatus("Voice input stopped. Tap the microphone to try again.");
+      }
+    };
+    current.onend = function () {
+      if (recognizer !== current) return;  // stopped on purpose
+      recognizer = null;
+      aiMic.classList.remove("is-listening");
+      aiMic.setAttribute("aria-pressed", "false");
+      var text = heard.trim().slice(0, 300);
+      if (text) {
+        setVoiceStatus("");
+        aiTranscript.hidden = true;
+        sendToAi(text);  // the transcript becomes a chat message
+      } else if (!aiVoiceStatus.textContent || /Listening/.test(aiVoiceStatus.textContent)) {
+        setVoiceStatus("Tap the microphone and say what you're looking for.");
+      }
+    };
+    recognizer = current;
+    try {
+      current.start();
+    } catch (e) {
+      recognizer = null;
+      setVoiceStatus("Voice input couldn't start. Tap the microphone to try again.");
+    }
+  }
+
+  aiMic.addEventListener("click", function () {
+    if (recognizer) {
+      recognizer.stop();  // finish now; what was heard is sent
+      return;
+    }
+    startListening();
+  });
+  aiMicSmall.addEventListener("click", startListening);
+  aiKeyboard.addEventListener("click", function () { setInputMode("text"); });
+  aiVoiceExit.addEventListener("click", function () {
+    setInputMode("text");
+  });
+  aiVolume.addEventListener("click", function () {
+    muted = !muted;
+    if (muted) stopSpeaking();
+    aiVolume.setAttribute("aria-pressed", String(muted));
+    aiVolume.setAttribute("aria-label", muted ? "Turn spoken replies on" : "Mute spoken replies");
+    aiVolume.title = aiVolume.getAttribute("aria-label");
+    aiVolume.innerHTML = muted ? VOLUME_OFF_ICON : VOLUME_ON_ICON;  // constant SVG markup
   });
 
   // Restore the transcript and fetch fresh results for its latest filters.

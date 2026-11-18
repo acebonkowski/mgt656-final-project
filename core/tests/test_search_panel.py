@@ -353,3 +353,77 @@ class AiImageAttachTests(TestCase):
     def test_the_chat_shows_which_image_was_sent(self):
         self.assertIn('imageName: image ? image.name : ""', self.source)
         self.assertIn('attached.className = "search-ai-attached"', self.source)
+
+
+class AiVoiceTests(TestCase):
+    """#36: start, text and voice input modes (browser Web Speech API)."""
+
+    def setUp(self):
+        user = get_user_model().objects.create_user(username="ai-voice@yale.edu")
+        self.client.force_login(user)
+        self.response = self.client.get("/map/")
+        self.html = self.response.content.decode()
+        self.source = static_source("core/search.js")
+
+    def test_start_controls_attach_left_microphone_centre_type_right(self):
+        controls = self.html.split('id="search-ai-controls"', 1)[1].split("</div>", 1)[0]
+        attach = controls.index('class="search-ai-attach"')
+        mic = controls.index('id="search-ai-mic"')
+        keyboard = controls.index('id="search-ai-keyboard"')
+        self.assertLess(attach, mic)
+        self.assertLess(mic, keyboard)
+        self.assertIn('aria-label="Speak your request"', controls)
+        self.assertIn('id="search-ai-volume" class="search-ai-round" type="button" aria-pressed="false"', controls)
+
+    def test_text_box_small_mic_and_voice_exit_start_hidden(self):
+        self.assertContains(self.response, 'id="search-ai-form" class="search-ai-form" novalidate hidden')
+        self.assertContains(self.response, 'aria-label="Speak instead" title="Speak instead" hidden')
+        self.assertContains(self.response, 'aria-label="Leave voice mode" title="Leave voice mode" hidden')
+
+    def test_modes_show_the_right_controls(self):
+        body = self.source.split("function setInputMode(value) {", 1)[1].split("\n  }\n", 1)[0]
+        self.assertIn('aiMicSmall.hidden = value !== "text";', body)   # mic top right in text mode
+        self.assertIn('aiVolume.hidden = value !== "voice";', body)    # volume only in voice mode
+        self.assertIn('aiVoiceExit.hidden = value !== "voice";', body)  # X only in voice mode
+        self.assertIn("stopSpeaking();", body)                          # text mode never speaks
+
+    def test_uses_the_browser_speech_api_with_a_fallback_message(self):
+        self.assertIn("window.SpeechRecognition || window.webkitSpeechRecognition", self.source)
+        self.assertIn("Voice isn't supported in this browser. You can type instead.", self.source)
+        unsupported = self.source.split("if (!Recognition) {", 1)[1].split("}", 1)[0]
+        self.assertIn('setInputMode("text")', unsupported)
+
+    def test_live_transcript_is_sent_as_a_message(self):
+        self.assertIn("current.interimResults = true;", self.source)
+        self.assertIn("aiTranscript.textContent = (heard + interim).trim();", self.source)
+        self.assertIn("sendToAi(text);  // the transcript becomes a chat message", self.source)
+
+    def test_replies_are_spoken_only_in_voice_mode_and_when_not_muted(self):
+        speak = self.source.split("function speak(text) {", 1)[1].split("\n  }\n", 1)[0]
+        self.assertIn('if (aiInputMode !== "voice" || muted || !text || !window.speechSynthesis) return;', speak)
+        self.assertIn("if (answer && answer.role !== \"user\") speak(answer.text);", self.source)
+
+    def test_mute_toggle_and_exit(self):
+        self.assertIn("muted = !muted;", self.source)
+        self.assertIn('aiVolume.setAttribute("aria-pressed", String(muted));', self.source)
+        self.assertIn('aiVoiceExit.addEventListener("click", function () {\n    setInputMode("text");', self.source)
+
+    def test_volume_button_uses_a_visible_outline_icon(self):
+        volume = self.html.split('id="search-ai-volume"', 1)[1].split("</button>", 1)[0]
+        self.assertIn('stroke="currentColor"', volume)
+        self.assertIn("aiVolume.innerHTML = muted ? VOLUME_OFF_ICON : VOLUME_ON_ICON;", self.source)
+
+    def test_microphone_permission_denied_is_explained(self):
+        self.assertIn('event.error === "not-allowed"', self.source)
+        self.assertIn("Microphone access is blocked", self.source)
+
+    def test_voice_stops_when_leaving_ai_mode_or_starting_a_new_chat(self):
+        back = self.source.split('aiBack.addEventListener("click", function () {', 1)[1].split("});", 1)[0]
+        self.assertIn("stopVoice();", back)
+        new_chat = self.source.split('aiNew.addEventListener("click"', 1)[1].split("\n  });\n", 1)[0]
+        self.assertIn("stopVoice();", new_chat)
+
+    def test_listening_pulse_respects_reduced_motion(self):
+        css = static_source("core/search.css")
+        self.assertIn(".search-panel .search-ai-mic.is-listening", css)
+        self.assertIn("@media (prefers-reduced-motion: reduce)", css)
