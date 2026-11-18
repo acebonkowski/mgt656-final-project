@@ -142,7 +142,7 @@ class SearchScriptTests(TestCase):
 
     def test_collapse_behaviour(self):
         source = static_source("core/search.js")
-        self.assertIn("function setCollapsed(collapsed)", source)
+        self.assertIn("function setCollapsed(value)", source)
         self.assertIn("function updateSummary()", source)
         # Phones: dragging the map tucks the panel away.
         self.assertIn('window.matchMedia("(max-width: 767px)")', source)
@@ -242,3 +242,38 @@ class EventDialogTests(TestCase):
         tail = self.source.rsplit("var initial = new URLSearchParams(window.location.search);", 1)[1]
         self.assertIn("runSearch();", tail)
         self.assertNotIn("if (initial.toString()) {", tail)
+
+
+class AiModeTests(TestCase):
+    """#34: an AI button switches the panel to AI mode (#36 fills it in)."""
+
+    def setUp(self):
+        user = get_user_model().objects.create_user(username="ai-mode@yale.edu")
+        self.client.force_login(user)
+        self.response = self.client.get("/map/")
+        self.html = self.response.content.decode()
+        self.source = static_source("core/search.js")
+
+    def test_ai_button_sits_next_to_filters(self):
+        row = self.html.split('class="search-row"', 1)[1].split("</div>", 1)[0]
+        self.assertLess(row.index('id="search-filters-toggle"'), row.index('id="search-ai-toggle"'))
+        self.assertContains(self.response, 'aria-controls="search-ai" aria-pressed="false"')
+
+    def test_search_button_is_an_icon_with_a_label(self):
+        self.assertContains(self.response, 'aria-label="Search" title="Search"')
+
+    def test_ai_view_is_hidden_until_chosen_and_has_a_back_arrow(self):
+        self.assertContains(self.response, 'id="search-ai" class="search-ai" aria-labelledby="search-ai-title" hidden')
+        self.assertContains(self.response, 'id="search-ai-back"')
+        self.assertContains(self.response, 'aria-label="Back to filters"')
+
+    def test_mode_is_kept_in_the_url_and_restored(self):
+        self.assertIn('if (mode === "ai") page.set("mode", "ai");', self.source)
+        self.assertIn('if (initial.get("mode") === "ai") setMode("ai");', self.source)
+
+    def test_switching_keeps_the_filters(self):
+        # setMode only swaps the views; it never resets the filter controls.
+        body = self.source.split("function setMode(value) {", 1)[1].split("\n  }\n", 1)[0]
+        self.assertNotIn("writeFilters", body)
+        self.assertNotIn("runSearch", body)
+        self.assertIn("form.hidden = collapsed || mode === \"ai\";", self.source)

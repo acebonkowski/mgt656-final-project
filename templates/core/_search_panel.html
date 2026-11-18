@@ -13,9 +13,17 @@
       <label class="visually-hidden" for="search-q">Search events</label>
       <input id="search-q" name="q" type="search" maxlength="200" autocomplete="off"
              placeholder="Search events">
-      <button id="search-submit" class="search-submit" type="submit">Search</button>
+      <button id="search-submit" class="search-submit search-icon-button" type="submit"
+              aria-label="Search" title="Search">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+          <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/>
+          <path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+      </button>
       <button id="search-filters-toggle" class="search-filters-toggle" type="button"
               aria-expanded="false" aria-controls="search-filters">Filters</button>
+      <button id="search-ai-toggle" class="search-ai-toggle" type="button"
+              aria-controls="search-ai" aria-pressed="false">&#10024; AI</button>
       <button id="search-collapse" class="search-collapse" type="button"
               aria-controls="search-form" aria-expanded="true"
               aria-label="Collapse search panel" title="Collapse">&#8963;</button>
@@ -87,6 +95,21 @@
     </div>
     <ol id="search-results" class="search-results" aria-label="Search results"></ol>
   </form>
+  {# AI mode (#34): replaces the filters view; #36 adds the conversation. #}
+  <section id="search-ai" class="search-ai" aria-labelledby="search-ai-title" hidden>
+    <div class="search-ai-header">
+      <button id="search-ai-back" class="search-icon-button" type="button"
+              aria-label="Back to filters" title="Back to filters">&#8592;</button>
+      <h2 id="search-ai-title" class="search-ai-title">&#10024; Ask AI</h2>
+      <button id="search-ai-collapse" class="search-collapse" type="button"
+              aria-controls="search-ai" aria-expanded="true"
+              aria-label="Collapse search panel" title="Collapse">&#8963;</button>
+    </div>
+    <div id="search-ai-body" class="search-ai-body">
+      <p class="search-hint">Describe what you're looking for, and the AI will find matching events. Coming soon.</p>
+    </div>
+  </section>
+
   {# Outside the form so it also shows while the panel is collapsed. #}
   <button id="search-this-area" class="search-this-area" type="button" hidden>Search this area</button>
 

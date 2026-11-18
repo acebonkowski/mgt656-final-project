@@ -40,6 +40,12 @@
   var summary = byId("search-summary");
   var summaryText = byId("search-summary-text");
   var collapseButton = byId("search-collapse");
+  var aiView = byId("search-ai");
+  var aiToggle = byId("search-ai-toggle");
+  var aiBack = byId("search-ai-back");
+  var aiCollapse = byId("search-ai-collapse");
+  var mode = "filters";     // or "ai" (#34); kept in the URL as ?mode=ai
+  var collapsed = false;
   var phone = window.matchMedia("(max-width: 767px)");
   var popupUrl = panel.dataset.popupUrl;  // "/events/0/popup/"
   var dialog = byId("search-event-dialog");
@@ -249,7 +255,9 @@
   }
 
   function updateUrl(params) {
-    var query = params.toString();
+    var page = new URLSearchParams(params);
+    if (mode === "ai") page.set("mode", "ai");
+    var query = page.toString();
     window.history.replaceState(null, "", window.location.pathname + (query ? "?" + query : ""));
   }
 
@@ -258,7 +266,6 @@
     hour: "numeric", minute: "2-digit",
   };
 
-  // A simple list of results; #34 turns these into cards with the event popup.
   function thumbnail(event) {
     var box = document.createElement("span");
     box.className = "search-result-thumb";
@@ -367,22 +374,42 @@
     }
   }
 
-  // Collapsed, the panel is one line summarising the search, so the map shows.
-  function setCollapsed(collapsed) {
-    if (collapsed === !form.hidden) {
-      form.hidden = collapsed;
-      summary.hidden = !collapsed;
-      collapseButton.setAttribute("aria-expanded", String(!collapsed));
-      summary.setAttribute("aria-expanded", String(!collapsed));
-      // Desktop: the map widens into the space the side panel used (#34).
-      document.body.classList.toggle("search-collapsed", collapsed);
-      if (window.eventMap) window.eventMap.resize();
-    }
+  // Shows the view for the current mode or, when collapsed, only the one-line
+  // summary so the map is visible.
+  function showViews() {
+    form.hidden = collapsed || mode === "ai";
+    aiView.hidden = collapsed || mode !== "ai";
+    summary.hidden = !collapsed;
+    [collapseButton, aiCollapse].forEach(function (button) {
+      button.setAttribute("aria-expanded", String(!collapsed));
+    });
+    summary.setAttribute("aria-expanded", String(!collapsed));
+    summary.setAttribute("aria-controls", mode === "ai" ? "search-ai" : "search-form");
+    aiToggle.setAttribute("aria-pressed", String(mode === "ai"));
+  }
+
+  function setCollapsed(value) {
+    if (value === collapsed) return;
+    collapsed = value;
+    showViews();
+    // Desktop: the map widens into the space the side panel used (#34).
+    document.body.classList.toggle("search-collapsed", collapsed);
+    if (window.eventMap) window.eventMap.resize();
+  }
+
+  // AI mode replaces the filters view; the filters (and the pins) stay as they
+  // are, so going back shows them unchanged.
+  function setMode(value) {
+    mode = value;
+    showViews();
+    updateUrl(toParams(readFilters()));
+    updateSummary();
   }
 
   function updateSummary() {
     var parts = chipList(readFilters()).map(function (chip) { return chip.label; });
     if (statusBox.textContent) parts.push(statusBox.textContent);
+    if (mode === "ai") parts.unshift("Ask AI");
     summaryText.textContent = parts.length ? parts.join(" \u00b7 ") : "Search events";
   }
 
@@ -478,13 +505,23 @@
     runSearch();
   });
   clearButton.addEventListener("click", clearAll);
-  collapseButton.addEventListener("click", function () {
-    setCollapsed(true);
-    summary.focus();
+  [collapseButton, aiCollapse].forEach(function (button) {
+    button.addEventListener("click", function () {
+      setCollapsed(true);
+      summary.focus();
+    });
   });
   summary.addEventListener("click", function () {
     setCollapsed(false);
-    qInput.focus();
+    (mode === "ai" ? aiBack : qInput).focus();
+  });
+  aiToggle.addEventListener("click", function () {
+    setMode("ai");
+    aiBack.focus();
+  });
+  aiBack.addEventListener("click", function () {
+    setMode("filters");
+    aiToggle.focus();
   });
 
   function showLocationMessage(message) {
@@ -602,5 +639,6 @@
   // or, without any, all upcoming events.
   var initial = new URLSearchParams(window.location.search);
   if (initial.toString()) writeFilters(fromParams(initial));
+  if (initial.get("mode") === "ai") setMode("ai");
   runSearch();
 })();
