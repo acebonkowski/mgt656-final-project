@@ -145,36 +145,36 @@
     var eventMarkers = [];
     var pendingEvents = null;
 
+    // Clicking a pin opens the event (search panel dialog, #34). Without a
+    // listener it falls back to the event page.
+    var eventClickHandler = null;
+
     function eventMarker(event) {
       if (typeof event.latitude !== "number" || typeof event.longitude !== "number") {
         return null;
       }
-      var popup = new window.maplibregl.Popup({ offset: 16, className: "event-popup" });
-      var content = document.createElement("div");
-      var title = document.createElement("strong");
-      title.className = "event-popup-name";
-      title.textContent = event.name;
-      content.appendChild(title);
-      if (event.start_at) {
-        var when = document.createElement("div");
-        when.textContent = new Date(event.start_at).toLocaleString("en-US", {
-          timeZone: "America/New_York", weekday: "short", month: "short",
-          day: "numeric", hour: "numeric", minute: "2-digit",
-        });
-        content.appendChild(when);
+      var marker = new window.maplibregl.Marker({ color: "#4da3ff" })
+        .setLngLat([event.longitude, event.latitude]);
+      var element = marker.getElement();
+      element.classList.add("event-marker");
+      element.setAttribute("role", "button");
+      element.setAttribute("tabindex", "0");
+      element.setAttribute("aria-label", "Event: " + event.name);
+      function open() {
+        if (eventClickHandler) eventClickHandler(event.id);
+        else window.location.href = event.detail_url || "/events/" + event.id + "/";
       }
-      var price = document.createElement("div");
-      price.textContent = event.price;
-      content.appendChild(price);
-      var link = document.createElement("a");
-      link.className = "event-popup-link";
-      link.href = event.detail_url || "/events/" + event.id + "/";
-      link.textContent = "View event";
-      content.appendChild(link);
-      popup.setDOMContent(content);
-      return new window.maplibregl.Marker({ color: "#4da3ff" })
-        .setLngLat([event.longitude, event.latitude])
-        .setPopup(popup);
+      element.addEventListener("click", function (clickEvent) {
+        clickEvent.stopPropagation();
+        open();
+      });
+      element.addEventListener("keydown", function (keyEvent) {
+        if (keyEvent.key === "Enter" || keyEvent.key === " ") {
+          keyEvent.preventDefault();
+          open();
+        }
+      });
+      return marker;
     }
 
     // Replaces all event markers (search results, #35). Before the map has
@@ -265,13 +265,13 @@
       viewCircle: viewCircle,
       // Call after the map container changes size (search panel, #34).
       resize: function () { map.resize(); },
-      // Centres the map on an event marker and opens its popup.
+      // Centres the map on an event's pin.
       focusEvent: function (id) {
         var entry = eventMarkers.filter(function (item) { return item.id === id; })[0];
         if (!entry) return;
         map.flyTo({ center: entry.marker.getLngLat(), zoom: Math.min(map.getMaxZoom(), Math.max(map.getZoom(), 15)) });
-        if (!entry.marker.getPopup().isOpen()) entry.marker.togglePopup();
       },
+      onEventClick: function (callback) { eventClickHandler = callback; },
       // Calls back when the user (not code) starts to pan or zoom the map.
       onUserMoveStart: function (callback) {
         map.on("movestart", function (event) {

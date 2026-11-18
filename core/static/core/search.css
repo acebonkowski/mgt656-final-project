@@ -207,33 +207,94 @@
   font-size: 0.85rem;
 }
 
-/* Event marker popups: dark text on MapLibre's white popup. */
-.event-popup .maplibregl-popup-content {
-  display: grid;
-  gap: 0.2rem;
-  min-width: 12rem;
-  padding: 0.75rem 1.75rem 0.75rem 0.85rem;
-  border-radius: 0.6rem;
-  color: #1c2533;
-  font: 0.9rem/1.35 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+/* Result cards (#34). */
+.search-result {
+  grid-template-columns: 3.5rem 1fr;
+  align-items: center;
+  gap: 0.7rem;
 }
 
-.event-popup .event-popup-name {
-  color: #0b1220;
-  font-size: 1.05rem;
+.search-result-text {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.search-result-text strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-result-thumb {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  overflow: hidden;
+  border-radius: 0.45rem;
+  background: rgba(77, 163, 255, 0.18);
+  color: #9fcbff;
+  font-size: 1.3rem;
   font-weight: 700;
 }
 
-.event-popup .event-popup-link {
-  margin-top: 0.35rem;
-  color: #1f6fd1;
-  font-weight: 600;
+.search-result-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.event-popup .maplibregl-popup-close-button {
-  padding: 0.2rem 0.5rem;
-  color: #1c2533;
-  font-size: 1.2rem;
+/* Event pins open the event dialog. */
+.event-marker {
+  cursor: pointer;
+}
+
+/* Event dialog (#34): reuses #31's .event-detail-popup look, plus a nav bar. */
+.search-event-dialog::backdrop {
+  background: rgba(5, 9, 18, 0.55);
+}
+
+.search-event-nav {
+  position: sticky;
+  top: -1rem;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: -1rem -1rem 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid rgba(230, 236, 245, 0.15);
+  background: #111b2d;
+}
+
+.search-event-nav button {
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  border: 1px solid rgba(230, 236, 245, 0.25);
+  border-radius: 0.5rem;
+  background: rgba(230, 236, 245, 0.08);
+  color: var(--map-text);
+  font: inherit;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.search-event-nav button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.search-event-position {
+  flex: 1;
+  color: var(--map-muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.search-event-content {
+  min-height: 6rem;
 }
 
 .search-chips {

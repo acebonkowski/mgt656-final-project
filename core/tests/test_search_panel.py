@@ -115,13 +115,6 @@ class SearchScriptTests(TestCase):
         self.assertIn('id: "search-area-preview"', source)
         self.assertIn('id: "search-area-line"', source)
 
-    def test_marker_popup_links_to_the_event_page(self):
-        source = static_source("core/map_provider.js")
-        self.assertIn('className: "event-popup"', source)
-        self.assertIn('link.textContent = "View event"', source)
-        css = static_source("core/search.css")
-        self.assertIn(".event-popup .event-popup-name", css)
-
     def test_search_script_uses_endpoint_and_keeps_filters_in_the_url(self):
         source = static_source("core/search.js")
         self.assertIn("panel.dataset.searchUrl", source)
@@ -154,7 +147,7 @@ class SearchScriptTests(TestCase):
         # Phones: dragging the map tucks the panel away.
         self.assertIn('window.matchMedia("(max-width: 767px)")', source)
         self.assertIn("window.eventMap.onUserMoveStart", source)
-        # Choosing a result collapses the panel and shows the event on the map.
+        # Opening an event centres the map on its pin.
         self.assertIn("window.eventMap.focusEvent(event.id)", source)
         provider = static_source("core/map_provider.js")
         self.assertIn("focusEvent: function (id)", provider)
@@ -188,3 +181,64 @@ class SidePanelLayoutTests(TestCase):
         self.assertIn('document.body.classList.toggle("search-collapsed", collapsed)', source)
         self.assertIn("window.eventMap.resize()", source)
         self.assertIn("resize: function () { map.resize(); }", static_source("core/map_provider.js"))
+
+
+class EventDialogTests(TestCase):
+    """#34: result cards and pins open one event dialog with previous/next."""
+
+    def setUp(self):
+        user = get_user_model().objects.create_user(username="dialog-user@yale.edu")
+        self.client.force_login(user)
+        self.response = self.client.get("/map/")
+        self.source = static_source("core/search.js")
+        self.provider = static_source("core/map_provider.js")
+
+    def test_dialog_markup(self):
+        self.assertContains(self.response, 'id="search-event-dialog" class="event-detail-popup search-event-dialog"')
+        self.assertContains(self.response, 'id="search-event-prev" type="button" aria-label="Previous event"')
+        self.assertContains(self.response, 'id="search-event-next" type="button" aria-label="Next event"')
+        self.assertContains(self.response, 'id="search-event-close"')
+        self.assertContains(self.response, 'id="search-event-position"')
+        self.assertContains(self.response, 'data-popup-url="/events/0/popup/"')
+
+    def test_popup_page_the_dialog_loads_exists(self):
+        from core.tests.test_search_endpoint import make_event
+
+        event = make_event("Jazz Night")
+        response = self.client.get(f"/events/{event.pk}/popup/")
+        self.assertContains(response, "Jazz Night")
+        self.assertNotContains(response, "<html")  # a fragment for the dialog
+
+    def test_cards_and_pins_open_the_dialog(self):
+        self.assertIn("openEvent(index, link)", self.source)
+        self.assertIn("window.eventMap.onEventClick(function (id)", self.source)
+        self.assertIn("onEventClick: function (callback) { eventClickHandler = callback; }",
+                      self.provider)
+        self.assertNotIn("setPopup(popup)", self.provider.split("function eventMarker", 1)[1]
+                         .split("function setEvents", 1)[0])
+
+    def test_previous_and_next_are_disabled_at_the_ends(self):
+        self.assertIn("prevButton.disabled = index === 0;", self.source)
+        self.assertIn("nextButton.disabled = index === currentEvents.length - 1;", self.source)
+        self.assertIn('(index + 1) + " of " + currentEvents.length', self.source)
+
+    def test_closing_returns_focus_to_the_card(self):
+        self.assertIn('dialog.addEventListener("close"', self.source)
+        self.assertIn("openedFrom.focus()", self.source)
+
+    def test_pins_are_keyboard_accessible_and_fall_back_to_the_page(self):
+        self.assertIn('element.setAttribute("role", "button")', self.provider)
+        self.assertIn('element.setAttribute("tabindex", "0")', self.provider)
+        self.assertIn('window.location.href = event.detail_url || "/events/" + event.id + "/"',
+                      self.provider)
+
+    def test_cards_have_a_thumbnail_with_initial_fallback(self):
+        self.assertIn('box.className = "search-result-thumb"', self.source)
+        self.assertIn("box.textContent = event.name.charAt(0).toUpperCase()", self.source)
+        self.assertIn(".search-result-thumb img", static_source("core/search.css"))
+
+    def test_list_loads_on_arrival(self):
+        # Without filters in the URL the panel lists all upcoming events.
+        tail = self.source.rsplit("var initial = new URLSearchParams(window.location.search);", 1)[1]
+        self.assertIn("runSearch();", tail)
+        self.assertNotIn("if (initial.toString()) {", tail)
