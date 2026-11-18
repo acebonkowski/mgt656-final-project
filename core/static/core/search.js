@@ -40,7 +40,22 @@
   var summary = byId("search-summary");
   var summaryText = byId("search-summary-text");
   var collapseButton = byId("search-collapse");
+  var aiView = byId("search-ai");
+  var aiToggle = byId("search-ai-toggle");
+  var aiBack = byId("search-ai-back");
+  var aiCollapse = byId("search-ai-collapse");
+  var mode = "filters";     // or "ai" (#34); kept in the URL as ?mode=ai
+  var collapsed = false;
   var phone = window.matchMedia("(max-width: 767px)");
+  var popupUrl = panel.dataset.popupUrl;  // "/events/0/popup/"
+  var dialog = byId("search-event-dialog");
+  var dialogContent = byId("search-event-content");
+  var dialogPosition = byId("search-event-position");
+  var prevButton = byId("search-event-prev");
+  var nextButton = byId("search-event-next");
+  var currentEvents = [];  // the events in the panel and on the map, in order
+  var openIndex = -1;
+  var openedFrom = null;
   var chips = byId("search-chips");
   var errorBox = byId("search-error");
   var statusBox = byId("search-status");
@@ -240,7 +255,9 @@
   }
 
   function updateUrl(params) {
-    var query = params.toString();
+    var page = new URLSearchParams(params);
+    if (mode === "ai") page.set("mode", "ai");
+    var query = page.toString();
     window.history.replaceState(null, "", window.location.pathname + (query ? "?" + query : ""));
   }
 
@@ -249,34 +266,98 @@
     hour: "numeric", minute: "2-digit",
   };
 
-  // A simple list of results; #34 turns these into cards with the event popup.
+  function thumbnail(event) {
+    var box = document.createElement("span");
+    box.className = "search-result-thumb";
+    box.setAttribute("aria-hidden", "true");
+    box.textContent = event.name.charAt(0).toUpperCase();
+    if (event.image_url) {
+      var img = document.createElement("img");
+      img.alt = "";
+      img.loading = "lazy";
+      img.src = event.image_url;
+      // Until the image loads (or if it can't), the box shows the initial.
+      img.addEventListener("load", function () { box.textContent = ""; box.appendChild(img); });
+    }
+    return box;
+  }
+
+  // Result cards (#34): thumbnail, name, date and time, price and category.
   function renderResults(events) {
     results.replaceChildren();
-    events.forEach(function (event) {
+    events.forEach(function (event, index) {
       var item = document.createElement("li");
       var link = document.createElement("a");
       link.className = "search-result";
       link.href = event.detail_url;
       link.addEventListener("click", function (clickEvent) {
-        // Show the event on the map; a modified click still opens the page.
-        if (!window.eventMap || clickEvent.metaKey || clickEvent.ctrlKey ||
-            clickEvent.shiftKey || clickEvent.button !== 0) return;
+        // Open the event over the map; a modified click still opens the page.
+        if (clickEvent.metaKey || clickEvent.ctrlKey || clickEvent.shiftKey ||
+            clickEvent.button !== 0) return;
         clickEvent.preventDefault();
-        setCollapsed(true);
-        window.eventMap.focusEvent(event.id);
+        openEvent(index, link);
       });
+      var text = document.createElement("span");
+      text.className = "search-result-text";
       var name = document.createElement("strong");
       name.textContent = event.name;
       var when = document.createElement("span");
       when.textContent = new Date(event.start_at).toLocaleString("en-US", NEW_YORK_TIME);
       var details = document.createElement("span");
       details.textContent = event.price + " \u00b7 " + event.category_label;
-      link.appendChild(name);
-      link.appendChild(when);
-      link.appendChild(details);
+      text.appendChild(name);
+      text.appendChild(when);
+      text.appendChild(details);
+      link.appendChild(thumbnail(event));
+      link.appendChild(text);
       item.appendChild(link);
       results.appendChild(item);
     });
+  }
+
+  // --- Event dialog (#34) --------------------------------------------------------
+
+  function eventPopupUrl(event) {
+    return event.popup_url || popupUrl.replace("/0/", "/" + event.id + "/");
+  }
+
+  function showEvent(index) {
+    var event = currentEvents[index];
+    if (!event) return;
+    openIndex = index;
+    dialogPosition.textContent = (index + 1) + " of " + currentEvents.length;
+    prevButton.disabled = index === 0;
+    nextButton.disabled = index === currentEvents.length - 1;
+    dialogContent.textContent = "Loading\u2026";
+    if (window.eventMap) window.eventMap.focusEvent(event.id);
+    fetch(eventPopupUrl(event), { credentials: "same-origin", headers: { "Accept": "text/html" } })
+      .then(function (response) {
+        if (!response.ok) throw new Error("not found");
+        return response.text();
+      }).then(function (html) {
+        if (openIndex !== index) return;  // the user already moved on
+        dialogContent.innerHTML = html;  // rendered (and escaped) by our server
+        dialogContent.querySelectorAll("img").forEach(function (img) {
+          img.addEventListener("error", function () { img.hidden = true; });
+        });
+      }).catch(function () {
+        if (openIndex !== index) return;
+        dialogContent.textContent = "This event couldn't be loaded. It may have been removed.";
+      });
+  }
+
+  function openEvent(index, trigger) {
+    openedFrom = trigger || null;
+    showEvent(index);
+    if (!dialog.open) {
+      if (typeof dialog.showModal === "function") dialog.showModal();
+      else dialog.setAttribute("open", "");
+    }
+  }
+
+  function closeEvent() {
+    if (typeof dialog.close === "function") dialog.close();
+    else dialog.removeAttribute("open");
   }
 
   // The map shows the preview circle after a drag, otherwise the searched one.
@@ -293,19 +374,42 @@
     }
   }
 
-  // Collapsed, the panel is one line summarising the search, so the map shows.
-  function setCollapsed(collapsed) {
-    if (collapsed === !form.hidden) {
-      form.hidden = collapsed;
-      summary.hidden = !collapsed;
-      collapseButton.setAttribute("aria-expanded", String(!collapsed));
-      summary.setAttribute("aria-expanded", String(!collapsed));
-    }
+  // Shows the view for the current mode or, when collapsed, only the one-line
+  // summary so the map is visible.
+  function showViews() {
+    form.hidden = collapsed || mode === "ai";
+    aiView.hidden = collapsed || mode !== "ai";
+    summary.hidden = !collapsed;
+    [collapseButton, aiCollapse].forEach(function (button) {
+      button.setAttribute("aria-expanded", String(!collapsed));
+    });
+    summary.setAttribute("aria-expanded", String(!collapsed));
+    summary.setAttribute("aria-controls", mode === "ai" ? "search-ai" : "search-form");
+    aiToggle.setAttribute("aria-pressed", String(mode === "ai"));
+  }
+
+  function setCollapsed(value) {
+    if (value === collapsed) return;
+    collapsed = value;
+    showViews();
+    // Desktop: the map widens into the space the side panel used (#34).
+    document.body.classList.toggle("search-collapsed", collapsed);
+    if (window.eventMap) window.eventMap.resize();
+  }
+
+  // AI mode replaces the filters view; the filters (and the pins) stay as they
+  // are, so going back shows them unchanged.
+  function setMode(value) {
+    mode = value;
+    showViews();
+    updateUrl(toParams(readFilters()));
+    updateSummary();
   }
 
   function updateSummary() {
     var parts = chipList(readFilters()).map(function (chip) { return chip.label; });
     if (statusBox.textContent) parts.push(statusBox.textContent);
+    if (mode === "ai") parts.unshift("Ask AI");
     summaryText.textContent = parts.length ? parts.join(" \u00b7 ") : "Search events";
   }
 
@@ -344,6 +448,7 @@
       }
       var events = result.payload.events || [];
       if (window.eventMap) window.eventMap.setEvents(events);
+      currentEvents = events;
       renderResults(events);
       if (events.length === 0) {
         statusBox.textContent = "No events found";
@@ -400,13 +505,23 @@
     runSearch();
   });
   clearButton.addEventListener("click", clearAll);
-  collapseButton.addEventListener("click", function () {
-    setCollapsed(true);
-    summary.focus();
+  [collapseButton, aiCollapse].forEach(function (button) {
+    button.addEventListener("click", function () {
+      setCollapsed(true);
+      summary.focus();
+    });
   });
   summary.addEventListener("click", function () {
     setCollapsed(false);
-    qInput.focus();
+    (mode === "ai" ? aiBack : qInput).focus();
+  });
+  aiToggle.addEventListener("click", function () {
+    setMode("ai");
+    aiBack.focus();
+  });
+  aiBack.addEventListener("click", function () {
+    setMode("filters");
+    aiToggle.focus();
   });
 
   function showLocationMessage(message) {
@@ -499,10 +614,31 @@
     runSearch();
   });
 
-  // A link with filters in it (refresh, back, shared URL) runs that search.
-  var initial = new URLSearchParams(window.location.search);
-  if (initial.toString()) {
-    writeFilters(fromParams(initial));
-    runSearch();
+  prevButton.addEventListener("click", function () { showEvent(openIndex - 1); });
+  nextButton.addEventListener("click", function () { showEvent(openIndex + 1); });
+  byId("search-event-close").addEventListener("click", closeEvent);
+  dialog.addEventListener("click", function (clickEvent) {
+    if (clickEvent.target === dialog) closeEvent();  // click on the backdrop
+  });
+  dialog.addEventListener("close", function () {
+    openIndex = -1;
+    dialogContent.replaceChildren();
+    // Back to where the user was in the panel (its scroll position is unchanged).
+    if (openedFrom && document.contains(openedFrom)) openedFrom.focus();
+  });
+
+  // Map pins open the same dialog, stepping through the same list.
+  if (window.eventMap) {
+    window.eventMap.onEventClick(function (id) {
+      var index = currentEvents.map(function (e) { return e.id; }).indexOf(id);
+      if (index !== -1) openEvent(index, null);
+    });
   }
+
+  // Load the list on arrival: the URL's filters (refresh, back, shared link)
+  // or, without any, all upcoming events.
+  var initial = new URLSearchParams(window.location.search);
+  if (initial.toString()) writeFilters(fromParams(initial));
+  if (initial.get("mode") === "ai") setMode("ai");
+  runSearch();
 })();
