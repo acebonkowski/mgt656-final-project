@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
+from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 from django.core.management import call_command
 from django.test import TestCase
@@ -38,6 +39,27 @@ class ImportPersistenceTests(TestCase):
         self.assertEqual(event.price, 0)
         self.assertIsNone(event.creator)
         self.assertEqual(event.image, "")
+        self.assertLessEqual(len(event.name), 30)
+        self.assertLessEqual(len(event.description), 150)
+        self.assertIn(event.category, Event.Category.values)
+        self.assertIsNotNone(event.latitude)
+        self.assertIsNotNone(event.longitude)
+        self.assertEqual(event.link, self.events[0].link)
+
+    def test_imported_event_disappears_from_map_at_end_time(self):
+        self.run_import()
+        event = Event.objects.get()
+        user = get_user_model().objects.create_user(username="import-viewer@yale.edu")
+        self.client.force_login(user)
+        with patch("core.views.timezone.now", return_value=NOW):
+            response = self.client.get("/map/")
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(event.pk, [row["id"] for row in response.context["map_config"]["events"]])
+        with patch("core.views.timezone.now", return_value=event.end_at):
+            response = self.client.get("/map/")
+            self.assertEqual(response.status_code, 200)
+            self.assertNotIn(event.pk, [row["id"] for row in response.context["map_config"]["events"]])
+        self.assertTrue(Event.objects.filter(pk=event.pk).exists())
 
     def test_exact_collision_with_user_event_is_rejected(self):
         self.run_import()
