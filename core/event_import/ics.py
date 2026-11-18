@@ -3,6 +3,7 @@
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from decimal import Decimal
 from urllib.parse import parse_qs, urlsplit
 
 from icalendar import Calendar
@@ -25,7 +26,11 @@ class Candidate:
     category: str
     category_source: str
     # Unknown price is not free. Coordinates/images await shared services in #31.
-    price: None = None
+    price: Decimal | None = None
+    latitude: str | None = None
+    longitude: str | None = None
+    city: str = ""
+    state: str = ""
 
     @property
     def identity(self):

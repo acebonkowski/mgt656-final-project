@@ -42,6 +42,12 @@ services:
         sync: false
       - key: SUPABASE_PHOTO_BUCKET
         value: profile-photos
+      - key: AGGREGATOR_TOKEN
+        generateValue: true
+      - key: AGGREGATOR_MAX_IMAGES_PER_RUN
+        value: "0"
+      - key: AGGREGATOR_MAX_CLASSIFICATIONS_PER_RUN
+        value: "0"
       - key: OPENROUTER_API_KEY  # LLM key (course credits), server-side only
         sync: false
       - key: OPENROUTER_MODEL  # a model allowed by the course key
@@ -83,6 +89,12 @@ services:
         sync: false
       - key: SUPABASE_PHOTO_BUCKET
         value: profile-photos
+      - key: AGGREGATOR_TOKEN
+        generateValue: true
+      - key: AGGREGATOR_MAX_IMAGES_PER_RUN
+        value: "0"
+      - key: AGGREGATOR_MAX_CLASSIFICATIONS_PER_RUN
+        value: "0"
       - key: OPENROUTER_API_KEY  # LLM key (course credits), server-side only
         sync: false
       - key: OPENROUTER_MODEL  # a model allowed by the course key

@@ -1,7 +1,7 @@
 """Persist prepared events using #31's model; all enrichment is explicit.
 
-No external calls. Unknown prices and unverified locations remain skipped until
-team policy/provider integration is ready. Existing source records are retained.
+No external calls. Unknown prices remain null; unverified locations are skipped.
+Existing source records are retained.
 """
 from collections import Counter
 from decimal import Decimal, InvalidOperation
@@ -17,7 +17,7 @@ def persist_candidates(candidates, enrichments, *, now):
 
     Sequential exact duplicates are rejected, including user-created events.
     A database constraint protects source identity across concurrent imports.
-    Cross-source/location concurrency still requires the scheduled-job lock.
+    A database constraint also protects exact location/time collisions.
     """
     counts = Counter()
     for candidate in candidates:
@@ -29,17 +29,14 @@ def persist_candidates(candidates, enrichments, *, now):
             counts["already_imported"] += 1
             continue
         extra = enrichments.get(candidate.external_id, {})
-        if extra.get("price") is None:
-            counts["unknown_price"] += 1
-            continue
         if extra.get("city") != "New Haven" or extra.get("state") != "CT":
             counts["unverified_location"] += 1
             continue
         try:
             lat = Decimal(str(extra["latitude"]))
             lon = Decimal(str(extra["longitude"]))
-            price = Decimal(str(extra["price"]))
-            if not all(value.is_finite() for value in (lat, lon, price)):
+            price = Decimal(str(extra["price"])) if extra.get("price") is not None else None
+            if not all(value.is_finite() for value in (lat, lon, price) if value is not None):
                 raise ValueError("Non-finite number")
             if not (-90 <= lat <= 90 and -180 <= lon <= 180):
                 raise ValueError("Coordinates out of range")
@@ -52,7 +49,7 @@ def persist_candidates(candidates, enrichments, *, now):
             # Imported images are optional (placeholder); user forms still require them.
             event.full_clean(exclude=["image", "description"], validate_unique=False,
                              validate_constraints=False)
-            if price < 0 or event.end_at <= event.start_at:
+            if (price is not None and price < 0) or event.end_at <= event.start_at:
                 raise ValueError("Invalid price or interval")
             with transaction.atomic():
                 if Event.objects.filter(location=event.location, start_at=event.start_at,
@@ -64,6 +61,9 @@ def persist_candidates(candidates, enrichments, *, now):
         except IntegrityError:
             if Event.objects.filter(**identity).exists():
                 counts["already_imported"] += 1
+            elif Event.objects.filter(location=candidate.location_text, start_at=candidate.starts_at,
+                                      end_at=candidate.ends_at).exists():
+                counts["duplicates"] += 1
             else:
                 raise
         except (ValidationError, InvalidOperation, ValueError, KeyError, TypeError):

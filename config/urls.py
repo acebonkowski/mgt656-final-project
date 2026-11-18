@@ -4,8 +4,10 @@ from django.urls import include, path
 from accounts import views as accounts_views
 from core import views
 from core.photo_views import profile_photo
+from core.event_import.views import trigger_import
 
 urlpatterns = [
+    path("internal/import-events/", trigger_import, name="trigger_event_import"),
     path("", accounts_views.home, name="home"),
     path("healthz", views.healthz, name="healthz"),
     path("onboarding/", views.onboarding, name="onboarding"),

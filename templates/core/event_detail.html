@@ -33,7 +33,8 @@
       <dt>Date &amp; time</dt>
       <dd>{{ event.start_at }}–{{ event.end_at }}</dd>
       <dt>Location</dt><dd>{{ event.location }}</dd>
-      <dt>Price</dt><dd>{% if event.price == 0 %}Free{% else %}${{ event.price }}{% endif %}</dd>
+      {% if event.source %}<dt>Source</dt><dd>{{ event.source_label }}</dd>{% endif %}
+      <dt>Price</dt><dd>{% if event.price == None %}Price not listed{% elif event.price == 0 %}Free{% else %}${{ event.price }}{% endif %}</dd>
       <dt>Link</dt><dd><a href="{{ event.link }}" rel="noopener">{{ event.link }}</a></dd>
     </dl>
   </article>

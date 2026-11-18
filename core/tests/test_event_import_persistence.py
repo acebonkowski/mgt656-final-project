@@ -73,10 +73,14 @@ class ImportPersistenceTests(TestCase):
                          {"duplicates": 1})
 
     def test_unknown_price_is_not_free_and_location_must_be_verified(self):
-        self.assertEqual(self.run_import(extra={}), {"unknown_price": 1})
+        self.assertEqual(self.run_import(extra={}), {"unverified_location": 1})
         wrong_city = {"1001": dict(EXTRA["1001"], city="Boston")}
         self.assertEqual(self.run_import(extra=wrong_city), {"unverified_location": 1})
         self.assertFalse(Event.objects.exists())
+
+    def test_verified_unknown_price_is_stored_as_null(self):
+        self.run_import(extra={"1001": dict(EXTRA["1001"], price=None)})
+        self.assertIsNone(Event.objects.get().price)
 
     def test_invalid_enrichment_and_expiry(self):
         for field, value in (("latitude", "nan"), ("longitude", "200"), ("price", "-1"),
@@ -113,3 +117,13 @@ class ImportPersistenceTests(TestCase):
             call_command("import_saved_events", str(FIXTURE), source="som",
                          enrichment=Path("verified.json"), stdout=io.StringIO())
             self.assertEqual(Event.objects.count(), 1)
+
+    def test_database_prevents_exact_collision_across_source_ids(self):
+        self.run_import()
+        event = Event.objects.get()
+        event.pk = None
+        event.source = "another_source"
+        event.external_id = "another_id"
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            event.save(force_insert=True)
+        self.assertEqual(Event.objects.count(), 1)

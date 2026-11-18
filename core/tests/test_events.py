@@ -45,6 +45,7 @@ class EventModelTests(TestCase):
 
         imported = self.make_event(
             name="Imported",
+            location="Another venue",
             creator=None,
             source="calendar",
             external_id="calendar-123",

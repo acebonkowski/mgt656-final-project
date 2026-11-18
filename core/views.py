@@ -10,7 +10,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.db import DatabaseError, connection
+from django.db import DatabaseError, IntegrityError, connection
 from django.db import transaction
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -106,8 +106,13 @@ def map_view(request):
             except photo_storage.StorageUnavailable as exc:
                 form.add_error("image", str(exc))
             else:
-                form.save(request.user, image_key=image_key)
-                return redirect("map")
+                try:
+                    with transaction.atomic():
+                        form.save(request.user, image_key=image_key)
+                except IntegrityError:
+                    form.add_error(None, "An event already exists at this location and time.")
+                else:
+                    return redirect("map")
 
     active_events = Event.objects.filter(end_at__gt=timezone.now())
     event_data = [
@@ -117,7 +122,7 @@ def map_view(request):
             "location": event.location,
             "latitude": float(event.latitude),
             "longitude": float(event.longitude),
-            "price": "Free" if event.price == 0 else f"${event.price:.2f}",
+            "price": "Price not listed" if event.price is None else ("Free" if event.price == 0 else f"${event.price:.2f}"),
         }
         for event in active_events
     ]
@@ -346,8 +351,13 @@ def edit_event(request, event_id):
                 except photo_storage.StorageUnavailable as exc:
                     form.add_error("image", str(exc))
             if not form.errors:
-                form.save(request.user, image_key=image_key, instance=event)
-                return redirect("event_detail", event_id=event.pk)
+                try:
+                    with transaction.atomic():
+                        form.save(request.user, image_key=image_key, instance=event)
+                except IntegrityError:
+                    form.add_error(None, "An event already exists at this location and time.")
+                else:
+                    return redirect("event_detail", event_id=event.pk)
 
     return render(request, "core/edit_event.html", {
         "event": event,

@@ -1,39 +1,54 @@
 # Issue #33 acceptance review
 
-Scope: `feat/33-event-import-foundation`, including the #31 branch. This is a
-review of implemented behavior, not a declaration that #33 is complete.
-Criteria checked against https://github.com/acebonkowski/mgt656-final-project/issues/33.
+Scope: `feat/33-event-import-foundation`, including the #31 implementation.
+Criteria: https://github.com/acebonkowski/mgt656-final-project/issues/33.
+“Tested” below means automated local tests with external services mocked; it does
+not mean the deployed service or external cron job has been configured.
 
-| Acceptance criterion | Status | Evidence / remaining work |
-| --- | --- | --- |
-| Missing/wrong scheduler token returns 403 | Not implemented | No scheduler endpoint. |
-| Valid token returns 202 within 2 seconds; background import and logs | Not implemented | Only offline management commands exist. |
-| An active run prevents a second run | Not implemented | Source-ID uniqueness does not replace a job overlap guard. |
-| Already-ended source events are skipped | Pass for offline path | Parser skips past starts; persistence also checks end time. Ongoing events are currently skipped too. |
-| Exact location/start/end duplicates rejected | Pass for sequential imports | Tests cover existing user records and cross-source collisions. Concurrent different-source/user writes remain unprotected. |
-| Stored fields meet limits, category, coordinates and link requirements | Pass for offline path | Model validation and persistence assertions; coordinates are supplied via verified enrichment, not automatically geocoded. |
-| Importing the same data twice creates no duplicate | Pass for offline path | Repeat-run test and database source-ID uniqueness constraint. |
-| Image cap and placeholder fallback | Partial | Placeholder exists; automatic image generation and cap do not. |
-| One source HTTP failure does not stop other sources | Not implemented | No live fetching or multiple-source runner. Bad individual entries are isolated, which is a different guarantee. |
-| Initial command populates all sources through 2026-12-31 | Partial | Saved Yale/SOM feed import accepts a date cutoff; needs manually verified price/coordinates. No all-source automatic population. |
-| Expired imported events disappear from map | Pass | Integration test imports a record, checks it before expiry, then checks absence at end time while retaining the database record. |
-| README documents cron setup | Not implemented | No live job configured or documented. |
-| Tests cover auth, dedupe, idempotency, expiry, cap with services mocked | Partial | Dedupe/idempotency/expiry covered offline; endpoint auth and cap await implementation. |
+| Acceptance criterion | Implementation / evidence |
+| --- | --- |
+| Missing/wrong token returns 403 | Tested; no job or lock created. Empty server configuration fails closed. |
+| Valid token returns 202 promptly; background import and logs | Tested under two seconds with thread startup mocked; worker logs start, per-source progress and final counts. Deployment cold-start latency is not measured. |
+| Active run prevents another run | Tested database-backed lock shared by endpoint and command; token-specific recovery and thread-start failure cleanup. |
+| Already-ended events skipped | Parser skips past starts; persistence checks expiry again. |
+| Exact location/date/start/end duplicates rejected | Sequential tests plus database constraint covering concurrent writes across sources and user-created events. Form races show a duplicate error. |
+| Stored fields valid | Model validation, truncation, category checks and geocoded/source coordinates with New Haven locality checks. |
+| Re-import does not duplicate | Runner and persistence repeat-run tests plus unique source identity. |
+| Per-run image cap; remainder gets placeholder | Tested successful/failed calls, zero budget, and repeat-run behavior. Failures consume budget. |
+| Source HTTP failure does not stop others | Tested failed source followed by successful import; logs omit exception text and credentials. |
+| Initial population through Dec 31 | `import_events` processes all configured sources through exclusive Jan 1 cutoff, using shared runner; command idempotency tested. Deployment population is not run. |
+| Expired imported event hidden on map | Integration test checks visible before end, hidden at end, retained in database. |
+| README cron setup | Documents POST URL, header token, daily 18:00 America/New_York, logs and recovery; no secret values. |
+| Mocked auth/dedupe/idempotency/expiry/cap tests | Covered by importer, source, enrichment, scheduler and map integration tests. |
 
 ## Validation
 
-- 19 importer tests pass, including saved-feed parsing, classification, database
-  writes, duplicate rejection, repeat imports, invalid enrichment and map expiry.
-- Ruff passes; Django reports no missing migrations.
-- Full suite: 200 tests passed, with no failures or skips.
-- SQLite test database only. No production/development imports, external API
-  calls, paid-service calls, GitHub issue updates, or deployment were performed.
-- Local Python remains 3.15; CI uses the repository's Python 3.12 configuration.
+All 223 local tests pass. Ruff, migration consistency, and whitespace checks pass.
+External services are mocked in the test suite; live ICS probes were read-only.
 
-## Decisions and remaining integration
+## Confirmed choices
 
-Unknown prices are skipped because #31 requires a price. The team must decide
-how to store/display unknown prices and whether source attribution is visible.
-The image cap remains undecided. Complete live source adapters, cached geocoding,
-image generation, scheduler authentication/overlap control, multi-source failure
-isolation, initial population, and documentation before closing #33.
+The user approved null unknown prices displayed as “Price not listed” and visible
+source attribution. User-created event forms still require a price and image.
+Image and LLM caps default to zero; code paths are implemented and tested, but
+paid calls must be explicitly enabled after a budget is approved.
+
+## Operational validation still required
+
+- Set deployment secrets, MapTiler key/quota, optional Ticketmaster key and
+  image-capable OpenRouter model/storage before enabling those integrations.
+- Apply migrations, run population, and configure the external cron-job.org job.
+- Measure deployed startup/response/runtime and provider quotas. A 202 is only
+  acknowledgement; monitor final logs. A killed thread requires manual lock
+  recovery after confirming its worker stopped.
+- Use the repository's Python 3.12 CI environment as well as local Python 3.15.
+- Localist is conditional in the issue and remains excluded until access is
+  verified. Ticketmaster live coverage is unverified without a key. Events with
+  missing ends/unsupported recurrence are skipped; no times are fabricated.
+- New Haven checking uses provider locality plus a sanity envelope, not a precise
+  city polygon. The per-run deadline may require repeat runs for initial backfill;
+  Ticketmaster's 1,000-result limit is counted if reached.
+
+Read-only live ICS parsing prepared 325 Yale Connect and 60 SOM candidates before
+geocoding/city filtering. No development or production event writes, paid calls,
+deployment, external job creation or GitHub issue changes were performed.

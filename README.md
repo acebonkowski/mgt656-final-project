@@ -140,3 +140,86 @@ One-time setup (repo owner):
 1. Render → `mgt656-production` → **Settings** → **Deploy Hook**: copy the URL. In GitHub → **Settings** → **Secrets and variables** → **Actions**, add it as `RENDER_PRODUCTION_DEPLOY_HOOK`. Never commit it: anyone with the URL can deploy.
 2. GitHub → **Settings** → **Branches**: protect `main`, require a pull request and the **Lint and test** status check.
 3. Optional: GitHub → **Settings** → **Environments** → `production`: add required reviewers so a promotion needs a second click to approve.
+
+## Automated event imports (#33)
+
+The importer reads Yale Connect and SOM ICS feeds and, when configured, the
+Ticketmaster Discovery API. Localist is intentionally excluded until public
+access/terms are verified. Unknown prices display **Price not listed**; imported
+event pages show the source. Invalid or unsupported events are counted and
+skipped instead of receiving invented dates, prices or coordinates.
+
+Set `MAP_API_KEY` for address geocoding and optionally `TICKETMASTER_API_KEY`.
+Geocoding uses the existing MapTiler service; confirm the team's plan/quota before
+running large imports. Set `AGGREGATOR_TOKEN` to a long random server-side secret.
+Migrations create a shared import lock and persistent geocoding cache.
+
+Initial population through December 31, 2026 (exclusive January 1 cutoff):
+
+```sh
+python manage.py migrate
+python manage.py import_events --until 2027-01-01T00:00:00-05:00
+```
+
+Use `--source yale_connect`, `--source som` or `--source ticketmaster` to narrow
+the run; repeat the option for multiple sources. Repeat runs are safe. The
+runtime budget defaults to 180 seconds (`AGGREGATOR_RUN_SECONDS`, maximum 300).
+If logs show `deadline_reached`, rerun to continue: already imported identities
+are skipped. The automatic job uses a rolling 90-day window (`AGGREGATOR_WINDOW_DAYS`,
+maximum 365). The CLI defaults to the initial year-end cutoff; use `--until`
+for other windows after that period.
+
+### Daily cron-job.org setup
+
+Create a free cron-job.org job for each environment to import:
+
+- URL: `https://<your-service-host>/internal/import-events/`
+- Method: **POST**, no body required.
+- Header: `Authorization: Bearer <the environment's AGGREGATOR_TOKEN>`.
+- Schedule: daily **18:00**, timezone explicitly **America/New_York** (DST-aware).
+- Enable failure notifications. Never put the token in a query string or commit it.
+
+The endpoint returns **403** for missing/wrong credentials and **202** immediately
+for accepted/already-running jobs. Work happens in a background thread. Check
+stdout logs for `event_import start`, per-source progress and `event_import end`
+with imported, rejected duplicate, skipped-past and failure counts. A 202 only
+acknowledges scheduling; it does not certify completion. This repository does
+not provision a cron-job.org account or job automatically.
+
+The shared database lock prevents overlapping workers and CLI runs. If a worker
+is killed/redeployed, a lock can remain held. Confirm that worker has stopped,
+find its run token in logs, then recover with:
+
+```sh
+python manage.py import_events --release-lock <stopped-run-token>
+```
+
+Do not release a live worker's lock. Imports retain existing records; source
+updates/cancellations do not overwrite existing event identities. Expired events
+stay in the database and disappear from the map. A server background thread is
+not a durable queue; interruptions require rerunning the idempotent job.
+
+### AI budgets and images
+
+`AGGREGATOR_MAX_IMAGES_PER_RUN=0` and
+`AGGREGATOR_MAX_CLASSIFICATIONS_PER_RUN=0` disable paid AI calls by default. After
+budget approval, set finite per-run caps to enable the existing server-side
+OpenRouter service. Configure an image-capable `OPENROUTER_MODEL` and the existing
+Supabase event-photo bucket (use `setup_photo_storage` with the existing project
+instructions). Failed requests consume their cap. Image failures and events over
+the cap retain a text placeholder; all valid events can still import. LLM
+classification is used only after source mapping and keyword rules fail; invalid
+or failed AI output falls back to `social_community`.
+
+No API keys or source response bodies are included in import logs. Tests use
+saved fixtures and mock HTTP, geocoding, OpenRouter and storage:
+
+```sh
+python manage.py test core.tests.test_aggregator core.tests.test_event_import core.tests.test_event_import_persistence
+```
+
+See [development notes](docs/event-import-development.md) and
+[acceptance review](docs/issue-33-acceptance-review.md) for scope and limitations.
+
+Documentation for this feature was drafted with assistance from Codex (OpenAI),
+under the direction of the project author.
