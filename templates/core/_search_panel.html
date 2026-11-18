@@ -1,0 +1,91 @@
+<section id="search-panel" class="search-panel" aria-label="Search events"
+         data-search-url="{% url 'search_events' %}"
+         data-geocode-url="{% url 'geocode_address' %}">
+  {# Collapsed: one line summarising the search; tap to open the panel again. #}
+  <button id="search-summary" class="search-summary" type="button"
+          aria-controls="search-form" aria-expanded="false" hidden>
+    <span id="search-summary-text" class="search-summary-text">Search events</span>
+    <span class="search-summary-icon" aria-hidden="true">&#8964;</span>
+  </button>
+  <form id="search-form" class="search-form" role="search" novalidate>
+    <div class="search-row">
+      <label class="visually-hidden" for="search-q">Search events</label>
+      <input id="search-q" name="q" type="search" maxlength="200" autocomplete="off"
+             placeholder="Search events">
+      <button id="search-submit" class="search-submit" type="submit">Search</button>
+      <button id="search-filters-toggle" class="search-filters-toggle" type="button"
+              aria-expanded="false" aria-controls="search-filters">Filters</button>
+      <button id="search-collapse" class="search-collapse" type="button"
+              aria-controls="search-form" aria-expanded="true"
+              aria-label="Collapse search panel" title="Collapse">&#8963;</button>
+    </div>
+
+    <div id="search-filters" class="search-filters" hidden>
+      <details id="search-category" class="search-field">
+        <summary>Category</summary>
+        <div class="search-options">
+          {% for value, label in categories %}
+            <label><input type="checkbox" name="category" value="{{ value }}" data-label="{{ label }}"> {{ label }}</label>
+          {% endfor %}
+        </div>
+      </details>
+
+      <fieldset id="search-when" class="search-field">
+        <legend>Date</legend>
+        <div class="search-choices">
+          <label><input type="radio" name="when" value="" checked> Any</label>
+          {% for value, label in when_choices %}
+            <label><input type="radio" name="when" value="{{ value }}" data-label="{{ label }}"> {{ label }}</label>
+          {% endfor %}
+          <label><input type="radio" name="when" value="dates"> Pick dates</label>
+        </div>
+        <div id="search-dates" class="search-dates" hidden>
+          <label><input id="search-date-range" type="checkbox"> Date range</label>
+          <label><span id="search-date-from-label">On</span>
+            <input id="search-date-from" type="date"></label>
+          <label id="search-date-to-wrap" hidden>To <input id="search-date-to" type="date"></label>
+        </div>
+      </fieldset>
+
+      <fieldset id="search-time" class="search-field">
+        <legend>Starts between</legend>
+        <div class="search-inline">
+          <label class="visually-hidden" for="search-time-from">Earliest start time</label>
+          <input id="search-time-from" type="time">
+          <span aria-hidden="true">and</span>
+          <label class="visually-hidden" for="search-time-to">Latest start time</label>
+          <input id="search-time-to" type="time">
+        </div>
+      </fieldset>
+
+      <fieldset id="search-location" class="search-field">
+        <legend>Near</legend>
+        <label class="visually-hidden" for="search-address">Address</label>
+        <input id="search-address" type="text" autocomplete="off" placeholder="Type an address">
+        <div id="search-address-suggestions" class="address-suggestions" role="listbox" hidden></div>
+        <div class="search-inline">
+          <button id="search-my-location" type="button">Use my location</button>
+          <label for="search-radius">Within</label>
+          <select id="search-radius">
+            {% for value, label in radius_choices %}
+              <option value="{{ value }}"{% if value == default_radius %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <p id="search-location-message" class="search-message" role="status" hidden></p>
+      </fieldset>
+
+      <p class="search-hint">Filters apply as you change them.</p>
+    </div>
+
+    <ul id="search-chips" class="search-chips" aria-label="Active filters"></ul>
+    <p id="search-error" class="search-message search-error" role="alert" hidden></p>
+    <div class="search-status-row">
+      <p id="search-status" class="search-status" role="status"></p>
+      <button id="search-clear" type="button" hidden>Clear filters</button>
+    </div>
+    <ol id="search-results" class="search-results" aria-label="Search results"></ol>
+  </form>
+  {# Outside the form so it also shows while the panel is collapsed. #}
+  <button id="search-this-area" class="search-this-area" type="button" hidden>Search this area</button>
+</section>

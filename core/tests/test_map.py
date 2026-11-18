@@ -67,7 +67,7 @@ class MapScreenTests(TestCase):
         response = self.client.get("/map/")
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "core/map.html")
-        self.assertContains(response, "More coming soon.")
+        self.assertContains(response, '<h1 class="visually-hidden">Find events in New Haven</h1>')
         self.assertContains(response, 'id="map"')
         self.assertEqual(response.context["map_config"]["center"], [41.3083, -72.9279])
         self.assertEqual(
@@ -578,7 +578,7 @@ class MapScreenWithoutKeyTests(TestCase):
     def test_missing_maptiler_key_does_not_disable_local_basemap(self):
         response = self.client.get("/map/")
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "More coming soon.")
+        self.assertContains(response, '<h1 class="visually-hidden">Find events in New Haven</h1>')
         self.assertTrue(response.context["map_enabled"])
         self.assertContains(response, '<p id="map-fallback" class="fallback" role="status" hidden>')
         self.assertContains(response, "core/map_provider.js")
