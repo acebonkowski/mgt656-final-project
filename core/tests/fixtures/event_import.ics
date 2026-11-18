@@ -1,0 +1,30 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//MGT656//Fictional test events//EN
+BEGIN:VEVENT
+UID:fictional-1
+DTSTART:20261201T230000Z
+DTEND:20261202T000000Z
+SUMMARY:A fictional career networking evening
+DESCRIPTION:A fictional fixture for offline tests. No real event is represented.
+LOCATION:Example Hall\, New Haven
+URL:https://example.test/rsvp?id=1001
+CATEGORIES:Info Session (event_type),Career
+END:VEVENT
+BEGIN:VEVENT
+UID:fictional-duplicate
+DTSTART;TZID=America/New_York:20261201T180000
+DTEND;TZID=America/New_York:20261201T190000
+SUMMARY:Duplicate venue and time
+LOCATION:Example Hall\, New Haven
+URL:https://example.test/rsvp?id=1002
+END:VEVENT
+BEGIN:VEVENT
+UID:fictional-past
+DTSTART:20260101T230000Z
+DTEND:20260102T000000Z
+SUMMARY:Past event
+LOCATION:Example Hall
+URL:https://example.test/events/past
+END:VEVENT
+END:VCALENDAR
