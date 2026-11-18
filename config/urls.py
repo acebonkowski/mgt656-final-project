@@ -20,6 +20,7 @@ urlpatterns = [
     path("events/search/", search_events_view, name="search_events"),
     path("events/<int:event_id>/", views.event_detail, name="event_detail"),
     path("events/<int:event_id>/popup/", views.event_detail_popup, name="event_detail_popup"),
+    path("events/<int:event_id>/calendar.ics", views.event_calendar, name="event_calendar"),
     path("events/<int:event_id>/edit/", views.edit_event, name="edit_event"),
     path("events/<int:event_id>/delete/", views.delete_event, name="delete_event"),
     # Before admin.site.urls: admin's password login is replaced by the Welcome screen.

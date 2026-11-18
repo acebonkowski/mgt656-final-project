@@ -168,7 +168,7 @@
       content.appendChild(price);
       var link = document.createElement("a");
       link.className = "event-popup-link";
-      link.href = event.detail_url || "/events/" + event.id + "/";
+      link.href = event.detail_url || event.url || "/events/" + event.id + "/";
       link.textContent = "View event";
       content.appendChild(link);
       popup.setDOMContent(content);
