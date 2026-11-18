@@ -24,7 +24,7 @@ from decimal import Decimal
 from zoneinfo import ZoneInfo
 from base64 import b64decode
 from unittest import mock
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from accounts.models import Profile
@@ -118,7 +118,7 @@ class MapEventTests(TestCase):
         self.addCleanup(mock.patch.stopall)
 
     def event_values(self, **overrides):
-        new_york_date = timezone.now().astimezone(ZoneInfo("America/New_York")).date()
+        new_york_date = timezone.now().astimezone(ZoneInfo("America/New_York")).date() + timedelta(days=1)
         png = b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=")
         values = {
             "image": SimpleUploadedFile("event.png", png, content_type="image/png"),
