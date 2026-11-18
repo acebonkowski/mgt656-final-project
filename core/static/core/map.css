@@ -87,7 +87,7 @@ body {
   display: none;
 }
 
-/* MapLibre's attribution (required by MapTiler/OpenStreetMap): keep it visible
+/* MapLibre's OpenStreetMap attribution: keep it visible
    but dark, so it doesn't glare on the blue-black map. Three-class selectors so
    they beat MapLibre's later-loaded two-class rules (e.g.
    .maplibregl-ctrl-attrib.maplibregl-compact { background-color: #fff }). */
@@ -128,6 +128,448 @@ body {
   border: 1px solid rgba(230, 236, 245, 0.25);
   border-radius: 0.6rem;
   cursor: pointer;
+}
+
+.create-event-button {
+  position: absolute;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(5rem, calc(env(safe-area-inset-bottom) + 4.5rem));
+  z-index: 3;
+  width: 3.25rem;
+  height: 3.25rem;
+  border: 0;
+  border-radius: 50%;
+  background: #4da3ff;
+  color: #08111f;
+  font: inherit;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.35);
+}
+
+.poi-marker {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1;
+  box-shadow: 0 0.15rem 0.45rem rgba(0, 0, 0, 0.5);
+  transform: rotate(-45deg);
+  cursor: pointer;
+}
+
+.poi-marker::first-letter {
+  transform: none;
+}
+
+.poi-marker-symbol {
+  transform: rotate(45deg);
+}
+
+.poi-marker--yale {
+  background: #2868a8;
+}
+
+.poi-marker--restaurant {
+  background: #c45036;
+}
+
+.poi-marker--bar {
+  background: #7d55a5;
+}
+
+.poi-legend {
+  position: absolute;
+  left: max(0.75rem, env(safe-area-inset-left));
+  bottom: max(1rem, calc(env(safe-area-inset-bottom) + 0.75rem));
+  z-index: 2;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid rgba(230, 236, 245, 0.18);
+  border-radius: 0.65rem;
+  background: var(--overlay-bg);
+  color: var(--map-text);
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+
+.poi-legend > span {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.poi-legend-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 50%;
+  font-size: 0.8rem;
+}
+
+.event-form-dialog {
+  width: min(92vw, 34rem);
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  padding: 0;
+  border: 1px solid rgba(230, 236, 245, 0.25);
+  border-radius: 0.9rem;
+  background: #111b2d;
+  color: var(--map-text);
+  overflow: auto;
+}
+
+.event-form-dialog::backdrop {
+  background: rgba(11, 18, 32, 0.72);
+}
+
+.event-form {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.event-form-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.event-form-heading h2 {
+  margin: 0;
+}
+
+.event-form-heading button {
+  border: 0;
+  background: transparent;
+  color: var(--map-text);
+  font-size: 1.75rem;
+  cursor: pointer;
+}
+
+.event-form p {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.event-form input,
+.event-form textarea,
+.event-form select {
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid rgba(230, 236, 245, 0.28);
+  border-radius: 0.5rem;
+  background: #0b1220;
+  color: var(--map-text);
+  padding: 0.6rem;
+  font: inherit;
+}
+
+.event-form textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.address-suggestions {
+  display: grid;
+  max-height: 12rem;
+  overflow-y: auto;
+  border: 1px solid rgba(230, 236, 245, 0.25);
+  border-radius: 0.5rem;
+  background: #0b1220;
+}
+
+.address-suggestions[hidden] {
+  display: none;
+}
+
+.address-suggestion {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid rgba(230, 236, 245, 0.12);
+  background: transparent;
+  color: var(--map-text);
+  padding: 0.65rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.address-suggestion:last-child {
+  border-bottom: 0;
+}
+
+.event-form .errorlist {
+  margin: 0;
+  color: #ffb4b4;
+}
+
+.event-form .helptext {
+  color: var(--map-muted);
+  font-size: 0.85rem;
+}
+
+.form-errors {
+  color: #ffb4b4;
+}
+
+.event-submit {
+  min-height: 3rem;
+  border: 0;
+  border-radius: 0.6rem;
+  background: #4da3ff;
+  color: #08111f;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.image-menu {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(230, 236, 245, 0.22);
+  border-radius: 0.6rem;
+}
+
+.event-image-preview {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: #0b1220;
+}
+
+.event-image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.event-image-preview[hidden],
+.image-sources[hidden],
+.image-loading[hidden],
+.image-error[hidden] {
+  display: none;
+}
+
+.image-menu-actions,
+.image-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.image-menu-actions button,
+.image-sources button,
+.image-sources label {
+  min-height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(230, 236, 245, 0.28);
+  border-radius: 0.5rem;
+  background: #0b1220;
+  color: var(--map-text);
+  padding: 0.55rem 0.75rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.image-sources input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.image-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--map-muted);
+}
+
+.spinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid rgba(230, 236, 245, 0.25);
+  border-top-color: #4da3ff;
+  border-radius: 50%;
+  animation: event-image-spin 0.8s linear infinite;
+}
+
+.image-error {
+  color: #ffb4b4;
+}
+
+@keyframes event-image-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.duplicate-event-dialog,
+.event-detail-popup {
+  width: min(92vw, 34rem);
+  max-height: calc(100dvh - 2rem);
+  border: 1px solid rgba(230, 236, 245, 0.25);
+  border-radius: 0.9rem;
+  background: #111b2d;
+  color: var(--map-text);
+  overflow: auto;
+}
+
+.duplicate-alert {
+  position: relative;
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.duplicate-alert h2,
+.duplicate-alert p {
+  margin: 0;
+}
+
+#close-duplicate-alert,
+.popup-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.65rem;
+  border: 0;
+  background: transparent;
+  color: var(--map-text);
+  font-size: 1.75rem;
+  cursor: pointer;
+}
+
+#view-duplicate-event,
+#thats-my-event,
+#request-collab,
+#return-to-map {
+  min-height: 2.75rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: #4da3ff;
+  color: #08111f;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.event-detail-popup {
+  padding: 1rem;
+}
+
+.event-detail-popup[hidden],
+#event-detail-second-step[hidden],
+#event-detail-first-step[hidden] {
+  display: none;
+}
+
+#event-detail-first-step,
+#event-detail-second-step {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+#event-detail-first-step button,
+#event-detail-second-step button {
+  flex: 1;
+}
+
+.event-detail {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.event-detail h1,
+.event-detail p {
+  margin: 0;
+}
+
+.event-detail-image {
+  width: 100%;
+  max-height: 18rem;
+  object-fit: cover;
+  border-radius: 0.6rem;
+}
+
+.event-detail dl {
+  display: grid;
+  grid-template-columns: minmax(6rem, 0.35fr) 1fr;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.event-detail dd {
+  margin: 0;
+}
+
+.event-owner-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.event-owner-actions a,
+.event-owner-actions button,
+.event-edit-form button,
+.delete-event {
+  min-height: 2.75rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: #4da3ff;
+  color: #08111f;
+  padding: 0.55rem 0.75rem;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.event-owner-actions form {
+  margin: 0;
+}
+
+.event-edit-form {
+  width: min(92vw, 34rem);
+  display: grid;
+  gap: 0.75rem;
+  margin: 2rem auto;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background: #111b2d;
+}
+
+.event-edit-form p {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.event-edit-form input,
+.event-edit-form textarea,
+.event-edit-form select {
+  min-height: 2.75rem;
+  border: 1px solid rgba(230, 236, 245, 0.28);
+  border-radius: 0.5rem;
+  background: #0b1220;
+  color: var(--map-text);
+  padding: 0.55rem;
+  font: inherit;
 }
 
 /* Tablets (iPad portrait and landscape) and up: a little more breathing room. */

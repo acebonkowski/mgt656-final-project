@@ -194,10 +194,10 @@ else:
 
 
 # --- Map (#8) -----------------------------------------------------------------
-# Browser map key, read only from the environment and never committed. It is
-# visible in the page source by design, so restrict it to our domains in the
-# provider's console. Empty means the map screen shows its fallback message.
+# The basemap is a local OSM vector-tile archive; this key is only used by the
+# server-side MapTiler geocoding endpoint for address autocomplete.
 MAP_API_KEY = os.environ.get("MAP_API_KEY", "")
+LOCAL_MAP_TILES_PATH = BASE_DIR / "core" / "data" / "new-haven.mbtiles"
 
 
 # --- LLM (OpenRouter) -----------------------------------------------------------
@@ -240,7 +240,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 SUPABASE_STORAGE_URL = os.environ.get("SUPABASE_STORAGE_URL", "").strip()
 SUPABASE_STORAGE_KEY = os.environ.get("SUPABASE_STORAGE_KEY", "").strip()
 SUPABASE_PHOTO_BUCKET = os.environ.get("SUPABASE_PHOTO_BUCKET", "profile-photos").strip()
-FILE_UPLOAD_HANDLERS = ["core.upload_handlers.ProfilePhotoUploadHandler"]
+SUPABASE_EVENT_PHOTO_BUCKET = os.environ.get("SUPABASE_EVENT_PHOTO_BUCKET", "event-photos").strip()
+FILE_UPLOAD_HANDLERS = ["core.upload_handlers.PhotoUploadHandler"]
 DATA_UPLOAD_MAX_NUMBER_FILES = 1
 DATA_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024
 

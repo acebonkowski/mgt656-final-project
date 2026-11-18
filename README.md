@@ -42,7 +42,7 @@ All configuration comes from environment variables. Nothing secret is committed.
 | `PORT` | set by Render | gunicorn binds to it |
 | `TEAM_NICKNAME` | no | Team course nickname; defaults to `holy-dew`. Holds the nickname, never the hash |
 | `TEAM_MEMBER_NICKNAMES` | no | Comma-separated member nicknames shown on the A/B page |
-| `MAP_API_KEY` | for the map | MapTiler key for the home screen (`/map/`). Visible in page source by design, so restrict it to our domains (see below). If empty, `/map/` shows a "map isn't available" message. |
+| `MAP_API_KEY` | no | Optional server-side MapTiler key for address autocomplete. The local OSM basemap works without it. |
 | `RESEND_API_KEY` | for login emails | Resend API key, used as the SMTP password. Without it, deployed environments don't send codes (students see an error); local development prints emails to the terminal |
 | `EMAIL_FROM` | for login emails | Sender on the team's verified Resend domain, e.g. `Yale Events <login@mail.<domain>>` |
 | `EMAIL_PORT` | no | Defaults to `587`; Resend also accepts `2587` |
@@ -88,35 +88,30 @@ Codes are sent through Resend's SMTP relay using Django's built-in SMTP backend 
 
 ## Home screen map (`/map/`)
 
-`/map/` is the logged-in home screen: a dark New Haven map with the headline "More coming soon." (#8). Logged-out visitors are sent to the Welcome screen (`LOGIN_URL`). `LOGIN_REDIRECT_URL` and `ONBOARDING_SUCCESS_URL` both point to `map`.
+`/map/` is the logged-in home screen: a New Haven map with the headline "More coming soon." (#8). Logged-out visitors are sent to the Welcome screen (`LOGIN_URL`). `LOGIN_REDIRECT_URL` and `ONBOARDING_SUCCESS_URL` both point to `map`.
 
-The map is drawn in the browser by [MapLibre GL JS](https://maplibre.org/) (open source, pinned to 5.24.0 from unpkg with Subresource Integrity hashes) using MapTiler's `dataviz-dark` style, tinted blue-black to match the page. The map code is kept in two files:
+The map uses locally stored OpenStreetMap vector tiles in [core/data/new-haven.mbtiles](core/data/new-haven.mbtiles), covering New Haven at zoom levels 8–16. The archive was generated from the Connecticut Geofabrik OSM extract (2026-11-17) with the Planetiler OpenMapTiles profile. It is rendered by the locally vendored MapLibre GL JS 5.24.0 library. The app serves tiles from the local MBTiles archive, so displaying the map does not require MapTiler, a map API key, or external tile requests. The visible attribution credits © OpenMapTiles and © OpenStreetMap contributors. OSM data is available under ODbL 1.0; the generated vector tiles are reusable under CC-BY as granted by OpenMapTiles.
 
-- [templates/core/_map_provider.html](templates/core/_map_provider.html) loads MapLibre and the provider script. It's only included when `MAP_API_KEY` is set.
-- [core/static/core/map_provider.js](core/static/core/map_provider.js) defines `window.renderMap(element, config)`. It builds the MapTiler style URL from the key, centres the map on New Haven and applies the blue-black tint.
+- [templates/core/_map_provider.html](templates/core/_map_provider.html) loads the local MapLibre assets and provider script.
+- [core/static/core/map_provider.js](core/static/core/map_provider.js) defines `window.renderMap(element, config)` and styles the local OSM vector layers.
+- [core/views.py](core/views.py) serves MBTiles vector data at `/map/tiles/{z}/{x}/{y}.pbf`.
 
-The provider-neutral [core/static/core/map.js](core/static/core/map.js) calls `renderMap`. It shows the fallback message if there's no key, if MapLibre didn't load, if the browser has no WebGL, or if MapTiler rejects the key (HTTP 401/403).
+The provider-neutral [core/static/core/map.js](core/static/core/map.js) calls `renderMap`. It shows the fallback message if the local archive is missing, MapLibre didn't load, or the browser has no WebGL.
 
-The server never calls MapTiler: the browser fetches the style and tiles directly. Tests only use a fake key, and `NoNetworkTests` fails if rendering the page opens any network connection.
+The map also shows a curated Yale-area place layer: Yale facilities (including Yale School of Management / Evans Hall), restaurants, and bars use distinct icons and popup labels. Coordinates are maintained in [core/map_places.py](core/map_places.py), sourced from OpenStreetMap (© OpenStreetMap contributors, ODbL 1.0); the list is static and makes no runtime geocoding requests. Verify places and coordinates before extending the list.
 
-### Getting a MapTiler key
+`MAP_API_KEY` is no longer needed to display the map. It is used only by the server-side MapTiler geocoding request for address autocomplete, so autocomplete requires the key and network access. The basemap itself is served locally. `NoNetworkTests` fails if rendering the page opens any network connection.
+
+### Optional MapTiler key for address autocomplete
 
 1. Sign up at [cloud.maptiler.com](https://cloud.maptiler.com/) (the free plan needs no credit card).
-2. Go to **Account → API keys**. The free plan allows **only one key**, so local development, staging and (later) production all share it.
-3. **Restrict the key to our domains** in its settings, under **Allowed HTTP origins**:
-   - `localhost` and `127.0.0.1` (local development)
-   - `mgt656-final-project-staging.onrender.com` (staging)
-   - the production `onrender.com` hostname, once that service exists
-
-   A restricted key is rejected (HTTP 403) on any other site, so a copied key is useless elsewhere. The exception is localhost: anyone running the app locally with our key could use it, so share the key only within the team. The map page sends our origin to MapTiler (`<meta name="referrer" content="strict-origin-when-cross-origin">`) so the restriction can be checked; Django's default `same-origin` policy would send nothing.
-4. In Render, open the service, go to **Environment**, and set `MAP_API_KEY` to the key. Saving restarts the service.
-5. To test locally, set the key in the same terminal as `runserver` (the app doesn't read `.env` files):
+2. Go to **Account → API keys** and create a key for geocoding.
+3. In Render, open the service, go to **Environment**, and set `MAP_API_KEY` to the key. Saving restarts the service.
+4. To test autocomplete locally, set the key in the same terminal as `runserver` (the app doesn't read `.env` files):
    - macOS/Linux: `export MAP_API_KEY=<key>`
    - Windows PowerShell: `$env:MAP_API_KEY = "<key>"`
 
-Because the key is shared, revoking or regenerating it breaks the map everywhere at once. If it ever leaks, regenerate it in MapTiler and update `MAP_API_KEY` in Render and in each teammate's shell.
-
-Never commit a key, not even the local one. Keep it in your shell or in Render only. The free plan requires the MapTiler and OpenStreetMap attribution, which MapLibre shows in the bottom-right corner; don't hide it.
+Without this key, the local map still works but location autocomplete is unavailable. Never commit a key; keep it in your shell or in Render only.
 
 ## Deploying (staging and production)
 

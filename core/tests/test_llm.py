@@ -45,6 +45,24 @@ class ChatTests(SimpleTestCase):
         with self.assertRaises(llm.LLMUnavailable):
             llm.chat([{"role": "user", "content": "Hi"}])
 
+    def test_generate_image_requires_data_url_and_never_uses_network(self):
+        response = SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(
+            images=[{"image_url": {"url": "data:image/png;base64,aGVsbG8="}}]
+        ))])
+        self.create.return_value = response
+        data, content_type = llm.generate_image("A campus event")
+        self.assertEqual(data, b"hello")
+        self.assertEqual(content_type, "image/png")
+        kwargs = self.create.call_args.kwargs
+        self.assertEqual(kwargs["extra_body"]["modalities"], ["image", "text"])
+
+    def test_generate_image_empty_response_becomes_llm_unavailable(self):
+        self.create.return_value = SimpleNamespace(choices=[SimpleNamespace(
+            message=SimpleNamespace(images=[])
+        )])
+        with self.assertRaises(llm.LLMUnavailable):
+            llm.generate_image("A campus event")
+
 
 class NotConfiguredTests(SimpleTestCase):
     @override_settings(OPENROUTER_API_KEY="", OPENROUTER_MODEL="test/model")

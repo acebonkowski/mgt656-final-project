@@ -7,7 +7,7 @@ from django.core.files.uploadhandler import FileUploadHandler, StopUpload
 from core.photo_storage import MAX_PHOTO_BYTES
 
 
-class ProfilePhotoUploadHandler(FileUploadHandler):
+class PhotoUploadHandler(FileUploadHandler):
     def __init__(self, request=None):
         super().__init__(request)
         self.total = 0
@@ -33,3 +33,6 @@ class ProfilePhotoUploadHandler(FileUploadHandler):
         self.buffer.seek(0)
         return InMemoryUploadedFile(self.buffer, self.field_name, self.file_name,
                                    self.content_type, file_size, self.charset)
+
+
+ProfilePhotoUploadHandler = PhotoUploadHandler
