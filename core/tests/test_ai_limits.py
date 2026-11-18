@@ -94,3 +94,14 @@ class AiLimitTests(TestCase):
         with override_settings(AI_SEARCH_DAILY_LIMIT=2):
             with self.assertRaises(ai_limits.LimitReached):
                 ai_limits.check(self.user, SEARCH, now=NOON)
+
+
+class AiUsageAdminTests(TestCase):
+    def test_admin_lists_usage_and_allows_deleting_but_not_editing(self):
+        admin_user = get_user_model().objects.create_superuser(username="admin@yale.edu", password="x")
+        self.client.force_login(admin_user)
+        AIUsage.objects.create(user=admin_user, kind=SEARCH, created_at=NOON)
+        response = self.client.get("/admin/core/aiusage/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "AI search message")
+        self.assertEqual(self.client.get("/admin/core/aiusage/add/").status_code, 403)
