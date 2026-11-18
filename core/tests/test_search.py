@@ -101,6 +101,38 @@ class TextSearchTests(SearchTestCase):
         make_event("Anything")
         self.assertEqual(self.names(q="   "), ["Anything"])
 
+    def test_every_word_must_match(self):
+        make_event("Jazz Night", description="Live music downtown")
+        make_event("Jazz Brunch", description="Pancakes")
+        self.assertEqual(self.names(q="jazz music"), ["Jazz Night"])
+
+    def test_punctuation_and_query_syntax_are_harmless(self):
+        make_event("Jazz Night")
+        self.assertEqual(self.names(q="jazz & | ! :* ( ) '"), ["Jazz Night"])
+        self.assertEqual(self.names(q="!!! ***"), [])
+
+
+@postgres_only
+class FullTextIndexTests(TestCase):
+    def test_search_expression_can_use_the_gin_index(self):
+        # Guards against the search expression drifting from migration 0004.
+        from core.search import full_text_query, full_text_vector
+
+        make_event("Jazz Night")
+        with connection.cursor() as cursor:
+            cursor.execute("SET LOCAL enable_seqscan = off")
+        plan = (Event.objects.annotate(document=full_text_vector())
+                .filter(document=full_text_query(["jazz"])).explain())
+        self.assertIn("core_event_search_gin", plan)
+
+
+class MigrationIndexTests(TestCase):
+    def test_btree_indexes_exist(self):
+        with connection.cursor() as cursor:
+            constraints = connection.introspection.get_constraints(cursor, "core_event")
+        for name in ("core_event_end_at_idx", "core_event_start_at_idx", "core_event_category_idx"):
+            self.assertIn(name, constraints)
+
 
 class CategoryTests(SearchTestCase):
     def test_category_choices_are_exactly_the_12(self):

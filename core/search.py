@@ -9,6 +9,7 @@ All dates and times are America/New_York. All filters combine with AND, and
 events that have already ended are never returned.
 """
 
+import re
 from datetime import datetime, time, timedelta
 from math import asin, cos, radians, sin, sqrt
 from zoneinfo import ZoneInfo
@@ -27,6 +28,7 @@ RADIUS_CHOICES = [("0.5", "0.5 mi"), ("1", "1 mi"), ("2", "2 mi"), ("5", "5 mi")
 DEFAULT_RADIUS_MI = 1.0
 WHEN_CHOICES = [("today", "Today"), ("tomorrow", "Tomorrow"), ("weekend", "This weekend")]
 SEARCH_CONFIG = "english"
+WORD_RE = re.compile(r"[^\W_]+")
 
 
 def quick_pick_dates(when, today):
@@ -124,27 +126,56 @@ def uses_full_text_search():
     return connection.vendor == "postgresql"
 
 
+def full_text_vector():
+    """Weighted document; must match the GIN index in migration 0004."""
+    from django.contrib.postgres.search import SearchVector
+
+    return (SearchVector("name", weight="A", config=SEARCH_CONFIG)
+            + SearchVector("description", weight="B", config=SEARCH_CONFIG))
+
+
+def full_text_query(words):
+    """
+    Every word must match as a prefix of a stemmed word: "concerts" finds
+    "concert" (stemming) and "conc" finds "Concert" (prefix). Only letters and
+    digits reach the raw query, so user input can't break its syntax.
+    """
+    from django.contrib.postgres.search import SearchQuery
+
+    return SearchQuery(" & ".join(f"{word}:*" for word in words),
+                       search_type="raw", config=SEARCH_CONFIG)
+
+
+def _all_words_in(field, words):
+    condition = Q()
+    for word in words:
+        condition &= Q(**{f"{field}__icontains": word})
+    return condition
+
+
 def _filter_text(events, q):
-    name_hit = Case(When(name__icontains=q, then=Value(1)), default=Value(0),
+    words = WORD_RE.findall(q)
+    if not words:
+        return events.none()
+    name_hit = Case(When(_all_words_in("name", words), then=Value(1)), default=Value(0),
                     output_field=IntegerField())
-    substring = Q(name__icontains=q) | Q(description__icontains=q)
+
     if not uses_full_text_search():
-        # SQLite (local development only): case-insensitive substring match.
-        return events.filter(substring).annotate(name_hit=name_hit).order_by(
+        # SQLite (local development only): every word as a case-insensitive
+        # substring of the name or the description.
+        condition = Q()
+        for word in words:
+            condition &= Q(name__icontains=word) | Q(description__icontains=word)
+        return events.filter(condition).annotate(name_hit=name_hit).order_by(
             "-name_hit", "start_at", "pk"
         )
 
-    from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
+    from django.contrib.postgres.search import SearchRank
 
-    # Must match the GIN index expression in the migration so Postgres uses it.
-    vector = (SearchVector("name", weight="A", config=SEARCH_CONFIG)
-              + SearchVector("description", weight="B", config=SEARCH_CONFIG))
-    query = SearchQuery(q, search_type="websearch", config=SEARCH_CONFIG)
+    vector, query = full_text_vector(), full_text_query(words)
     return (
         events.annotate(document=vector, rank=SearchRank(vector, query), name_hit=name_hit)
-        # Full-text match finds word forms ("concerts" -> "concert"); the
-        # substring match finds half-typed words ("conc").
-        .filter(Q(document=query) | substring)
+        .filter(document=query)
         .order_by("-rank", "-name_hit", "start_at", "pk")
     )
 
