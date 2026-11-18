@@ -102,7 +102,7 @@ class AiSearchEndpointTests(TestCase):
         self.assertEqual(data["count"], 1)
         self.assertEqual(set(data["events"][0]), {
             "id", "name", "location", "latitude", "longitude", "price", "category",
-            "category_label", "start_at", "end_at", "image_url", "detail_url", "popup_url"})
+            "category_label", "start_at", "end_at", "image_url", "url", "detail_url", "popup_url"})
 
     def test_events_the_ai_mentions_but_the_database_lacks_never_appear(self):
         make_event("Jazz Night")
