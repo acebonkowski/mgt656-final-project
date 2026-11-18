@@ -1,0 +1,25 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Edit {{ event.name }} · Yale Events</title>
+  <link rel="stylesheet" href="{% static 'core/map.css' %}">
+</head>
+<body class="event-detail-page">
+<main>
+  <form method="post" action="{% url 'edit_event' event.pk %}" enctype="multipart/form-data" class="event-edit-form">
+    {% csrf_token %}
+    <h1>Edit event</h1>
+    {{ event_form.as_p }}
+    <label><input type="checkbox" name="remove_image" value="1"> Remove existing image</label>
+    <button type="submit">Save changes</button>
+  </form>
+  <form method="post" action="{% url 'delete_event' event.pk %}">
+    {% csrf_token %}
+    <button type="submit" class="delete-event">Delete event</button>
+  </form>
+</main>
+</body>
+</html>

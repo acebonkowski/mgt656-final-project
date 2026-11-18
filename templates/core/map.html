@@ -5,12 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1220">
-  {# Django defaults to Referrer-Policy: same-origin, which sends no Referer to  #}
-  {# MapTiler, so its "allowed origins" check could reject our key. This sends  #}
-  {# only our origin (never the path) to other sites, and only over HTTPS.     #}
-  <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>Home · Yale Events</title>
-  <link rel="stylesheet" href="{% static 'core/map.css' %}">
+  <link rel="stylesheet" href="{% static 'core/map.css' %}?v=osm-local-1">
 </head>
 <body class="map-screen">
   <main>
@@ -18,7 +14,74 @@
       {% csrf_token %}
       <button type="submit">Log out</button>
     </form>
+    <button id="open-event-form" class="create-event-button" type="button"
+            aria-haspopup="dialog" aria-controls="event-form-dialog">+</button>
+    <dialog id="event-form-dialog" class="event-form-dialog"
+            aria-labelledby="event-form-title"
+            data-geocode-url="{% url 'geocode_address' %}"
+            data-duplicate-url="{% url 'duplicate_event' %}"
+            {% if event_form.errors %} open{% endif %}>
+      <form method="post" action="{% url 'map' %}" class="event-form">
+        {% csrf_token %}
+        <div class="event-form-heading">
+          <h2 id="event-form-title">Create event</h2>
+          <button id="close-event-form" type="button" aria-label="Close">×</button>
+        </div>
+        {% if event_form.non_field_errors %}
+          <div class="form-errors" role="alert">{{ event_form.non_field_errors }}</div>
+        {% endif %}
+        <div class="image-menu" aria-label="Event image menu"
+             data-generate-url="{% url 'generate_event_image' %}">
+          <div id="event-image-preview" class="event-image-preview" hidden>
+            <img id="event-image-preview-img" alt="Selected event image">
+          </div>
+          <div class="image-menu-actions">
+            <button id="event-image-add" type="button">Add image</button>
+            <button id="event-image-replace" type="button" hidden>Replace</button>
+            <button id="event-image-delete" type="button" hidden>Delete</button>
+          </div>
+          <div id="event-image-sources" class="image-sources" hidden>
+            <label>Gallery<input id="event-image-gallery" type="file" accept="image/png,image/jpeg,image/heic,image/heif"></label>
+            <button id="event-image-ai" type="button">Generate with AI</button>
+            <label>Files<input id="event-image-files" type="file" accept="image/png,image/jpeg,image/heic,image/heif"></label>
+            <label>Camera<input id="event-image-camera" type="file" accept="image/*" capture="environment"></label>
+          </div>
+          <div id="event-image-loading" class="image-loading" role="status" hidden>
+            <span class="spinner" aria-hidden="true"></span> Generating image…
+          </div>
+          <div id="event-image-error" class="image-error" role="alert" hidden></div>
+        </div>
+        {{ event_form.as_p }}
+        <button id="create-event-submit" class="event-submit" type="submit">Create event</button>
+      </form>
+    </dialog>
+    <dialog id="duplicate-event-dialog" class="duplicate-event-dialog"
+            aria-labelledby="duplicate-event-title">
+      <div class="duplicate-alert" role="alert">
+        <h2 id="duplicate-event-title">Possible duplicate event</h2>
+        <p>An event already exists at the same location and time.</p>
+        <button id="view-duplicate-event" type="button">View</button>
+        <button id="close-duplicate-alert" type="button" aria-label="Close duplicate alert">×</button>
+      </div>
+    </dialog>
+    <dialog id="event-detail-popup" class="event-detail-popup"
+            aria-labelledby="event-detail-title">
+      <button id="close-event-detail" class="popup-close" type="button" aria-label="Close">×</button>
+      <div id="event-detail-content"></div>
+      <div id="event-detail-first-step">
+        <button id="thats-my-event" type="button">That's my event</button>
+      </div>
+      <div id="event-detail-second-step" hidden>
+        <button id="request-collab" type="button">Request collab</button>
+        <button id="return-to-map" type="button">Return to map</button>
+      </div>
+    </dialog>
     <div id="map" class="map" role="region" aria-label="Map of New Haven"></div>
+    <aside class="poi-legend" aria-label="Map place legend">
+      <span><span class="poi-legend-icon poi-marker--yale" aria-hidden="true">🏛️</span> Yale facilities</span>
+      <span><span class="poi-legend-icon poi-marker--restaurant" aria-hidden="true">🍴</span> Restaurants</span>
+      <span><span class="poi-legend-icon poi-marker--bar" aria-hidden="true">🍸</span> Bars</span>
+    </aside>
     <div class="overlay">
       <h1 class="headline">More coming soon.</h1>
       <p id="map-fallback" class="fallback" role="status"{% if map_enabled %} hidden{% endif %}>
@@ -28,6 +91,6 @@
   </main>
   {{ map_config|json_script:"map-config" }}
   {% if map_enabled %}{% include "core/_map_provider.html" %}{% endif %}
-  <script src="{% static 'core/map.js' %}"></script>
+  <script src="{% static 'core/map.js' %}?v=osm-local-1"></script>
 </body>
 </html>
