@@ -118,6 +118,7 @@ def map_view(request):
     event_data = [
         {
             "id": event.pk,
+            "url": reverse("event_detail", args=[event.pk]),
             "name": event.name,
             "location": event.location,
             "latitude": float(event.latitude),

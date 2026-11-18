@@ -156,11 +156,19 @@
         price.textContent = event.price;
         content.appendChild(title);
         content.appendChild(price);
+        var link = document.createElement("a");
+        link.href = event.url;
+        link.textContent = "View event";
+        link.setAttribute("aria-label", "View event: " + event.name);
+        content.appendChild(link);
         popup.setDOMContent(content);
-        new window.maplibregl.Marker({ color: "#4da3ff" })
+        var marker = new window.maplibregl.Marker({ color: "#4da3ff" })
           .setLngLat([event.longitude, event.latitude])
           .setPopup(popup)
           .addTo(map);
+        marker.getElement().classList.add("event-marker");
+        marker.getElement().setAttribute("aria-label", "Event: " + event.name);
+        marker.getElement().setAttribute("title", event.name);
       });
       (config.places || []).forEach(function (place) {
         if (typeof place.latitude !== "number" || typeof place.longitude !== "number") {
