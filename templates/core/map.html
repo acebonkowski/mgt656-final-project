@@ -21,7 +21,7 @@
             aria-labelledby="event-form-title"
             data-geocode-url="{% url 'geocode_address' %}"
             data-duplicate-url="{% url 'duplicate_event' %}"
-            {% if event_form.errors %} open{% endif %}>
+            {% if event_form.errors %} data-open-on-load{% endif %}>
       <form method="post" action="{% url 'map' %}" enctype="multipart/form-data" class="event-form">
         {% csrf_token %}
         <div class="event-form-heading">

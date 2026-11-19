@@ -9,14 +9,24 @@
   var dialog = document.getElementById("event-form-dialog");
   var closeButton = document.getElementById("close-event-form");
 
+  // Always open as a modal: a non-modal dialog sits under the full-screen map,
+  // and showModal() throws if the dialog is already open (#57).
+  function openEventForm() {
+    if (dialog.open) return;
+    if (typeof dialog.showModal === "function") {
+      dialog.showModal();
+    } else {
+      dialog.setAttribute("open", "");
+    }
+  }
+
   if (openButton && dialog) {
-    openButton.addEventListener("click", function () {
-      if (typeof dialog.showModal === "function") {
-        dialog.showModal();
-      } else {
-        dialog.setAttribute("open", "");
-      }
-    });
+    openButton.addEventListener("click", openEventForm);
+  }
+  // The server marks the dialog when a submit was rejected, so the user sees
+  // the form again with its errors.
+  if (dialog && dialog.hasAttribute("data-open-on-load")) {
+    openEventForm();
   }
   if (closeButton && dialog) {
     closeButton.addEventListener("click", function () {

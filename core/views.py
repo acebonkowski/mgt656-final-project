@@ -116,6 +116,9 @@ def map_view(request):
                     form.add_error(None, "An event already exists at this location and time.")
                 else:
                     return redirect("map")
+    if request.method == "POST":
+        # Field names only, never values, so the reason shows in the logs (#57).
+        logger.info("Create event rejected: %s", ", ".join(sorted(form.errors)))
 
     active_events = Event.objects.filter(end_at__gt=timezone.now())
     event_data = [

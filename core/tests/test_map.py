@@ -306,12 +306,38 @@ class MapEventTests(TestCase):
     @override_settings(MAP_API_KEY=FAKE_KEY)
     def test_invalid_post_keeps_form_open_with_field_errors(self):
         count = Event.objects.count()
-        response = self.client.post("/map/", self.event_values(price="-1", end_time="17:00"))
+        with self.assertLogs("core.views", level="INFO") as logs:
+            response = self.client.post("/map/", self.event_values(price="-1", end_time="17:00"))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Event.objects.count(), count)
         self.assertTrue(response.context["event_form"].errors)
-        self.assertContains(response, 'id="event-form-dialog"')
-        self.assertContains(response, "open")
+        # The JS opens it as a modal; a rendered `open` attribute would make it
+        # non-modal, hidden under the map, and break the + button (#57).
+        dialog = self.dialog_tag(response)
+        self.assertIn("data-open-on-load", dialog)
+        self.assertNotRegex(dialog, r"\sopen(\s|>|=)")
+        self.assertContains(response, "errorlist")
+        # Only field names are logged, never what the user typed.
+        self.assertIn("Create event rejected: __all__, price", logs.output[0])
+        self.assertNotIn("-1", logs.output[0])
+
+    @override_settings(MAP_API_KEY=FAKE_KEY)
+    def test_map_get_renders_the_create_dialog_closed(self):
+        dialog = self.dialog_tag(self.client.get("/map/"))
+        self.assertNotIn("data-open-on-load", dialog)
+        self.assertNotRegex(dialog, r"\sopen(\s|>|=)")
+
+    @override_settings(MAP_API_KEY=FAKE_KEY)
+    def test_map_js_opens_the_dialog_modally_on_load_and_guards_the_plus_button(self):
+        with open(finders.find("core/map.js"), encoding="utf-8") as f:
+            source = f.read()
+        self.assertIn('hasAttribute("data-open-on-load")', source)
+        self.assertIn("if (dialog.open) return;", source)
+
+    def dialog_tag(self, response):
+        match = re.search(r'<dialog id="event-form-dialog"[^>]*>', response.content.decode())
+        self.assertIsNotNone(match)
+        return match.group(0)
 
     @override_settings(MAP_API_KEY=FAKE_KEY)
     def test_exact_duplicate_endpoint_returns_match(self):
