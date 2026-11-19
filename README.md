@@ -187,12 +187,30 @@ python manage.py import_events --until 2027-01-01T00:00:00-05:00
 ```
 
 Use `--source yale_connect`, `--source som` or `--source ticketmaster` to narrow
-the run; repeat the option for multiple sources. Repeat runs are safe. The
+the run; repeat the option for multiple sources. Ticketmaster is skipped when
+its key is missing; the two public Yale feeds still run. For a small live check,
+use `python manage.py import_events --source yale_connect --source som --limit-per-source 10`.
+The limit counts new events attempted per source, including unverified locations;
+it is not a guaranteed number of saved events. Campus room prefixes are removed
+for a fallback lookup only when a street address explicitly includes New Haven, CT.
+Hidden and online locations are skipped. Repeat runs are safe. The
 runtime budget defaults to 180 seconds (`AGGREGATOR_RUN_SECONDS`, maximum 300).
 If logs show `deadline_reached`, rerun to continue: already imported identities
 are skipped. The automatic job uses a rolling 90-day window (`AGGREGATOR_WINDOW_DAYS`,
 maximum 365). The CLI defaults to the initial year-end cutoff; use `--until`
 for other windows after that period.
+
+To select the next calendar day's events instead of limiting their count:
+
+```sh
+python manage.py import_events --source yale_connect --source som --tomorrow
+```
+
+`--tomorrow` selects event start times from midnight tomorrow (inclusive) to
+midnight the following day (exclusive), in `America/New_York`, including daylight
+saving time changes. It cannot be combined with `--until`. Omit `--limit-per-source`
+to attempt all eligible events within the normal runtime budget. Existing saved
+events remain in the database; this option only filters the import.
 
 ### Daily cron-job.org setup
 

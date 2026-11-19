@@ -81,6 +81,19 @@ class SearchEndpointTests(TestCase):
         make_event("Free Gig", price="0")
         self.assertEqual(self.client.get(self.url).json()["events"][0]["price"], "Free")
 
+    def test_missing_imported_image_does_not_break_search_results(self):
+        imported = make_event("Imported Talk", image="", price=None,
+                              source="som", external_id="som-no-image")
+        pictured = make_event("Jazz Night", days_ahead=2)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        results = {event["id"]: event for event in response.json()["events"]}
+        self.assertEqual(set(results), {imported.pk, pictured.pk})
+        self.assertEqual(results[imported.pk]["image_url"], "")
+        self.assertEqual(results[imported.pk]["price"], "Price not listed")
+        self.assertEqual(results[imported.pk]["detail_url"], f"/events/{imported.pk}/")
+        self.assertEqual(results[pictured.pk]["image_url"], "/event-photo/events/1/test.jpg")
+
     def test_imported_event_without_a_price_says_price_not_listed(self):
         make_event("Imported Talk", price=None, source="ticketmaster", external_id="tm-1")
         self.assertEqual(self.client.get(self.url).json()["events"][0]["price"], "Price not listed")

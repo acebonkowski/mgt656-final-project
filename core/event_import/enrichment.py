@@ -31,18 +31,33 @@ def locate(candidate):
     if candidate.latitude is not None and candidate.longitude is not None:
         return verified_coordinates(candidate.latitude, candidate.longitude, candidate.city, candidate.state)
     normalized = " ".join(candidate.location_text.casefold().split())
-    key = hashlib.sha256(normalized.encode()).hexdigest()
+    # Version the cache when address matching changes, including negative results.
+    key = hashlib.sha256(('v2:' + normalized).encode()).hexdigest()
     cached = EventGeocodeCache.objects.filter(key=key).first()
     if cached and cached.updated_at > timezone.now() - timezone.timedelta(days=30 if cached.result else 1):
         return cached.result
-    suggestions = geocoding.search(candidate.location_text)
+    queries = [candidate.location_text]
+    # Campus feeds prefix usable addresses with buildings, auditoriums and rooms.
+    # Retain the supplied city/state; never invent a locality for an ambiguous venue.
+    street = re.search(
+        r"\b\d+\s+[\w .'-]+?\s(?:Street|St\.?|Avenue|Ave\.?|Road|Rd\.?|Drive|Dr\.?|Lane|Ln\.?|Boulevard|Blvd\.?)\b.*",
+        candidate.location_text, re.I,
+    )
+    if street and re.search(r"\bNew Haven\b", street.group(), re.I) and re.search(r"\b(?:CT|Connecticut)\b", street.group()):
+        address = street.group()
+        if address != candidate.location_text:
+            queries.append(address)
     result = None
     # Only accept the provider's best match; do not force a distant venue into town.
-    if suggestions:
-        best = suggestions[0]
-        address = best["address"]
-        if re.search(r"\bNew Haven\b", address, re.I) and re.search(r"\b(CT|Connecticut)\b", address):
-            result = verified_coordinates(best["latitude"], best["longitude"], "New Haven", "CT")
+    for query in queries:
+        suggestions = geocoding.search(query)
+        if suggestions:
+            best = suggestions[0]
+            address = best["address"]
+            if re.search(r"\bNew Haven\b", address, re.I) and re.search(r"\b(CT|Connecticut)\b", address):
+                result = verified_coordinates(best["latitude"], best["longitude"], "New Haven", "CT")
+                if result:
+                    break
     EventGeocodeCache.objects.update_or_create(key=key, defaults={"result": result})
     return result
 

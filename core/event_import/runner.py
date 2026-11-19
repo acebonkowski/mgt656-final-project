@@ -35,7 +35,7 @@ def default_until():
     return datetime(2027, 1, 1, tzinfo=ZoneInfo("America/New_York"))
 
 
-def run_import(token, *, sources=DEFAULT_SOURCES, until=None):
+def run_import(token, *, sources=DEFAULT_SOURCES, until=None, limit_per_source=None, starts_from=None):
     """Caller owns lock. Stop between operations after budget; never log secrets.
 
     A crashed process leaves the lock held: explicit operator recovery is safer
@@ -53,6 +53,7 @@ def run_import(token, *, sources=DEFAULT_SOURCES, until=None):
         if until <= now:
             raise ValueError("Import window has ended; set a future --until")
         for source in sources:
+            attempted = 0
             if source == "ticketmaster" and not settings.TICKETMASTER_API_KEY:
                 counts["unconfigured_sources"] += 1
                 logger.info("event_import source=ticketmaster skipped=not_configured")
@@ -66,13 +67,19 @@ def run_import(token, *, sources=DEFAULT_SOURCES, until=None):
                     counts["skipped_past"] += batch.counts["past_start"]
                     counts["rejected_duplicates"] += batch.counts["duplicates"]
                     counts["invalid_source_events"] += batch.counts["invalid_or_unsupported"]
-                    for candidate in batch.events:
+                    for candidate in sorted(batch.events, key=lambda event: event.starts_at):
+                        if (starts_from is not None and candidate.starts_at < starts_from) or candidate.starts_at >= until:
+                            counts["outside_window"] += 1
+                            continue
+                        if limit_per_source is not None and attempted >= limit_per_source:
+                            break
                         if time.monotonic() >= deadline:
                             counts["deadline_reached"] += 1
                             break
                         if Event.objects.filter(source=candidate.source, external_id=candidate.external_id).exists():
                             counts["already_imported"] += 1
                             continue
+                        attempted += 1
                         try:
                             if candidate.category_source == "default" and classification_attempts < settings.AGGREGATOR_MAX_CLASSIFICATIONS_PER_RUN:
                                 classification_attempts += 1
@@ -107,7 +114,7 @@ def run_import(token, *, sources=DEFAULT_SOURCES, until=None):
                         except Exception as exc:
                             counts["failed"] += 1
                             logger.warning("event_import event_failed source=%s type=%s", source, type(exc).__name__)
-                    if counts["deadline_reached"]:
+                    if counts["deadline_reached"] or (limit_per_source is not None and attempted >= limit_per_source):
                         break
             except Exception as exc:
                 counts["failed"] += 1
