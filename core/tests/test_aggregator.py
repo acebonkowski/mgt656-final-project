@@ -2,7 +2,7 @@ import io
 import json
 import time
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
@@ -146,6 +146,42 @@ class AggregatorTests(TestCase):
         self.assertIsNone(enrichment.verified_coordinates("0", "0", "New Haven", "CT"))
         self.assertIsNone(enrichment.verified_coordinates("NaN", "-72.9", "New Haven", "CT"))
 
+    def test_campus_room_prefix_falls_back_to_supplied_street_address(self):
+        candidate = replace(self.candidate, location_text="Kroon Hall, Burke Auditorium, 165 Whitney Avenue, New Haven, CT 06511, United States")
+        suggestion = {"address": "165 Whitney Avenue, New Haven, Connecticut",
+                      "latitude": 41.3083, "longitude": -72.9279}
+        with mock.patch("core.geocoding.search", side_effect=[[], [suggestion]]) as search:
+            self.assertEqual(enrichment.locate(candidate), COORDS)
+        self.assertEqual(search.call_args_list[1].args[0], "165 Whitney Avenue, New Haven, CT 06511, United States")
+
+    def test_fallback_does_not_relocate_an_out_of_town_event(self):
+        candidate = replace(self.candidate, location_text="Ohiri Field, 95 N Harvard St, Boston, MA 02134")
+        with mock.patch("core.geocoding.search", return_value=[]) as search:
+            self.assertIsNone(enrichment.locate(candidate))
+        search.assert_called_once()
+
+    @override_settings(TICKETMASTER_API_KEY="")
+    def test_missing_ticketmaster_key_keeps_both_open_feeds_and_per_source_limit(self):
+        def batches(source, **kwargs):
+            return [Preview([replace(self.candidate, source=source, external_id=f"{source}-{i}",
+                                     location_text=f"{source} hall {i}") for i in range(3)])]
+        with mock.patch.object(runner, "source_batches", side_effect=batches) as fetch, \
+                mock.patch.object(enrichment, "locate", return_value=COORDS), \
+                mock.patch.object(runner.timezone, "now", return_value=NOW):
+            result = runner.run_import(runner.acquire_lock(), until=UNTIL, limit_per_source=1)
+        self.assertEqual(result["imported"], 2)
+        self.assertEqual(result["unconfigured_sources"], 1)
+        self.assertEqual([call.args[0] for call in fetch.call_args_list], ["yale_connect", "som"])
+        self.assertEqual(set(Event.objects.values_list("source", flat=True)), {"yale_connect", "som"})
+
+    def test_hidden_and_online_locations_are_not_geocoded(self):
+        for location in ("Online Event", "Sign in to download the location", "-"):
+            data = FIXTURE.read_bytes().replace(b"Example Hall\\, New Haven", location.encode())
+            data = data.replace(b"Example Hall", location.encode())
+            batch = parse_feed(data, "som", now=NOW)
+            self.assertEqual(batch.events, [])
+            self.assertEqual(batch.counts["no_physical_location"], 2)
+
     def test_ai_category_validates_response(self):
         with mock.patch("core.llm.chat", return_value='{"category":"made_up"}'):
             with self.assertRaises(ValueError):
@@ -193,6 +229,76 @@ class AggregatorTests(TestCase):
             for _ in range(2):
                 call_command("import_events", source=["som"], until=UNTIL.isoformat(), stdout=io.StringIO())
         self.assertEqual(Event.objects.count(), 1)
+
+    def test_tomorrow_command_imports_only_starts_within_local_day(self):
+        from django.core.management import call_command
+        # NOW is Nov 16 at 7 PM Eastern; tomorrow starts at Nov 17 05:00 UTC.
+        lower = datetime(2026, 11, 17, 5, tzinfo=timezone.utc)
+        upper = lower + timedelta(days=1)
+        events = [replace(self.candidate, external_id=str(i), location_text=f"Hall {i}",
+                          starts_at=start, ends_at=start + timedelta(hours=1))
+                  for i, start in enumerate([lower - timedelta(seconds=1), lower,
+                                             upper - timedelta(seconds=1), upper])]
+        with mock.patch.object(runner, "source_batches", return_value=[Preview(events)]), \
+                mock.patch.object(enrichment, "locate", return_value=COORDS) as locate, \
+                mock.patch.object(runner.timezone, "now", return_value=NOW):
+            call_command("import_events", source=["som"], tomorrow=True, stdout=io.StringIO())
+        self.assertEqual(set(Event.objects.values_list("external_id", flat=True)), {"1", "2"})
+        self.assertEqual(locate.call_count, 2)
+
+    def test_tomorrow_handles_daylight_saving_time_boundaries(self):
+        from django.core.management import call_command
+        for now, hours in [(datetime(2026, 3, 7, 17, tzinfo=timezone.utc), 23),
+                           (datetime(2026, 10, 31, 17, tzinfo=timezone.utc), 25)]:
+            with self.subTest(hours=hours), \
+                    mock.patch.object(runner.timezone, "now", return_value=now), \
+                    mock.patch("core.management.commands.import_events.acquire_lock", return_value="test"), \
+                    mock.patch("core.management.commands.import_events.run_import", return_value={}) as run:
+                call_command("import_events", tomorrow=True, stdout=io.StringIO())
+                options = run.call_args.kwargs
+                duration = options["until"].astimezone(timezone.utc) - options["starts_from"].astimezone(timezone.utc)
+                self.assertEqual(duration, timedelta(hours=hours))
+                self.assertIsNone(options["limit_per_source"])
+
+    def test_next_week_imports_all_seven_days_with_exclusive_end(self):
+        from django.core.management import call_command
+        lower = datetime(2026, 11, 17, 5, tzinfo=timezone.utc)
+        upper = lower + timedelta(days=7)
+        starts = [lower - timedelta(seconds=1), lower, lower + timedelta(days=3),
+                  upper - timedelta(seconds=1), upper]
+        events = [replace(self.candidate, external_id=str(i), location_text=f"Hall {i}",
+                          starts_at=start, ends_at=start + timedelta(hours=1))
+                  for i, start in enumerate(starts)]
+        with mock.patch.object(runner, "source_batches", return_value=[Preview(events)]), \
+                mock.patch.object(enrichment, "locate", return_value=COORDS) as locate, \
+                mock.patch.object(runner.timezone, "now", return_value=NOW):
+            call_command("import_events", source=["som"], next_week=True, stdout=io.StringIO())
+        self.assertEqual(set(Event.objects.values_list("external_id", flat=True)), {"1", "2", "3"})
+        self.assertEqual(locate.call_count, 3)
+
+    def test_next_week_handles_daylight_saving_time_and_conflicting_flags(self):
+        from django.core.management import call_command, CommandError
+        for now, hours in [(datetime(2026, 3, 7, 17, tzinfo=timezone.utc), 167),
+                           (datetime(2026, 10, 31, 17, tzinfo=timezone.utc), 169)]:
+            with self.subTest(hours=hours), \
+                    mock.patch.object(runner.timezone, "now", return_value=now), \
+                    mock.patch("core.management.commands.import_events.acquire_lock", return_value="test"), \
+                    mock.patch("core.management.commands.import_events.run_import", return_value={}) as run:
+                call_command("import_events", next_week=True, stdout=io.StringIO())
+                options = run.call_args.kwargs
+                duration = options["until"].astimezone(timezone.utc) - options["starts_from"].astimezone(timezone.utc)
+                self.assertEqual(duration, timedelta(hours=hours))
+                self.assertIsNone(options["limit_per_source"])
+        for options in ({"tomorrow": True}, {"until": UNTIL.isoformat()}):
+            with self.assertRaisesMessage(CommandError, "Use --next-week without"):
+                call_command("import_events", next_week=True, **options)
+        self.assertFalse(EventImportLock.objects.exists())
+
+    def test_tomorrow_rejects_conflicting_cutoff_before_acquiring_lock(self):
+        from django.core.management import call_command, CommandError
+        with self.assertRaisesMessage(CommandError, "Use either --tomorrow or --until"):
+            call_command("import_events", tomorrow=True, until=UNTIL.isoformat())
+        self.assertFalse(EventImportLock.objects.exists())
 
 
 class SourceTests(TestCase):

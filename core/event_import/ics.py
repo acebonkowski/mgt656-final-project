@@ -97,7 +97,7 @@ def parse_feed(data, source, *, now, until=None):
             uid = str(event.get("UID", "")).strip()
             if not all((name, location, uid)) or url.scheme not in ("http", "https") or not url.hostname:
                 raise ValueError("Missing required text or source URL")
-            if location.casefold() in {"online", "online only", "zoom", "tbd", "tba", "to be announced"}:
+            if location.casefold() in {"online", "online only", "online event", "zoom", "tbd", "tba", "to be announced", "-", "sign in to download the location"}:
                 result.counts["no_physical_location"] += 1
                 continue
             external_id = parse_qs(url.query).get("id", [uid])[0]
