@@ -22,7 +22,7 @@
             data-geocode-url="{% url 'geocode_address' %}"
             data-duplicate-url="{% url 'duplicate_event' %}"
             {% if event_form.errors %} open{% endif %}>
-      <form method="post" action="{% url 'map' %}" class="event-form">
+      <form method="post" action="{% url 'map' %}" enctype="multipart/form-data" class="event-form">
         {% csrf_token %}
         <div class="event-form-heading">
           <h2 id="event-form-title">Create event</h2>
