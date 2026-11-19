@@ -144,12 +144,23 @@ class MapEventTests(TestCase):
         response = self.client.get("/map/")
         self.assertContains(response, 'id="open-event-form"')
         self.assertContains(response, "Create event")
+        # The test client always posts multipart, so it can't catch a missing
+        # enctype; a real browser then drops the uploaded image (#55).
+        create_form = re.search(r'<form[^>]*action="/map/"[^>]*>', response.content.decode())
+        self.assertIsNotNone(create_form)
+        self.assertIn('enctype="multipart/form-data"', create_form.group(0))
 
-        response = self.client.post("/map/", self.event_values())
+        # Coordinates as MapTiler returns them, with more than 6 decimals (#55).
+        response = self.client.post("/map/", self.event_values(
+            latitude="41.30830049514770",
+            longitude="-72.92790055274963",
+        ))
         self.assertRedirects(response, "/map/", fetch_redirect_response=False)
         event = Event.objects.get(name="Map Event")
         self.assertEqual(event.creator, self.user)
         self.assertEqual(event.price, Decimal("0"))
+        self.assertEqual(event.latitude, Decimal("41.308300"))
+        self.assertEqual(event.longitude, Decimal("-72.927901"))
 
         response = self.client.get("/map/")
         self.assertIn(event.pk, [item["id"] for item in response.context["map_config"]["events"]])
@@ -233,6 +244,22 @@ class MapEventTests(TestCase):
         self.client.logout()
         response = self.client.get("/map/geocode/", {"q": "Yale Commons"})
         self.assertEqual(response.status_code, 302)
+
+    @override_settings(MAP_API_KEY=FAKE_KEY)
+    def test_geocoder_rounds_maptiler_coordinates_to_six_decimals(self):
+        # urlopen is mocked, so this never touches the network.
+        from core import geocoding
+        payload = b'{"features": [{"place_name": "Yale Commons, New Haven, CT",' \
+                  b' "center": [-72.92790055274963, 41.3083004951477]}]}'
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = payload
+        with mock.patch("core.geocoding.urlopen", return_value=response):
+            suggestions = geocoding.search("Yale Commons")
+        self.assertEqual(suggestions, [{
+            "address": "Yale Commons, New Haven, CT",
+            "latitude": 41.3083,
+            "longitude": -72.927901,
+        }])
 
     @override_settings(MAP_API_KEY=FAKE_KEY)
     def test_location_autocomplete_script_and_confirmed_field_are_rendered(self):

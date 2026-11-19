@@ -7,6 +7,8 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+COORDINATE_DECIMAL_PLACES = 6
+
 
 class GeocodingUnavailable(Exception):
     pass
@@ -41,7 +43,9 @@ def search(query):
             or feature.get("place_name_en")
             or feature.get("text")
             or "",
-            "latitude": center[1],
-            "longitude": center[0],
+            # Event coordinates are stored with 6 decimal places (~0.1 m);
+            # MapTiler returns more, which the form would reject (#55).
+            "latitude": round(center[1], COORDINATE_DECIMAL_PLACES),
+            "longitude": round(center[0], COORDINATE_DECIMAL_PLACES),
         })
     return [item for item in suggestions if item["address"]]

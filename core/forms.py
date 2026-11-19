@@ -1,5 +1,5 @@
 from datetime import datetime
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 import base64
 import binascii
 from urllib.parse import urlsplit
@@ -48,6 +48,21 @@ class OnboardingForm(forms.ModelForm):
                 field.widget.attrs["aria-invalid"] = "true"
 
 
+class CoordinateField(forms.DecimalField):
+    """DecimalField that rounds extra precision instead of rejecting it.
+
+    Geocoders return coordinates with ~14 decimal places; the hidden inputs
+    must still validate against the model's 6 (#55). Rounding happens in
+    to_python so it runs before the max_digits/decimal_places validators.
+    """
+
+    def to_python(self, value):
+        value = super().to_python(value)
+        if value is None or not value.is_finite():
+            return value
+        return value.quantize(Decimal(1).scaleb(-self.decimal_places), rounding=ROUND_HALF_UP)
+
+
 class EventForm(forms.Form):
     image = forms.FileField(
         label="Image",
@@ -63,14 +78,14 @@ class EventForm(forms.Form):
     end_time = forms.TimeField(widget=forms.TimeInput(attrs={"type": "time"}))
     location = forms.CharField(max_length=500, label="Address")
     location_confirmed = forms.CharField(required=False, widget=forms.HiddenInput)
-    latitude = forms.DecimalField(
+    latitude = CoordinateField(
         max_digits=9,
         decimal_places=6,
         min_value=Decimal("-90"),
         max_value=Decimal("90"),
         widget=forms.HiddenInput,
     )
-    longitude = forms.DecimalField(
+    longitude = CoordinateField(
         max_digits=9,
         decimal_places=6,
         min_value=Decimal("-180"),
