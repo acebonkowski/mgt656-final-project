@@ -29,7 +29,7 @@ def event_json(event):
         "location": event.location,
         "latitude": float(event.latitude),
         "longitude": float(event.longitude),
-        "price": "Free" if event.price == 0 else f"${event.price:.2f}",
+        "price": event.price_label,
         "category": event.category,
         "category_label": event.get_category_display(),
         "start_at": event.start_at.astimezone(NEW_YORK).isoformat(),

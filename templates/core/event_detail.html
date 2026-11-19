@@ -48,6 +48,8 @@
     {# Field order is fixed by #32: image, name + description, category, date & time, location, price, link. #}
     {% if event.image %}
       <img class="event-detail-image" src="{% url 'event_photo' event.image %}" alt="">
+    {% else %}
+      <p class="event-image-placeholder">Image unavailable</p>
     {% endif %}
     <h1 id="event-detail-title">{{ event.name }}</h1>
     <p class="event-description">{{ event.description }}</p>
@@ -60,8 +62,9 @@
       </dd>
       {% endtimezone %}
       <dt>Location</dt><dd data-field="location">{{ event.location }}</dd>
-      <dt>Price</dt><dd data-field="price">{% if event.price == 0 %}Free{% else %}${{ event.price|floatformat:2 }}{% endif %}</dd>
+      <dt>Price</dt><dd data-field="price">{{ event.price_label }}</dd>
       <dt>Link</dt><dd data-field="link"><a href="{{ event.link }}" target="_blank" rel="noopener">{{ event.link }}</a></dd>
+      {% if event.source %}<dt>Source</dt><dd data-field="source">{{ event.source_label }}</dd>{% endif %}
     </dl>
   </article>
 {% if not popup %}

@@ -81,6 +81,10 @@ class SearchEndpointTests(TestCase):
         make_event("Free Gig", price="0")
         self.assertEqual(self.client.get(self.url).json()["events"][0]["price"], "Free")
 
+    def test_imported_event_without_a_price_says_price_not_listed(self):
+        make_event("Imported Talk", price=None, source="ticketmaster", external_id="tm-1")
+        self.assertEqual(self.client.get(self.url).json()["events"][0]["price"], "Price not listed")
+
     def test_results_share_the_map_event_format(self):
         make_event("Jazz Night", price="5")
         map_event = self.client.get("/map/").context["map_config"]["events"][0]

@@ -61,7 +61,7 @@ class Event(models.Model):
     location = models.CharField(max_length=500)
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
     longitude = models.DecimalField(max_digits=9, decimal_places=6)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     link = models.URLField(max_length=2048)
     creator = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -76,6 +76,15 @@ class Event(models.Model):
     class Meta:
         ordering = ["start_at"]
         constraints = [
+            models.UniqueConstraint(
+                fields=["source", "external_id"],
+                condition=~models.Q(source="") & ~models.Q(external_id=""),
+                name="event_source_external_id_unique",
+            ),
+            models.UniqueConstraint(
+                fields=["location", "start_at", "end_at"],
+                name="event_location_interval_unique",
+            ),
             models.CheckConstraint(
                 condition=models.Q(price__gte=0),
                 name="event_price_gte_zero",
@@ -88,6 +97,18 @@ class Event(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def price_label(self):
+        # Imported events (#33) may have no price.
+        if self.price is None:
+            return "Price not listed"
+        return "Free" if self.price == 0 else f"${self.price:.2f}"
+
+    @property
+    def source_label(self):
+        return {"yale_connect": "Yale Connect", "som": "Yale SOM",
+                "ticketmaster": "Ticketmaster"}.get(self.source, self.source)
 
     @property
     def address(self):
@@ -140,3 +161,15 @@ class AIUsage(models.Model):
 
     def __str__(self):
         return f"{self.kind} by {self.user_id} at {self.created_at:%Y-%m-%d %H:%M}"
+
+
+class EventImportLock(models.Model):
+    name = models.CharField(max_length=40, primary_key=True)
+    token = models.CharField(max_length=36, blank=True)
+    started_at = models.DateTimeField(null=True)
+
+
+class EventGeocodeCache(models.Model):
+    key = models.CharField(max_length=64, primary_key=True)
+    result = models.JSONField(null=True)
+    updated_at = models.DateTimeField(auto_now=True)

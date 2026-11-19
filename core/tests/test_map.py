@@ -153,6 +153,10 @@ class MapEventTests(TestCase):
 
         response = self.client.get("/map/")
         self.assertIn(event.pk, [item["id"] for item in response.context["map_config"]["events"]])
+        marker = next(item for item in response.context["map_config"]["events"] if item["id"] == event.pk)
+        detail = self.client.get(marker["url"])
+        self.assertEqual(detail.status_code, 200)
+        self.assertContains(detail, event.name)
         self.assertContains(response, "Free")
 
     @override_settings(MAP_API_KEY=FAKE_KEY)

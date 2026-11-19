@@ -586,3 +586,25 @@ body {
     padding-top: 3rem;
   }
 }
+
+/* Event pins stay clickable when a venue occupies the same coordinates. */
+.map .event-marker {
+  z-index: 2;
+  cursor: pointer;
+}
+
+.map .maplibregl-popup {
+  z-index: 3;
+}
+
+.map .maplibregl-popup-content {
+  color: #172033;
+}
+
+.map .maplibregl-popup-content a {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.35rem 0;
+  color: #174ea6;
+  text-decoration: underline;
+}

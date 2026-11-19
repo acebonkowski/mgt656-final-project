@@ -5,6 +5,7 @@ The clock is fixed (NOW, a Wednesday) so date rules are deterministic. Tests
 that need Postgres full-text search are skipped on SQLite; CI runs on Postgres.
 """
 
+import itertools
 import unittest
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -28,6 +29,9 @@ def at(day, hour, minute=0):
     return datetime(2026, 11, day, hour, minute, tzinfo=NY)
 
 
+_rooms = itertools.count(1)
+
+
 def make_event(name="Event", start=None, end=None, **fields):
     start = start or at(19, 18)
     values = {
@@ -37,7 +41,8 @@ def make_event(name="Event", start=None, end=None, **fields):
         "category": "social_community",
         "start_at": start,
         "end_at": end or start + timedelta(hours=2),
-        "location": "Yale Commons",
+        # Unique per event: #33 rejects two events at the same place and time.
+        "location": f"Yale Commons, room {next(_rooms)}",
         "latitude": f"{YALE[0]:.6f}",
         "longitude": f"{YALE[1]:.6f}",
         "price": "0",

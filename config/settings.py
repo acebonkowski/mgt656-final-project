@@ -289,3 +289,15 @@ LOGGING = {
         "django": {"handlers": ["stdout"], "level": LOG_LEVEL, "propagate": False},
     },
 }
+
+
+# Event importer: opt-in scheduler and paid AI calls; keys remain server-side.
+AGGREGATOR_TOKEN = os.environ.get("AGGREGATOR_TOKEN", "")
+AGGREGATOR_MAX_IMAGES_PER_RUN = max(0, int(os.environ.get("AGGREGATOR_MAX_IMAGES_PER_RUN", "0")))
+AGGREGATOR_MAX_CLASSIFICATIONS_PER_RUN = max(0, int(os.environ.get("AGGREGATOR_MAX_CLASSIFICATIONS_PER_RUN", "0")))
+AGGREGATOR_RUN_SECONDS = min(300, max(10, int(os.environ.get("AGGREGATOR_RUN_SECONDS", "180"))))
+AGGREGATOR_YALE_URL = os.environ.get("AGGREGATOR_YALE_URL", "https://yaleconnect.yale.edu/ical/yale/ical_yale.ics")
+AGGREGATOR_SOM_URL = os.environ.get("AGGREGATOR_SOM_URL", "https://groups.som.yale.edu/ical/yalesom/ical_yalesom.ics")
+TICKETMASTER_API_KEY = os.environ.get("TICKETMASTER_API_KEY", "")
+
+AGGREGATOR_WINDOW_DAYS = min(365, max(1, int(os.environ.get("AGGREGATOR_WINDOW_DAYS", "90"))))
