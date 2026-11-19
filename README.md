@@ -212,6 +212,17 @@ saving time changes. It cannot be combined with `--until`. Omit `--limit-per-sou
 to attempt all eligible events within the normal runtime budget. Existing saved
 events remain in the database; this option only filters the import.
 
+For the next seven full days, starting tomorrow, use:
+
+```sh
+python manage.py import_events --source yale_connect --source som --next-week
+```
+
+This covers midnight tomorrow through midnight seven days later (exclusive),
+in New Haven time, rather than the next Monday–Sunday calendar week. It cannot
+be combined with `--tomorrow` or `--until`. Omit `--limit-per-source` to avoid
+an event-count cap; location validation and the runtime budget still apply.
+
 ### Daily cron-job.org setup
 
 Create a free cron-job.org job for each environment to import:

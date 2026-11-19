@@ -260,6 +260,40 @@ class AggregatorTests(TestCase):
                 self.assertEqual(duration, timedelta(hours=hours))
                 self.assertIsNone(options["limit_per_source"])
 
+    def test_next_week_imports_all_seven_days_with_exclusive_end(self):
+        from django.core.management import call_command
+        lower = datetime(2026, 11, 17, 5, tzinfo=timezone.utc)
+        upper = lower + timedelta(days=7)
+        starts = [lower - timedelta(seconds=1), lower, lower + timedelta(days=3),
+                  upper - timedelta(seconds=1), upper]
+        events = [replace(self.candidate, external_id=str(i), location_text=f"Hall {i}",
+                          starts_at=start, ends_at=start + timedelta(hours=1))
+                  for i, start in enumerate(starts)]
+        with mock.patch.object(runner, "source_batches", return_value=[Preview(events)]), \
+                mock.patch.object(enrichment, "locate", return_value=COORDS) as locate, \
+                mock.patch.object(runner.timezone, "now", return_value=NOW):
+            call_command("import_events", source=["som"], next_week=True, stdout=io.StringIO())
+        self.assertEqual(set(Event.objects.values_list("external_id", flat=True)), {"1", "2", "3"})
+        self.assertEqual(locate.call_count, 3)
+
+    def test_next_week_handles_daylight_saving_time_and_conflicting_flags(self):
+        from django.core.management import call_command, CommandError
+        for now, hours in [(datetime(2026, 3, 7, 17, tzinfo=timezone.utc), 167),
+                           (datetime(2026, 10, 31, 17, tzinfo=timezone.utc), 169)]:
+            with self.subTest(hours=hours), \
+                    mock.patch.object(runner.timezone, "now", return_value=now), \
+                    mock.patch("core.management.commands.import_events.acquire_lock", return_value="test"), \
+                    mock.patch("core.management.commands.import_events.run_import", return_value={}) as run:
+                call_command("import_events", next_week=True, stdout=io.StringIO())
+                options = run.call_args.kwargs
+                duration = options["until"].astimezone(timezone.utc) - options["starts_from"].astimezone(timezone.utc)
+                self.assertEqual(duration, timedelta(hours=hours))
+                self.assertIsNone(options["limit_per_source"])
+        for options in ({"tomorrow": True}, {"until": UNTIL.isoformat()}):
+            with self.assertRaisesMessage(CommandError, "Use --next-week without"):
+                call_command("import_events", next_week=True, **options)
+        self.assertFalse(EventImportLock.objects.exists())
+
     def test_tomorrow_rejects_conflicting_cutoff_before_acquiring_lock(self):
         from django.core.management import call_command, CommandError
         with self.assertRaisesMessage(CommandError, "Use either --tomorrow or --until"):

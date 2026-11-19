@@ -17,6 +17,7 @@ class Command(BaseCommand):
         parser.add_argument("--limit-per-source", type=int, help="Maximum new events to attempt per source (for small live checks)")
         parser.add_argument("--until", help="Exclusive ISO start cutoff with offset; default Jan 1, 2027 Eastern")
         parser.add_argument("--tomorrow", action="store_true", help="Import events starting tomorrow, midnight to midnight in America/New_York")
+        parser.add_argument("--next-week", action="store_true", help="Import the next seven full days, starting tomorrow in America/New_York")
         parser.add_argument("--release-lock", metavar="TOKEN", help="Recovery only after confirming the old worker stopped")
 
     def handle(self, *args, **options):
@@ -27,13 +28,16 @@ class Command(BaseCommand):
             return
         if options["tomorrow"] and options["until"]:
             raise CommandError("Use either --tomorrow or --until")
+        if options["next_week"] and (options["tomorrow"] or options["until"]):
+            raise CommandError("Use --next-week without --tomorrow or --until")
         starts_from = None
         try:
-            if options["tomorrow"]:
+            if options["tomorrow"] or options["next_week"]:
                 local_zone = ZoneInfo("America/New_York")
                 tomorrow = timezone.now().astimezone(local_zone).date() + timedelta(days=1)
                 starts_from = datetime.combine(tomorrow, time.min, tzinfo=local_zone)
-                until = datetime.combine(tomorrow + timedelta(days=1), time.min, tzinfo=local_zone)
+                days = 7 if options["next_week"] else 1
+                until = datetime.combine(tomorrow + timedelta(days=days), time.min, tzinfo=local_zone)
             else:
                 until = aware_datetime(datetime.fromisoformat(options["until"])) if options["until"] else default_until()
             if until <= timezone.now():
