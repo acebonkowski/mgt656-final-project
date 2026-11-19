@@ -223,6 +223,41 @@ in New Haven time, rather than the next Monday–Sunday calendar week. It cannot
 be combined with `--tomorrow` or `--until`. Omit `--limit-per-source` to avoid
 an event-count cap; location validation and the runtime budget still apply.
 
+### Import automatically on server startup
+
+Set `AGGREGATOR_IMPORT_ON_STARTUP=true` to start a background import when the
+WSGI server starts (Django `runserver` locally or the deployed Gunicorn workers).
+It uses the same next-seven-full-days window as `--next-week`, starting tomorrow
+in New Haven time. The server serves requests while the import runs; refresh the
+map after the `event_import end` log to see newly saved events.
+
+For local development, export the settings into your shell before starting:
+
+```sh
+export DJANGO_DEBUG=true
+export AGGREGATOR_IMPORT_ON_STARTUP=true
+# MAP_API_KEY must also be set in this shell; .env is not automatically loaded.
+python manage.py migrate
+python manage.py runserver
+```
+
+The setting defaults to false. The staging and production Blueprints enable it; for an existing
+service not managed by that Blueprint, set it in Render's Environment settings
+and deploy the updated code. This requires the
+existing server-side MapTiler key for Yale locations, not a Render API key or
+an aggregator endpoint token. Startup does not enable paid AI generation.
+
+Workers and scheduled imports share the same database overlap lock, and repeated
+imports skip existing events. Provider or database errors are logged without
+preventing the web server from starting. Startup imports use the same runtime
+budget and stale-lock recovery as scheduled imports. A restart during a run can
+interrupt it. With this hook, keep Gunicorn's default worker loading; do not use
+`--preload`, which would start the thread in the master process.
+
+Refreshing the page only reads saved events; it does not fetch external feeds.
+Startup importing supplements the daily job below: a server that stays running
+needs the scheduled job to pick up new events without restarting.
+
 ### Daily cron-job.org setup
 
 Create a free cron-job.org job for each environment to import:

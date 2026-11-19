@@ -3,7 +3,7 @@ import logging
 import time
 from collections import Counter
 from dataclasses import replace
-from datetime import datetime
+from datetime import datetime, time as datetime_time, timedelta
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
@@ -33,6 +33,14 @@ def release_lock(token):
 
 def default_until():
     return datetime(2027, 1, 1, tzinfo=ZoneInfo("America/New_York"))
+
+
+def next_days_window(days):
+    """Full local calendar days starting tomorrow, with an exclusive end."""
+    local_zone = ZoneInfo("America/New_York")
+    tomorrow = timezone.now().astimezone(local_zone).date() + timedelta(days=1)
+    return (datetime.combine(tomorrow, datetime_time.min, tzinfo=local_zone),
+            datetime.combine(tomorrow + timedelta(days=days), datetime_time.min, tzinfo=local_zone))
 
 
 def run_import(token, *, sources=DEFAULT_SOURCES, until=None, limit_per_source=None, starts_from=None):

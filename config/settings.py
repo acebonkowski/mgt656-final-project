@@ -292,6 +292,7 @@ LOGGING = {
 
 
 # Event importer: opt-in scheduler and paid AI calls; keys remain server-side.
+AGGREGATOR_IMPORT_ON_STARTUP = env_bool("AGGREGATOR_IMPORT_ON_STARTUP", default=False)
 AGGREGATOR_TOKEN = os.environ.get("AGGREGATOR_TOKEN", "")
 AGGREGATOR_MAX_IMAGES_PER_RUN = max(0, int(os.environ.get("AGGREGATOR_MAX_IMAGES_PER_RUN", "0")))
 AGGREGATOR_MAX_CLASSIFICATIONS_PER_RUN = max(0, int(os.environ.get("AGGREGATOR_MAX_CLASSIFICATIONS_PER_RUN", "0")))
