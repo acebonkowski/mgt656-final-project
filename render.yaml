@@ -44,6 +44,8 @@ services:
         value: profile-photos
       - key: AGGREGATOR_TOKEN
         generateValue: true
+      - key: AGGREGATOR_IMPORT_ON_STARTUP
+        value: "true"
       - key: AGGREGATOR_MAX_IMAGES_PER_RUN
         value: "0"
       - key: AGGREGATOR_MAX_CLASSIFICATIONS_PER_RUN
@@ -91,6 +93,8 @@ services:
         value: profile-photos
       - key: AGGREGATOR_TOKEN
         generateValue: true
+      - key: AGGREGATOR_IMPORT_ON_STARTUP
+        value: "true"
       - key: AGGREGATOR_MAX_IMAGES_PER_RUN
         value: "0"
       - key: AGGREGATOR_MAX_CLASSIFICATIONS_PER_RUN

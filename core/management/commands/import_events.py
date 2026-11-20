@@ -1,12 +1,11 @@
 import json
-from datetime import datetime, time, timedelta
-from zoneinfo import ZoneInfo
+from datetime import datetime
 
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
 from core.event_import.ics import aware_datetime
-from core.event_import.runner import DEFAULT_SOURCES, acquire_lock, default_until, release_lock, run_import
+from core.event_import.runner import DEFAULT_SOURCES, acquire_lock, default_until, next_days_window, release_lock, run_import
 
 
 class Command(BaseCommand):
@@ -33,11 +32,8 @@ class Command(BaseCommand):
         starts_from = None
         try:
             if options["tomorrow"] or options["next_week"]:
-                local_zone = ZoneInfo("America/New_York")
-                tomorrow = timezone.now().astimezone(local_zone).date() + timedelta(days=1)
-                starts_from = datetime.combine(tomorrow, time.min, tzinfo=local_zone)
                 days = 7 if options["next_week"] else 1
-                until = datetime.combine(tomorrow + timedelta(days=days), time.min, tzinfo=local_zone)
+                starts_from, until = next_days_window(days)
             else:
                 until = aware_datetime(datetime.fromisoformat(options["until"])) if options["until"] else default_until()
             if until <= timezone.now():
