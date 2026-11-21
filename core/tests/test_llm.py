@@ -7,11 +7,12 @@ from unittest import mock
 
 from django.core.management import CommandError, call_command
 from django.test import SimpleTestCase, override_settings
-from openai import OpenAIError
+from openai import BadRequestError, OpenAIError
 
 from core import llm
 
-CONFIGURED = dict(OPENROUTER_API_KEY="fake-key", OPENROUTER_MODEL="test/model")
+CONFIGURED = dict(OPENROUTER_API_KEY="fake-key", OPENROUTER_MODEL="test/model",
+                  OPENROUTER_IMAGE_MODEL="test/image-model")
 
 
 def fake_response(content):
@@ -56,6 +57,56 @@ class ChatTests(SimpleTestCase):
         kwargs = self.create.call_args.kwargs
         self.assertEqual(kwargs["extra_body"]["modalities"], ["image", "text"])
 
+    def test_generate_image_uses_image_model_not_text_model(self):
+        self.create.return_value = SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(
+            images=[{"image_url": {"url": "data:image/png;base64,aGVsbG8="}}]
+        ))])
+        llm.generate_image("A campus event")
+        kwargs = self.create.call_args.kwargs
+        self.assertEqual(kwargs["model"], "test/image-model")
+        self.assertEqual(kwargs["max_tokens"], llm.IMAGE_MAX_TOKENS)
+        self.assertGreaterEqual(kwargs["max_tokens"], 2048)
+        client_kwargs = self.openai_cls.call_args.kwargs
+        self.assertEqual(client_kwargs["base_url"], "https://openrouter.ai/api/v1")
+        # One attempt that ends before gunicorn's 30 s worker timeout.
+        self.assertEqual(client_kwargs["max_retries"], 0)
+        self.assertLess(client_kwargs["timeout"], 30)
+
+    @override_settings(OPENROUTER_MODEL="")
+    def test_generate_image_does_not_need_text_model(self):
+        self.create.return_value = SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(
+            images=[{"image_url": {"url": "data:image/png;base64,aGVsbG8="}}]
+        ))])
+        data, _ = llm.generate_image("A campus event")
+        self.assertEqual(data, b"hello")
+
+    def test_generate_image_provider_error_logs_status_and_message_not_key_or_prompt(self):
+        body = {"message": "test/image-model is not a valid model ID", "code": 400,
+                "metadata": {"raw": "upstream detail"}}
+        response = SimpleNamespace(status_code=400, request=None, headers={})
+        self.create.side_effect = BadRequestError(
+            f"Error code: 400 - {{'error': {body}}}", response=response, body=body,
+        )
+        prompt = "Secret party at the Elm Street loft"
+        with self.assertLogs("core.llm", "WARNING") as logs, self.assertRaises(llm.LLMUnavailable) as caught:
+            llm.generate_image(prompt)
+        output = "\n".join(logs.output)
+        self.assertIn("BadRequestError", output)
+        self.assertIn("status=400", output)
+        self.assertIn("test/image-model is not a valid model ID", output)
+        self.assertIn("model=test/image-model", output)
+        self.assertNotIn("fake-key", output)
+        self.assertNotIn(prompt, output)
+        self.assertNotIn("upstream detail", output)
+        # Users get the generic message, not the provider's.
+        self.assertEqual(str(caught.exception), "The AI image service is temporarily unavailable.")
+
+    def test_generate_image_connection_error_logs_without_status(self):
+        self.create.side_effect = OpenAIError("Connection error.")
+        with self.assertLogs("core.llm", "WARNING") as logs, self.assertRaises(llm.LLMUnavailable):
+            llm.generate_image("A campus event")
+        self.assertIn("status=- message=Connection error.", logs.output[0])
+
     def test_generate_image_empty_response_becomes_llm_unavailable(self):
         self.create.return_value = SimpleNamespace(choices=[SimpleNamespace(
             message=SimpleNamespace(images=[])
@@ -75,6 +126,24 @@ class NotConfiguredTests(SimpleTestCase):
     @override_settings(OPENROUTER_API_KEY="fake-key", OPENROUTER_MODEL="")
     def test_missing_model(self):
         self.assertFalse(llm.configured())
+
+    @override_settings(OPENROUTER_API_KEY="fake-key", OPENROUTER_MODEL="test/model", OPENROUTER_IMAGE_MODEL="")
+    def test_missing_image_model_sends_no_request(self):
+        self.assertFalse(llm.image_configured())
+        with mock.patch("core.llm.OpenAI") as openai_cls, self.assertRaises(llm.LLMNotConfigured) as caught:
+            llm.generate_image("A campus event")
+        self.assertEqual(str(caught.exception), "AI image generation is not configured.")
+        openai_cls.assert_not_called()
+
+    @override_settings(OPENROUTER_API_KEY="", OPENROUTER_IMAGE_MODEL="test/image-model")
+    def test_missing_key_blocks_image_generation(self):
+        with mock.patch("core.llm.OpenAI") as openai_cls, self.assertRaises(llm.LLMNotConfigured):
+            llm.generate_image("A campus event")
+        openai_cls.assert_not_called()
+
+    def test_not_configured_is_still_llm_unavailable(self):
+        # Existing callers that catch LLMUnavailable keep working.
+        self.assertTrue(issubclass(llm.LLMNotConfigured, llm.LLMUnavailable))
 
 
 @override_settings(**CONFIGURED)

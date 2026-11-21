@@ -228,6 +228,8 @@ def generate_event_image(request):
             clean_data, clean_type = validate_event_photo(upload)
         except ValidationError as exc:
             return JsonResponse({"error": exc.messages[0]}, status=400)
+    except llm.LLMNotConfigured as exc:
+        return JsonResponse({"error": str(exc)}, status=503)
     except llm.LLMUnavailable as exc:
         return JsonResponse({"error": str(exc)}, status=502)
     data_url = f"data:{clean_type};base64," + base64.b64encode(clean_data).decode("ascii")

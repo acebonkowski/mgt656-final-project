@@ -37,6 +37,7 @@ print(json.dumps({
     "grader_otp_set": bool(settings.GRADER_FIXED_OTP),
     "openrouter_key": settings.OPENROUTER_API_KEY,
     "openrouter_model": settings.OPENROUTER_MODEL,
+    "openrouter_image_model": settings.OPENROUTER_IMAGE_MODEL,
 }))
 """
 
@@ -115,6 +116,13 @@ class DeployedSettingsTests(SimpleTestCase):
         result = load_settings(DJANGO_DEBUG="true", OPENROUTER_MODEL=" vendor/model ")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout)["openrouter_model"], "vendor/model")
+
+    def test_openrouter_image_model_is_read_from_environment_and_defaults_to_empty(self):
+        result = load_settings(DJANGO_DEBUG="true", OPENROUTER_IMAGE_MODEL=" vendor/image-model ")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["openrouter_image_model"], "vendor/image-model")
+        result = load_settings(DJANGO_DEBUG="true", OPENROUTER_MODEL="vendor/model")
+        self.assertEqual(json.loads(result.stdout)["openrouter_image_model"], "")
 
     def test_logs_go_to_stdout(self):
         result = load_settings(DJANGO_SECRET_KEY="x", DATABASE_URL=FAKE_URL)
