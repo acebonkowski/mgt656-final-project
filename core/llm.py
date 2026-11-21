@@ -16,25 +16,58 @@ from openai import OpenAI, OpenAIError
 
 logger = logging.getLogger(__name__)
 TIMEOUT_SECONDS = 30
+# Image requests: one attempt that finishes before gunicorn's 30 s worker
+# timeout, and enough output tokens for an image (~1.3k for Gemini image models).
+IMAGE_TIMEOUT_SECONDS = 25
+IMAGE_MAX_TOKENS = 4096
+PROVIDER_MESSAGE_MAX_CHARS = 300
 
 
 class LLMUnavailable(Exception):
     pass
 
 
+class LLMNotConfigured(LLMUnavailable):
+    """A required OpenRouter setting is missing; no request was sent."""
+
+
 def configured():
     return bool(settings.OPENROUTER_API_KEY and settings.OPENROUTER_MODEL)
 
 
-def get_client():
-    if not configured():
-        raise LLMUnavailable("The AI service is not configured.")
+def image_configured():
+    return bool(settings.OPENROUTER_API_KEY and settings.OPENROUTER_IMAGE_MODEL)
+
+
+def _client(timeout=TIMEOUT_SECONDS, max_retries=1):
     return OpenAI(
         base_url=settings.OPENROUTER_BASE_URL,
         api_key=settings.OPENROUTER_API_KEY,
-        timeout=TIMEOUT_SECONDS,
-        max_retries=1,
+        timeout=timeout,
+        max_retries=max_retries,
     )
+
+
+def get_client():
+    if not configured():
+        raise LLMNotConfigured("The AI service is not configured.")
+    return _client()
+
+
+def _provider_error(exc):
+    """HTTP status and the provider's own error message, for server logs only.
+
+    Takes only OpenRouter's `error.message` field from the response body (the
+    SDK's own message embeds the whole body, metadata included) and nothing
+    from the request, so neither the key nor the prompt is logged.
+    """
+    status = getattr(exc, "status_code", None)
+    body = getattr(exc, "body", None)
+    message = body.get("message") if isinstance(body, dict) else None
+    if not message:
+        message = getattr(exc, "message", "") or str(exc)
+    message = " ".join(str(message).split())
+    return status or "-", message[:PROVIDER_MESSAGE_MAX_CHARS]
 
 
 def chat(messages, max_tokens=256, **kwargs):
@@ -102,21 +135,29 @@ def chat_json(messages, schema_name, schema, max_tokens=500, model=None, timeout
 
 
 def generate_image(prompt):
-    """Generate one image through OpenRouter and return PNG/JPEG bytes.
+    """Generate one image through OpenRouter and return (bytes, content type).
 
-    OpenRouter is the only provider and key-bearing request path. Provider
-    image payloads are decoded only in this server-side module.
+    Uses OPENROUTER_IMAGE_MODEL, never the text model. OpenRouter is the only
+    provider and key-bearing request path. Provider image payloads are decoded
+    only in this server-side module.
     """
-    client = get_client()
+    if not image_configured():
+        raise LLMNotConfigured("AI image generation is not configured.")
+    client = _client(timeout=IMAGE_TIMEOUT_SECONDS, max_retries=0)
+    model = settings.OPENROUTER_IMAGE_MODEL
     try:
         response = client.chat.completions.create(
-            model=settings.OPENROUTER_MODEL,
+            model=model,
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=512,
+            max_tokens=IMAGE_MAX_TOKENS,
             extra_body={"modalities": ["image", "text"]},
         )
     except OpenAIError as exc:
-        logger.warning("OpenRouter image request failed (%s)", type(exc).__name__)
+        status, message = _provider_error(exc)
+        logger.warning(
+            "OpenRouter image request failed (%s) model=%s status=%s message=%s",
+            type(exc).__name__, model, status, message,
+        )
         raise LLMUnavailable("The AI image service is temporarily unavailable.") from exc
 
     if not response.choices:
