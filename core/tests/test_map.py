@@ -228,6 +228,37 @@ class MapEventTests(TestCase):
         self.assertEqual(response.status_code, 502)
         self.assertIn("temporarily unavailable", response.json()["error"])
 
+    @override_settings(MAP_API_KEY=FAKE_KEY, OPENROUTER_API_KEY="fake-key",
+                       OPENROUTER_MODEL="test/model", OPENROUTER_IMAGE_MODEL="")
+    def test_ai_generation_without_image_model_returns_503_and_sends_no_request(self):
+        with mock.patch("core.llm.OpenAI") as openai_cls:
+            response = self.client.post(
+                "/event-image/generate/",
+                {"name": "Yale Event", "description": "A campus gathering"},
+            )
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json(), {"error": "AI image generation is not configured."})
+        openai_cls.assert_not_called()
+
+    @override_settings(MAP_API_KEY=FAKE_KEY, OPENROUTER_API_KEY="fake-key",
+                       OPENROUTER_MODEL="test/text-model", OPENROUTER_IMAGE_MODEL="test/image-model")
+    def test_ai_generation_endpoint_sends_request_to_image_model(self):
+        png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        reply = mock.Mock()
+        reply.choices = [mock.Mock(message=mock.Mock(images=[{"image_url": {"url": "data:image/png;base64," + png}}]))]
+        with mock.patch("core.llm.OpenAI") as openai_cls:
+            create = openai_cls.return_value.chat.completions.create
+            create.return_value = reply
+            response = self.client.post(
+                "/event-image/generate/",
+                {"name": "Yale Event", "description": "A campus gathering"},
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["image"].startswith("data:image/png;base64,"))
+        self.assertEqual(create.call_args.kwargs["model"], "test/image-model")
+        self.assertEqual(create.call_args.kwargs["extra_body"], {"modalities": ["image", "text"]})
+        self.assertIn("Yale Event", create.call_args.kwargs["messages"][0]["content"])
+
     @override_settings(MAP_API_KEY=FAKE_KEY)
     def test_geocoding_endpoint_mocked_and_requires_login(self):
         suggestions = [{
