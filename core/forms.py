@@ -157,6 +157,11 @@ class EventForm(forms.Form):
     date = forms.DateField(widget=forms.DateInput(attrs={"type": "date"}))
     start_time = forms.TimeField(widget=TwelveHourTimeWidget(attrs={"aria-label": "Start time"}))
     end_time = forms.TimeField(widget=TwelveHourTimeWidget(attrs={"aria-label": "End time"}))
+    # Overnight and multi-day events (#70). Empty means the start date;
+    # event_form.js shows it (default: the next day) when the end time is
+    # earlier than the start time.
+    end_date = forms.DateField(required=False, label="End date",
+                               widget=forms.DateInput(attrs={"type": "date"}))
     location = forms.CharField(max_length=500, label="Address")
     location_confirmed = forms.CharField(required=False, widget=forms.HiddenInput)
     latitude = CoordinateField(
@@ -235,12 +240,16 @@ class EventForm(forms.Form):
         date = cleaned.get("date")
         start_time = cleaned.get("start_time")
         end_time = cleaned.get("end_time")
-        if date and start_time and end_time:
+        end_date = cleaned.get("end_date") or date
+        if date and end_date < date:
+            self.add_error("end_date", "End date can't be before the start date.")
+        elif date and start_time and end_time and "end_date" not in self.errors:
             new_york = ZoneInfo("America/New_York")
             start_at = datetime.combine(date, start_time, tzinfo=new_york)
-            end_at = datetime.combine(date, end_time, tzinfo=new_york)
-            if end_at <= start_at:
+            end_at = datetime.combine(end_date, end_time, tzinfo=new_york)
+            if end_at <= start_at:  # equal start and end stays an error
                 raise ValidationError("End time must be after start time.")
+            cleaned["end_date"] = end_date
             cleaned["start_at"] = start_at
             cleaned["end_at"] = end_at
         return cleaned

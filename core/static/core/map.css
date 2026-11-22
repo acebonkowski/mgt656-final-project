@@ -387,6 +387,10 @@ span.time12 input.time12-minute {
   gap: 0.75rem;
 }
 
+.event-row[hidden] {
+  display: none;  /* End date row until needed (#70) */
+}
+
 .event-label-row {
   display: flex;
   align-items: baseline;
