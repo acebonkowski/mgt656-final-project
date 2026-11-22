@@ -310,6 +310,146 @@ body {
   resize: vertical;
 }
 
+/* 12-hour time: hh : mm [AM|PM] (templates/core/widgets/time12.html). */
+.time12 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* span.time12 outranks search.css's .search-panel input[type="text"], which loads later. */
+span.time12 input.time12-hour,
+span.time12 input.time12-minute {
+  width: 2.6rem;
+  min-height: 2.5rem;
+  padding: 0.4rem 0.3rem;
+  border: 1px solid rgba(230, 236, 245, 0.25);
+  border-radius: 0.5rem;
+  background: #0b1220;
+  color: var(--map-text);
+  font: inherit;
+  text-align: center;
+}
+
+.time12-period {
+  display: inline-flex;
+  margin-left: 0.25rem;
+  border: 1px solid rgba(230, 236, 245, 0.25);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.time12-period input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.time12-period label {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.3rem;
+  min-height: 2.4rem;
+  padding: 0 0.4rem;
+  color: var(--map-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.time12-period input:checked + label {
+  background: #4da3ff;
+  color: #08111f;
+}
+
+.time12-period input:focus-visible + label {
+  outline: 2px solid #9fcbff;
+  outline-offset: -2px;
+}
+
+/* Compact event form (#69): full-width Title and Description with counters,
+   then two-column rows. Shared by the create dialog and the edit page. */
+.event-fields {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.event-field {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+  align-content: start;
+}
+
+.event-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.event-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.char-count,
+.field-optional {
+  color: var(--map-muted);
+  font-size: 0.8rem;
+}
+
+.char-count {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Grows with its text (event_form.js) instead of scrolling. */
+.event-fields textarea {
+  min-height: 3.5rem;
+  overflow: hidden;
+  resize: none;
+}
+
+.event-fields input:not([type="radio"]),
+.event-fields select,
+.event-fields textarea {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Two time controls share a row, so they are a little tighter here. */
+.event-fields .time12 {
+  flex-wrap: wrap;
+  row-gap: 0.35rem;
+}
+
+.event-fields .time12 input.time12-hour,
+.event-fields .time12 input.time12-minute {
+  width: 2.35rem;
+  min-height: 2.75rem;
+  padding: 0.4rem 0.15rem;
+}
+
+.event-fields .time12-period {
+  margin-left: 0.15rem;
+}
+
+.event-fields .time12-period label {
+  min-width: 2.1rem;
+  min-height: 2.65rem;
+  padding: 0 0.3rem;
+}
+
+.event-fields .errorlist {
+  padding-left: 1rem;
+  font-size: 0.9rem;
+}
+
+.event-image-field[hidden] {
+  display: none;
+}
+
 .address-suggestions {
   display: grid;
   max-height: 12rem;
@@ -672,7 +812,12 @@ body {
   margin: 0;
 }
 
-.event-edit-form input,
+.event-edit-form input[type="checkbox"] {
+  min-height: auto;
+  margin: 0 0.4rem 0 0;
+}
+
+.event-edit-form input:not([type="checkbox"]),
 .event-edit-form textarea,
 .event-edit-form select {
   min-height: 2.75rem;

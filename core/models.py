@@ -62,7 +62,7 @@ class Event(models.Model):
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
     longitude = models.DecimalField(max_digits=9, decimal_places=6)
     price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    link = models.URLField(max_length=2048)
+    link = models.URLField(max_length=2048, blank=True)  # optional since #69
     creator = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

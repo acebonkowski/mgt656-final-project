@@ -5,15 +5,24 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Edit {{ event.name }} · Yale Events</title>
-  <link rel="stylesheet" href="{% static 'core/map.css' %}">
+  <link rel="stylesheet" href="{% static 'core/map.css' %}?v=ui-69">
 </head>
 <body class="event-detail-page">
 <main>
   <form method="post" action="{% url 'edit_event' event.pk %}" enctype="multipart/form-data" class="event-edit-form">
     {% csrf_token %}
     <h1>Edit event</h1>
-    {{ event_form.as_p }}
+    {% if event_form.non_field_errors %}
+      <div class="form-errors" role="alert">{{ event_form.non_field_errors }}</div>
+    {% endif %}
+    <div class="event-field">
+      {{ event_form.image.label_tag }}
+      {{ event_form.image }}
+      <span class="helptext">{{ event_form.image.help_text }}</span>
+      {{ event_form.image.errors }}
+    </div>
     <label><input type="checkbox" name="remove_image" value="1"> Remove existing image</label>
+    {% include "core/_event_form_fields.html" with form=event_form %}
     <button type="submit">Save changes</button>
   </form>
   <form method="post" action="{% url 'delete_event' event.pk %}">
@@ -21,5 +30,7 @@
     <button type="submit" class="delete-event">Delete event</button>
   </form>
 </main>
+<script src="{% static 'core/time12.js' %}?v=time12-67"></script>
+<script src="{% static 'core/event_form.js' %}?v=form-69"></script>
 </body>
 </html>

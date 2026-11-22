@@ -308,13 +308,13 @@ class MapEventTests(TestCase):
         response = self.client.get("/map/")
         html = response.content.decode()
         labels = [
-            'for="id_image"',
+            'class="image-menu"',  # the image square (#68)
             'for="id_name"',
             'for="id_description"',
             'for="id_category"',
             'for="id_date"',
-            'for="id_start_time"',
-            'for="id_end_time"',
+            'for="id_start_time_hour"',  # 12-hour times (#69)
+            'for="id_end_time_hour"',
             'for="id_location"',
             'for="id_price"',
             'for="id_link"',
@@ -322,7 +322,7 @@ class MapEventTests(TestCase):
         positions = [html.index(label) for label in labels]
         self.assertEqual(positions, sorted(positions))
         self.assertIn('type="date"', html)
-        self.assertIn('type="time"', html)
+        self.assertIn('name="start_time_hour"', html)
 
     def test_live_duplicate_popup_and_two_step_buttons_are_in_browser_code(self):
         path = finders.find("core/map.js")

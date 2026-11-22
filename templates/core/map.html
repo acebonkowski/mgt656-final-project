@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1220">
   <title>Home · Yale Events</title>
-  <link rel="stylesheet" href="{% static 'core/map.css' %}?v=ui-68">
-  <link rel="stylesheet" href="{% static 'core/search.css' %}?v=search-67">
+  <link rel="stylesheet" href="{% static 'core/map.css' %}?v=ui-69">
+  <link rel="stylesheet" href="{% static 'core/search.css' %}?v=search-69">
 </head>
 <body class="map-screen">
   <main>
@@ -91,8 +91,11 @@
             </div>
           </div>
           <div id="event-image-error" class="image-error" role="alert" hidden></div>
+          {{ event_form.image.errors }}
+          {# The real file field; the square above fills it (#68). #}
+          <div class="event-image-field" hidden>{{ event_form.image }}</div>
         </div>
-        {{ event_form.as_p }}
+        {% include "core/_event_form_fields.html" with form=event_form include_remove_image=True %}
         <button id="create-event-submit" class="event-submit" type="submit">Create event</button>
       </form>
     </dialog>
@@ -134,8 +137,9 @@
   </main>
   {{ map_config|json_script:"map-config" }}
   {% if map_enabled %}{% include "core/_map_provider.html" %}{% endif %}
-  <script src="{% static 'core/map.js' %}?v=ui-68"></script>
   <script src="{% static 'core/time12.js' %}?v=time12-67"></script>
+  <script src="{% static 'core/event_form.js' %}?v=form-69"></script>
+  <script src="{% static 'core/map.js' %}?v=ui-69"></script>
   <script src="{% static 'core/search.js' %}?v=search-67"></script>
 </body>
 </html>

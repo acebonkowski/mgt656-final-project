@@ -104,8 +104,12 @@
     var detailSecondStep = document.getElementById("event-detail-second-step");
     var submitButton = document.getElementById("create-event-submit");
     var dateInput = document.getElementById("id_date");
+    // 12-hour groups (#69); Time12.read gives "HH:MM", "" or null (invalid).
     var startInput = document.getElementById("id_start_time");
     var endInput = document.getElementById("id_end_time");
+    function timeValue(group) {
+      return group && window.Time12 ? (window.Time12.read(group) || "") : "";
+    }
     var duplicateTimer = null;
     var duplicateMatch = null;
 
@@ -127,8 +131,8 @@
         var params = new URLSearchParams({
           location: locationInput.value,
           date: dateInput ? dateInput.value : "",
-          start_time: startInput ? startInput.value : "",
-          end_time: endInput ? endInput.value : "",
+          start_time: timeValue(startInput),
+          end_time: timeValue(endInput),
         });
         if (!params.get("location") || !params.get("date") ||
             !params.get("start_time") || !params.get("end_time")) {
