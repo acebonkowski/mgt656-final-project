@@ -17,18 +17,20 @@
   var form = byId("search-form");
   var qInput = byId("search-q");
   var filtersToggle = byId("search-filters-toggle");
+  var iconBar = panel.querySelector(".search-bar");
   var filters = byId("search-filters");
-  var categoryDetails = byId("search-category");
-  var categoryBoxes = Array.prototype.slice.call(
-    panel.querySelectorAll('input[name="category"]'));
-  var whenRadios = Array.prototype.slice.call(panel.querySelectorAll('input[name="when"]'));
+  var filtersBack = byId("search-filters-back");   // manual search header (#67)
+  var filtersAi = byId("search-filters-ai");
+  var categorySelect = byId("search-category");
+  var whenSelect = byId("search-when");
+  var pickDates = byId("search-pick-dates");
   var datesBox = byId("search-dates");
   var rangeBox = byId("search-date-range");
   var dateFrom = byId("search-date-from");
   var dateFromLabel = byId("search-date-from-label");
   var dateTo = byId("search-date-to");
   var dateToWrap = byId("search-date-to-wrap");
-  var timeFrom = byId("search-time-from");
+  var timeFrom = byId("search-time-from");  // 12-hour groups (time12.js)
   var timeTo = byId("search-time-to");
   var address = byId("search-address");
   var suggestions = byId("search-address-suggestions");
@@ -85,23 +87,52 @@
 
   // --- Reading and writing the controls --------------------------------------
 
-  function checkedWhen() {
-    var checked = whenRadios.filter(function (radio) { return radio.checked; })[0];
-    return checked ? checked.value : "";
+  // Category is one dropdown (#67). The AI can pick several categories; then
+  // the dropdown shows one extra option holding all of them, so "Edit in
+  // filters" keeps the AI's search intact.
+  var MULTI = "multiple";
+
+  function categoryOption(value) {
+    return Array.prototype.filter.call(categorySelect.options, function (o) {
+      return o.value === value;
+    })[0];
+  }
+
+  function readCategories() {
+    var option = categorySelect.options[categorySelect.selectedIndex];
+    if (!option || !option.value) return [];
+    return option.value === MULTI ? option.dataset.values.split(",") : [option.value];
+  }
+
+  function setCategories(values) {
+    var multi = categoryOption(MULTI);
+    if (multi) multi.remove();
+    values = (values || []).filter(function (v) { return v && v !== MULTI && categoryOption(v); });
+    if (values.length > 1) {
+      multi = document.createElement("option");
+      multi.value = MULTI;
+      multi.dataset.values = values.join(",");
+      multi.textContent = values.length + " categories";
+      categorySelect.appendChild(multi);
+    }
+    categorySelect.value = values.length > 1 ? MULTI : (values[0] || "");
+  }
+
+  function readTime(group) {
+    return window.Time12.read(group) || "";  // invalid times are reported by runSearch
   }
 
   function readFilters() {
-    var when = checkedWhen();
-    var pickDates = when === "dates";
+    var when = whenSelect.value;
+    var picked = when === "dates";
     return {
       q: qInput.value.trim(),
-      category: categoryBoxes.filter(function (box) { return box.checked; })
-        .map(function (box) { return box.value; }),
-      when: pickDates ? "" : when,
-      date_from: pickDates ? dateFrom.value : "",
-      date_to: pickDates && rangeBox.checked ? dateTo.value : "",
-      time_from: timeFrom.value,
-      time_to: timeTo.value,
+      category: readCategories(),
+      when: picked ? "" : when,
+      date_from: picked ? dateFrom.value : "",
+      date_to: picked && rangeBox.checked ? dateTo.value : "",
+      time_from: readTime(timeFrom),  // 24-hour "HH:MM" for the server
+      time_to: readTime(timeTo),
       near_lat: near.lat,
       near_lng: near.lng,
       near_label: near.lat ? near.label : "",
@@ -110,9 +141,12 @@
     };
   }
 
+  // The quick-date dropdown and "Pick dates" are separate controls; picked
+  // dates show as "Picked dates" in the dropdown.
   function setWhen(value) {
-    whenRadios.forEach(function (radio) { radio.checked = radio.value === value; });
+    whenSelect.value = value;
     datesBox.hidden = value !== "dates";
+    pickDates.setAttribute("aria-expanded", String(value === "dates"));
   }
 
   function setRange(isRange) {
@@ -124,9 +158,7 @@
 
   function writeFilters(f) {
     qInput.value = f.q || "";
-    categoryBoxes.forEach(function (box) {
-      box.checked = (f.category || []).indexOf(box.value) !== -1;
-    });
+    setCategories(f.category);
     if (f.date_from || f.date_to) {
       setWhen("dates");
       dateFrom.value = f.date_from || f.date_to;
@@ -137,8 +169,8 @@
       dateFrom.value = "";
       setRange(false);
     }
-    timeFrom.value = f.time_from || "";
-    timeTo.value = f.time_to || "";
+    window.Time12.write(timeFrom, f.time_from);
+    window.Time12.write(timeTo, f.time_to);
     near = { lat: f.near_lat || "", lng: f.near_lng || "", label: f.near_label || "" };
     address.value = near.lat ? (near.label || "Selected location") : "";
     radius.value = f.radius_mi || defaultRadius;
@@ -194,14 +226,15 @@
         remove: function () { qInput.value = ""; } });
     }
     f.category.forEach(function (value) {
-      var box = categoryBoxes.filter(function (b) { return b.value === value; })[0];
-      list.push({ label: labelFor(box), focus: categoryDetails, remove: function () {
-        if (box) box.checked = false;
+      list.push({ label: labelFor(categoryOption(value)), focus: categorySelect, remove: function () {
+        setCategories(readCategories().filter(function (v) { return v !== value; }));
       } });
     });
     if (f.when) {
-      var radio = whenRadios.filter(function (r) { return r.value === f.when; })[0];
-      list.push({ label: labelFor(radio), focus: radio, remove: function () { setWhen(""); } });
+      var option = Array.prototype.filter.call(whenSelect.options, function (o) {
+        return o.value === f.when;
+      })[0];
+      list.push({ label: labelFor(option), focus: whenSelect, remove: function () { setWhen(""); } });
     } else if (f.date_from) {
       var label = shortDate(f.date_from) + (f.date_to && f.date_to !== f.date_from
         ? " – " + shortDate(f.date_to) : "");
@@ -210,10 +243,12 @@
       } });
     }
     if (f.time_from || f.time_to) {
-      var timeLabel = f.time_from && f.time_to ? "Starts " + f.time_from + "–" + f.time_to
-        : (f.time_from ? "Starts after " + f.time_from : "Starts before " + f.time_to);
-      list.push({ label: timeLabel, focus: timeFrom, remove: function () {
-        timeFrom.value = ""; timeTo.value = "";
+      var from = window.Time12.label(f.time_from);
+      var to = window.Time12.label(f.time_to);
+      var timeLabel = f.time_from && f.time_to ? "Starts " + from + "–" + to
+        : (f.time_from ? "Starts after " + from : "Starts before " + to);
+      list.push({ label: timeLabel, focus: timeFrom.querySelector(".time12-hour"), remove: function () {
+        window.Time12.write(timeFrom, ""); window.Time12.write(timeTo, "");
       } });
     }
     if (f.near_lat) {
@@ -241,7 +276,6 @@
       edit.addEventListener("click", function () {
         if (!chip.focus) return;
         openFilters(true);
-        if (chip.focus === categoryDetails) categoryDetails.open = true;
         chip.focus.focus();
       });
       var remove = document.createElement("button");
@@ -433,6 +467,10 @@
       showError("Choose an address from the suggestions, or use your location.");
       return;
     }
+    if (window.Time12.read(timeFrom) === null || window.Time12.read(timeTo) === null) {
+      showError("Enter start times like 8:30, from 1 to 12, with AM or PM.");
+      return;
+    }
     var f = readFilters();
     var params = toParams(f);
     renderChips(f);
@@ -490,8 +528,10 @@
 
   // --- Controls ----------------------------------------------------------------
 
+  // Manual search replaces the icon bar (#67); results stay below both.
   function openFilters(open) {
     filters.hidden = !open;
+    iconBar.hidden = open;
     filtersToggle.setAttribute("aria-expanded", String(open));
   }
 
@@ -507,13 +547,21 @@
     applyTimer = window.setTimeout(runSearch, 250);
   }
 
-  whenRadios.forEach(function (radio) {
-    radio.addEventListener("change", function () { setWhen(checkedWhen()); applySoon(); });
+  whenSelect.addEventListener("change", function () { setWhen(whenSelect.value); applySoon(); });
+  pickDates.addEventListener("click", function () {
+    setWhen("dates");
+    dateFrom.focus();
+    // Open the calendar right away where the browser allows it.
+    try { if (dateFrom.showPicker) dateFrom.showPicker(); } catch (e) { /* needs a user gesture */ }
   });
   rangeBox.addEventListener("change", function () { setRange(rangeBox.checked); applySoon(); });
-  categoryBoxes.concat([dateFrom, dateTo, timeFrom, timeTo]).forEach(function (input) {
-    input.addEventListener("change", applySoon);
+  categorySelect.addEventListener("change", function () {
+    if (categorySelect.value !== MULTI) setCategories(readCategories());
   });
+  [categorySelect, dateFrom, dateTo].concat(window.Time12.inputs(timeFrom), window.Time12.inputs(timeTo))
+    .forEach(function (input) {
+      input.addEventListener("change", applySoon);
+    });
   radius.addEventListener("change", function () { if (near.lat) applySoon(); });
 
   form.addEventListener("submit", function (event) {
@@ -531,10 +579,18 @@
     // Back where the user was: the AI view, the filters, or the icon bar (#65).
     (mode === "ai" ? aiBack : (filters.hidden ? filtersToggle : qInput)).focus();
   });
-  aiToggle.addEventListener("click", function () {
+  function openAi() {
     setMode("ai");
     showAiResults();
     setInputMode(aiInputMode);
+  }
+  aiToggle.addEventListener("click", openAi);
+  filtersAi.addEventListener("click", openAi);  // "Search with AI" (#67)
+  // Back to the icon bar: like the AI view's Back, this leaves search (#66).
+  filtersBack.addEventListener("click", function () {
+    openFilters(false);
+    resetChat();
+    filtersToggle.focus();
   });
   // Back to the icon bar (#66). Leaving search ends the conversation, which
   // replaced the "New chat" button.

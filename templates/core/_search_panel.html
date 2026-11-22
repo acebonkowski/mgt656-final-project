@@ -42,7 +42,81 @@
       </button>
     </div>
 
+    {% comment %}Manual search (#67): a back arrow and "Search with AI" on top, then
+       flat rows, label left and control right, with nothing collapsible.{% endcomment %}
     <div id="search-filters" class="search-filters" hidden>
+      <div class="search-manual-header">
+        <button id="search-filters-back" class="search-icon-button" type="button"
+                aria-label="Back" title="Back">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"
+               fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5"/><polyline points="11 6 5 12 11 18"/>
+          </svg>
+        </button>
+        <h2 class="search-ai-title">Filters</h2>
+        <button id="search-filters-ai" class="search-tertiary" type="button"
+                aria-controls="search-ai">Search with AI</button>
+      </div>
+
+      <div class="search-field-row">
+        <label for="search-category">Category</label>
+        <select id="search-category" name="category">
+          <option value="">Any</option>
+          {% for value, label in categories %}
+            <option value="{{ value }}" data-label="{{ label }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="search-field-row">
+        <label for="search-when">Date</label>
+        <div class="search-control search-date-control">
+          <select id="search-when" name="when">
+            <option value="">Any</option>
+            {% for value, label in when_choices %}
+              <option value="{{ value }}" data-label="{{ label }}">{{ label }}</option>
+            {% endfor %}
+            <option value="dates">Picked dates</option>
+          </select>
+          <button id="search-pick-dates" type="button" aria-controls="search-dates"
+                  aria-expanded="false">Pick dates</button>
+        </div>
+      </div>
+      <div id="search-dates" class="search-dates" hidden>
+        <label><input id="search-date-range" type="checkbox"> Date range</label>
+        <label><span id="search-date-from-label">On</span>
+          <input id="search-date-from" type="date"></label>
+        <label id="search-date-to-wrap" hidden>To <input id="search-date-to" type="date"></label>
+      </div>
+
+      <div class="search-field-row" role="group" aria-labelledby="search-time-label">
+        <span id="search-time-label" class="search-row-label">Start time</span>
+        <div class="search-control search-time-control">
+          <span class="search-time-line"><span class="search-time-word">From</span>
+            {% include "core/widgets/time12.html" with id="search-time-from" label="Earliest start time" %}</span>
+          <span class="search-time-line"><span class="search-time-word">To</span>
+            {% include "core/widgets/time12.html" with id="search-time-to" label="Latest start time" %}</span>
+        </div>
+      </div>
+
+      <div class="search-field-row search-field-row--top">
+        <label for="search-address">Address</label>
+        <div class="search-control">
+          <input id="search-address" type="text" autocomplete="off" placeholder="Type an address">
+          <div id="search-address-suggestions" class="address-suggestions" role="listbox" hidden></div>
+          <div class="search-inline">
+            <button id="search-my-location" type="button">Use my location</button>
+            <label class="visually-hidden" for="search-radius">Radius</label>
+            <select id="search-radius" aria-label="Radius">
+              {% for value, label in radius_choices %}
+                <option value="{{ value }}"{% if value == default_radius %} selected{% endif %}>Within {{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <p id="search-location-message" class="search-message" role="status" hidden></p>
+        </div>
+      </div>
+
       <div class="search-text-row">
         <label class="visually-hidden" for="search-q">Search text</label>
         <input id="search-q" name="q" type="search" maxlength="200" autocomplete="off"
@@ -55,61 +129,8 @@
           </svg>
         </button>
       </div>
-      <details id="search-category" class="search-field">
-        <summary>Category</summary>
-        <div class="search-options">
-          {% for value, label in categories %}
-            <label><input type="checkbox" name="category" value="{{ value }}" data-label="{{ label }}"> {{ label }}</label>
-          {% endfor %}
-        </div>
-      </details>
 
-      <fieldset id="search-when" class="search-field">
-        <legend>Date</legend>
-        <div class="search-choices">
-          <label><input type="radio" name="when" value="" checked> Any</label>
-          {% for value, label in when_choices %}
-            <label><input type="radio" name="when" value="{{ value }}" data-label="{{ label }}"> {{ label }}</label>
-          {% endfor %}
-          <label><input type="radio" name="when" value="dates"> Pick dates</label>
-        </div>
-        <div id="search-dates" class="search-dates" hidden>
-          <label><input id="search-date-range" type="checkbox"> Date range</label>
-          <label><span id="search-date-from-label">On</span>
-            <input id="search-date-from" type="date"></label>
-          <label id="search-date-to-wrap" hidden>To <input id="search-date-to" type="date"></label>
-        </div>
-      </fieldset>
-
-      <fieldset id="search-time" class="search-field">
-        <legend>Starts between</legend>
-        <div class="search-inline">
-          <label class="visually-hidden" for="search-time-from">Earliest start time</label>
-          <input id="search-time-from" type="time">
-          <span aria-hidden="true">and</span>
-          <label class="visually-hidden" for="search-time-to">Latest start time</label>
-          <input id="search-time-to" type="time">
-        </div>
-      </fieldset>
-
-      <fieldset id="search-location" class="search-field">
-        <legend>Near</legend>
-        <label class="visually-hidden" for="search-address">Address</label>
-        <input id="search-address" type="text" autocomplete="off" placeholder="Type an address">
-        <div id="search-address-suggestions" class="address-suggestions" role="listbox" hidden></div>
-        <div class="search-inline">
-          <button id="search-my-location" type="button">Use my location</button>
-          <label for="search-radius">Within</label>
-          <select id="search-radius">
-            {% for value, label in radius_choices %}
-              <option value="{{ value }}"{% if value == default_radius %} selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <p id="search-location-message" class="search-message" role="status" hidden></p>
-      </fieldset>
-
-      <p class="search-hint">Filters apply as you change them.</p>
+      <p class="search-hint">Filters apply as you change them. Text searches on Enter.</p>
     </div>
 
     <ul id="search-chips" class="search-chips" aria-label="Active filters"></ul>

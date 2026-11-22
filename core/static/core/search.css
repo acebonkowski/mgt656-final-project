@@ -130,39 +130,140 @@
 .search-filters {
   display: grid;
   gap: 0.75rem;
-  margin-top: 0.75rem;
 }
 
-.search-field {
-  margin: 0;
-  padding: 0;
-  border: 0;
+/* Manual search (#67): header, then flat rows with the label on the left. */
+.search-manual-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.search-field legend,
-.search-field summary {
-  margin-bottom: 0.35rem;
+.search-field-row {
+  display: grid;
+  grid-template-columns: 5.25rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.search-field-row--top {
+  align-items: start;
+}
+
+.search-field-row--top > label {
+  padding-top: 0.6rem;
+}
+
+.search-field-row > label,
+.search-row-label {
   font-weight: 600;
-  cursor: default;
 }
 
-.search-field summary {
-  cursor: pointer;
+.search-field-row select,
+.search-control > input[type="text"] {
+  width: 100%;
+  min-width: 0;
 }
 
-.search-options,
-.search-choices,
+.search-control {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.search-date-control {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
 .search-dates {
   display: grid;
   gap: 0.35rem;
+  margin-left: 5.75rem;
 }
 
-.search-choices {
-  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+.search-time-line {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
 }
 
-.search-dates {
-  margin-top: 0.5rem;
+.search-time-word {
+  flex: none;
+  width: 2rem;
+  color: var(--map-muted);
+  font-size: 0.85rem;
+}
+
+/* Very narrow phones: labels go above their controls so nothing is clipped. */
+@media (max-width: 359px) {
+  .search-field-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.3rem;
+  }
+
+  .search-field-row--top > label {
+    padding-top: 0;
+  }
+
+  .search-dates {
+    margin-left: 0;
+  }
+}
+
+/* 12-hour time: hh : mm [AM|PM] (templates/core/widgets/time12.html). */
+.time12 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.time12 input.time12-hour,
+.time12 input.time12-minute {
+  width: 2.6rem;
+  min-height: 2.5rem;
+  padding: 0.4rem 0.3rem;
+  border: 1px solid rgba(230, 236, 245, 0.25);
+  border-radius: 0.5rem;
+  background: #0b1220;
+  color: var(--map-text);
+  font: inherit;
+  text-align: center;
+}
+
+.time12-period {
+  display: inline-flex;
+  margin-left: 0.25rem;
+  border: 1px solid rgba(230, 236, 245, 0.25);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.time12-period input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.time12-period label {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.3rem;
+  min-height: 2.4rem;
+  padding: 0 0.4rem;
+  color: var(--map-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.time12-period input:checked + label {
+  background: #4da3ff;
+  color: #08111f;
+}
+
+.time12-period input:focus-visible + label {
+  outline: 2px solid #9fcbff;
+  outline-offset: -2px;
 }
 
 .search-inline {
@@ -171,10 +272,6 @@
   align-items: center;
   gap: 0.5rem;
   margin-top: 0.4rem;
-}
-
-#search-location input[type="text"] {
-  width: 100%;
 }
 
 .search-hint {

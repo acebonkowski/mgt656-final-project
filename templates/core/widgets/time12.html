@@ -1,0 +1,19 @@
+{% comment %}
+12-hour time: hour, minute and an AM/PM switch (#67). Native type=time does not
+reliably show 12-hour format. time12.js converts to the 24-hour "HH:MM" the
+server expects. Params: id, label, and optionally name, hour, minute, period,
+required. Without a name the inputs are not submitted (the search panel reads
+them in JavaScript).
+{% endcomment %}<span class="time12" id="{{ id }}" role="group" aria-label="{{ label }}">
+  <input id="{{ id }}_hour" class="time12-hour"{% if name %} name="{{ name }}_hour"{% endif %} type="text"
+         inputmode="numeric" maxlength="2" autocomplete="off" placeholder="hh" aria-label="Hour"
+         value="{{ hour|default:'' }}"{% if required %} required{% endif %}>
+  <span class="time12-colon" aria-hidden="true">:</span>
+  <input id="{{ id }}_minute" class="time12-minute"{% if name %} name="{{ name }}_minute"{% endif %} type="text"
+         inputmode="numeric" maxlength="2" autocomplete="off" placeholder="mm" aria-label="Minutes"
+         value="{{ minute|default:'' }}">
+  <span class="time12-period">
+    <input type="radio" id="{{ id }}_am" name="{% firstof name id %}_period" value="AM"{% if period == "AM" %} checked{% endif %}><label for="{{ id }}_am">AM</label>
+    <input type="radio" id="{{ id }}_pm" name="{% firstof name id %}_period" value="PM"{% if period != "AM" %} checked{% endif %}><label for="{{ id }}_pm">PM</label>
+  </span>
+</span>
