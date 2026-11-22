@@ -5,33 +5,56 @@
          data-ai-url="{% url 'ai_search' %}"
          data-ai-reset-url="{% url 'ai_search_reset' %}">
   {# Collapsed: one line summarising the search; tap to open the panel again. #}
+  {# Chevron points right: tapping it opens the panel again (#65). #}
   <button id="search-summary" class="search-summary" type="button"
           aria-controls="search-form" aria-expanded="false" hidden>
     <span id="search-summary-text" class="search-summary-text">Search events</span>
-    <span class="search-summary-icon" aria-hidden="true">&#8964;</span>
+    <svg class="search-summary-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"
+         fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="9 6 15 12 9 18"/>
+    </svg>
   </button>
   <form id="search-form" class="search-form" role="search" novalidate>
-    <div class="search-row">
-      <label class="visually-hidden" for="search-q">Search events</label>
-      <input id="search-q" name="q" type="search" maxlength="200" autocomplete="off"
-             placeholder="Search events">
-      <button id="search-submit" class="search-submit search-icon-button" type="submit"
-              aria-label="Search" title="Search">
+    {# Icon bar (#65): filter, search, and a chevron that points left to collapse. #}
+    <div class="search-bar">
+      <button id="search-filters-toggle" class="search-icon-button" type="button"
+              aria-expanded="false" aria-controls="search-filters"
+              aria-label="Filters" title="Filters">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"
+             fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 6h16M7 12h10M10 18h4"/>
+        </svg>
+      </button>
+      <button id="search-ai-toggle" class="search-icon-button" type="button"
+              aria-controls="search-ai" aria-label="Search" title="Search">
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
           <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/>
           <path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
         </svg>
       </button>
-      <button id="search-filters-toggle" class="search-filters-toggle" type="button"
-              aria-expanded="false" aria-controls="search-filters">Filters</button>
-      <button id="search-ai-toggle" class="search-ai-toggle" type="button"
-              aria-controls="search-ai" aria-pressed="false">&#10024; AI</button>
-      <button id="search-collapse" class="search-collapse" type="button"
+      <button id="search-collapse" class="search-icon-button search-collapse" type="button"
               aria-controls="search-form" aria-expanded="true"
-              aria-label="Collapse search panel" title="Collapse">&#8963;</button>
+              aria-label="Collapse search panel" title="Collapse">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"
+             fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 6 9 12 15 18"/>
+        </svg>
+      </button>
     </div>
 
     <div id="search-filters" class="search-filters" hidden>
+      <div class="search-text-row">
+        <label class="visually-hidden" for="search-q">Search text</label>
+        <input id="search-q" name="q" type="search" maxlength="200" autocomplete="off"
+               placeholder="Search events">
+        <button id="search-submit" class="search-submit search-icon-button" type="submit"
+                aria-label="Search text" title="Search text">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+            <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/>
+            <path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
       <details id="search-category" class="search-field">
         <summary>Category</summary>
         <div class="search-options">
@@ -108,9 +131,14 @@
       <button id="search-ai-voice-exit" class="search-icon-button" type="button"
               aria-label="Leave voice mode" title="Leave voice mode" hidden>&#10005;</button>
       <button id="search-ai-new" type="button" title="Start a new conversation">New chat</button>
-      <button id="search-ai-collapse" class="search-collapse" type="button"
+      <button id="search-ai-collapse" class="search-icon-button search-collapse" type="button"
               aria-controls="search-ai" aria-expanded="true"
-              aria-label="Collapse search panel" title="Collapse">&#8963;</button>
+              aria-label="Collapse search panel" title="Collapse">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"
+             fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 6 9 12 15 18"/>
+        </svg>
+      </button>
     </div>
     <div id="search-ai-body" class="search-ai-body">
       <ol id="search-ai-log" class="search-ai-log" role="log" aria-live="polite" aria-label="Conversation">

@@ -403,7 +403,6 @@
     });
     summary.setAttribute("aria-expanded", String(!collapsed));
     summary.setAttribute("aria-controls", mode === "ai" ? "search-ai" : "search-form");
-    aiToggle.setAttribute("aria-pressed", String(mode === "ai"));
   }
 
   function setCollapsed(value) {
@@ -534,7 +533,8 @@
   });
   summary.addEventListener("click", function () {
     setCollapsed(false);
-    (mode === "ai" ? aiBack : qInput).focus();
+    // Back where the user was: the AI view, the filters, or the icon bar (#65).
+    (mode === "ai" ? aiBack : (filters.hidden ? filtersToggle : qInput)).focus();
   });
   aiToggle.addEventListener("click", function () {
     setMode("ai");
