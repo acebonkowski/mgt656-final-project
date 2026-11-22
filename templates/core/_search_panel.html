@@ -1,14 +1,15 @@
-<section id="search-panel" class="search-panel" aria-label="Search events"
+{% load static %}<section id="search-panel" class="search-panel" aria-label="Search events"
          data-search-url="{% url 'search_events' %}"
          data-geocode-url="{% url 'geocode_address' %}"
          data-popup-url="{% url 'event_detail_popup' 0 %}"
          data-ai-url="{% url 'ai_search' %}"
-         data-ai-reset-url="{% url 'ai_search_reset' %}">
+         data-ai-reset-url="{% url 'ai_search_reset' %}"
+         data-default-image="{% static 'core/img/default-event.svg' %}">
   {# Collapsed: one line summarising the search; tap to open the panel again. #}
   {# Chevron points right: tapping it opens the panel again (#65). #}
   <button id="search-summary" class="search-summary" type="button"
           aria-controls="search-form" aria-expanded="false" hidden>
-    <span id="search-summary-text" class="search-summary-text">Search events</span>
+    <span id="search-summary-text" class="search-summary-text">Search Events</span>
     <svg class="search-summary-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"
          fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
       <polyline points="9 6 15 12 9 18"/>
@@ -34,7 +35,7 @@
       </button>
       <button id="search-collapse" class="search-icon-button search-collapse" type="button"
               aria-controls="search-form" aria-expanded="true"
-              aria-label="Collapse search panel" title="Collapse">
+              aria-label="Collapse Search Panel" title="Collapse">
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"
              fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="15 6 9 12 15 18"/>
@@ -55,7 +56,7 @@
         </button>
         <h2 class="search-ai-title">Filters</h2>
         <button id="search-filters-ai" class="search-tertiary" type="button"
-                aria-controls="search-ai">Search with AI</button>
+                aria-controls="search-ai">Search With AI</button>
       </div>
 
       <div class="search-field-row">
@@ -79,18 +80,18 @@
             <option value="dates">Picked dates</option>
           </select>
           <button id="search-pick-dates" type="button" aria-controls="search-dates"
-                  aria-expanded="false">Pick dates</button>
+                  aria-expanded="false">Pick Dates</button>
         </div>
       </div>
       <div id="search-dates" class="search-dates" hidden>
-        <label><input id="search-date-range" type="checkbox"> Date range</label>
+        <label><input id="search-date-range" type="checkbox"> Date Range</label>
         <label><span id="search-date-from-label">On</span>
           <input id="search-date-from" type="date"></label>
         <label id="search-date-to-wrap" hidden>To <input id="search-date-to" type="date"></label>
       </div>
 
       <div class="search-field-row" role="group" aria-labelledby="search-time-label">
-        <span id="search-time-label" class="search-row-label">Start time</span>
+        <span id="search-time-label" class="search-row-label">Start Time</span>
         <div class="search-control search-time-control">
           <span class="search-time-line"><span class="search-time-word">From</span>
             {% include "core/widgets/time12.html" with id="search-time-from" label="Earliest start time" %}</span>
@@ -105,7 +106,7 @@
           <input id="search-address" type="text" autocomplete="off" placeholder="Type an address">
           <div id="search-address-suggestions" class="address-suggestions" role="listbox" hidden></div>
           <div class="search-inline">
-            <button id="search-my-location" type="button">Use my location</button>
+            <button id="search-my-location" type="button">Use My Location</button>
             <label class="visually-hidden" for="search-radius">Radius</label>
             <select id="search-radius" aria-label="Radius">
               {% for value, label in radius_choices %}
@@ -118,11 +119,11 @@
       </div>
 
       <div class="search-text-row">
-        <label class="visually-hidden" for="search-q">Search text</label>
+        <label class="visually-hidden" for="search-q">Search Text</label>
         <input id="search-q" name="q" type="search" maxlength="200" autocomplete="off"
                placeholder="Search events">
         <button id="search-submit" class="search-submit search-icon-button" type="submit"
-                aria-label="Search text" title="Search text">
+                aria-label="Search Text" title="Search Text">
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
             <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/>
             <path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
@@ -137,7 +138,7 @@
     <p id="search-error" class="search-message search-error" role="alert" hidden></p>
     <div class="search-status-row">
       <p id="search-status" class="search-status" role="status"></p>
-      <button id="search-clear" type="button" hidden>Clear filters</button>
+      <button id="search-clear" type="button" hidden>Clear Filters</button>
     </div>
     <ol id="search-results" class="search-results" aria-label="Search results"></ol>
   </form>
@@ -155,11 +156,11 @@
       </button>
       <h2 id="search-ai-title" class="search-ai-title">&#10024; Ask AI</h2>
       <button id="search-ai-mic-small" class="search-icon-button" type="button"
-              aria-label="Speak instead" title="Speak instead" hidden>&#127908;</button>
+              aria-label="Speak Instead" title="Speak Instead" hidden>&#127908;</button>
       <button id="search-ai-voice-exit" class="search-icon-button" type="button"
-              aria-label="Leave voice mode" title="Leave voice mode" hidden>&#10005;</button>
+              aria-label="Leave Voice Mode" title="Leave Voice Mode" hidden>&#10005;</button>
       <button id="search-ai-manual" class="search-tertiary" type="button"
-              aria-controls="search-filters">Search manually</button>
+              aria-controls="search-filters">Search Manually</button>
     </div>
     <div id="search-ai-body" class="search-ai-body">
       <ol id="search-ai-log" class="search-ai-log" role="log" aria-live="polite" aria-label="Conversation">
@@ -175,7 +176,7 @@
       <div id="search-ai-attachment" class="search-ai-attachment" hidden>
         <img id="search-ai-attachment-preview" alt="">
         <span id="search-ai-attachment-name" class="search-ai-attachment-name"></span>
-        <button id="search-ai-attachment-remove" type="button" aria-label="Remove attached image">&times;</button>
+        <button id="search-ai-attachment-remove" type="button" aria-label="Remove Attached Image">&times;</button>
       </div>
       <p id="search-ai-notice" class="search-message search-error" role="alert" hidden></p>
       <p id="search-ai-voice-status" class="search-message" role="status" hidden></p>
@@ -188,14 +189,14 @@
     <div id="search-ai-controls" class="search-ai-controls">
       <label class="search-ai-attach" for="search-ai-image"
              title="Attach a poster or flyer (PNG, JPEG or HEIC, up to 5 MB)">
-        <span aria-hidden="true">&#128206;</span><span class="visually-hidden">Attach an image</span>
+        <span aria-hidden="true">&#128206;</span><span class="visually-hidden">Attach an Image</span>
       </label>
       <button id="search-ai-mic" class="search-ai-mic" type="button" aria-pressed="false"
-              aria-label="Speak your request">&#127908;</button>
+              aria-label="Speak Your Request">&#127908;</button>
       <button id="search-ai-keyboard" class="search-ai-round" type="button"
-              aria-label="Type instead" title="Type instead">&#9000;</button>
+              aria-label="Type Instead" title="Type Instead">&#9000;</button>
       <button id="search-ai-volume" class="search-ai-round" type="button" aria-pressed="false"
-              aria-label="Mute spoken replies" title="Mute spoken replies" hidden><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg></button>
+              aria-label="Mute Spoken Replies" title="Mute Spoken Replies" hidden><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg></button>
     </div>
 
     {# Text mode. #}
@@ -207,7 +208,7 @@
       <div class="search-ai-form-row">
         <label class="search-ai-attach" for="search-ai-image"
                title="Attach a poster or flyer (PNG, JPEG or HEIC, up to 5 MB)">
-          <span aria-hidden="true">&#128206;</span><span class="visually-hidden">Attach an image</span>
+          <span aria-hidden="true">&#128206;</span><span class="visually-hidden">Attach an Image</span>
         </label>
         <span id="search-ai-count" class="search-ai-count" aria-live="polite">0/300</span>
         <button id="search-ai-send" class="search-submit" type="submit">Send</button>
@@ -216,14 +217,14 @@
   </section>
 
   {# Outside the form so it also shows while the panel is collapsed. #}
-  <button id="search-this-area" class="search-this-area" type="button" hidden>Search this area</button>
+  <button id="search-this-area" class="search-this-area" type="button" hidden>Search This Area</button>
 
   {# One event at a time, opened from a result card or a map pin (#34). #}
   <dialog id="search-event-dialog" class="event-detail-popup search-event-dialog" aria-label="Event details">
     <div class="search-event-nav">
-      <button id="search-event-prev" type="button" aria-label="Previous event">&#8249;</button>
+      <button id="search-event-prev" type="button" aria-label="Previous Event">&#8249;</button>
       <span id="search-event-position" class="search-event-position" aria-live="polite"></span>
-      <button id="search-event-next" type="button" aria-label="Next event">&#8250;</button>
+      <button id="search-event-next" type="button" aria-label="Next Event">&#8250;</button>
       <button id="search-event-close" class="search-event-close" type="button" aria-label="Close">&times;</button>
     </div>
     <div id="search-event-content" class="search-event-content"></div>

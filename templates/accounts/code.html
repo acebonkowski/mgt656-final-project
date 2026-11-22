@@ -2,8 +2,8 @@
 {% load static %}
 {% block title %}Code was sent · Yale Events{% endblock %}
 {% block content %}
-  <a class="back" href="{% url 'accounts:welcome' %}" aria-label="Back: change your email address">&larr;</a>
-  <h1>Code was sent.</h1>
+  <a class="back" href="{% url 'accounts:welcome' %}" aria-label="Back: Change Your Email Address">&larr;</a>
+  <h1>Code Was Sent.</h1>
   <p>We sent a 6-digit code to <strong>{{ email }}</strong>. It expires in 10 minutes.</p>
   <form method="post" action="{% url 'accounts:code' %}" novalidate>
     {% csrf_token %}
@@ -19,7 +19,7 @@
   </p>
   <form id="resend-form" method="post" action="{% url 'accounts:resend' %}"{% if seconds_until_resend %} hidden{% endif %}>
     {% csrf_token %}
-    <button type="submit" class="link">Resend code</button>
+    <button type="submit" class="link">Resend Code</button>
   </form>
 {% endblock %}
 {% block scripts %}<script src="{% static 'accounts/code.js' %}"></script>{% endblock %}

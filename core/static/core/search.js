@@ -66,6 +66,7 @@
   var collapsed = false;
   var phone = window.matchMedia("(max-width: 767px)");
   var popupUrl = panel.dataset.popupUrl;  // "/events/0/popup/"
+  var defaultImage = panel.dataset.defaultImage;
   var dialog = byId("search-event-dialog");
   var dialogContent = byId("search-event-content");
   var dialogPosition = byId("search-event-position");
@@ -81,7 +82,7 @@
 
   var defaultRadius = radius.value;
   var near = { lat: "", lng: "", label: "" };
-  var area = "";          // applied "Search this area" circle: "lat,lng,radius"
+  var area = "";          // applied "Search This Area" circle: "lat,lng,radius"
   var previewArea = null;  // circle shown after a drag, not searched yet
   var requestId = 0;
 
@@ -281,7 +282,7 @@
       var remove = document.createElement("button");
       remove.type = "button";
       remove.className = "search-chip-remove";
-      remove.setAttribute("aria-label", "Remove filter: " + chip.label);
+      remove.setAttribute("aria-label", "Remove Filter: " + chip.label);
       remove.textContent = "×";
       remove.addEventListener("click", function () {
         chip.remove();
@@ -316,19 +317,23 @@
     hour: "numeric", minute: "2-digit",
   };
 
+  // Events without an image, or whose image fails to load, show the default
+  // bulldog (#79) instead of their first letter.
+  function useDefaultImage(img) {
+    if (!defaultImage || img.getAttribute("src") === defaultImage) return;
+    img.src = defaultImage;
+  }
+
   function thumbnail(event) {
     var box = document.createElement("span");
     box.className = "search-result-thumb";
     box.setAttribute("aria-hidden", "true");
-    box.textContent = event.name.charAt(0).toUpperCase();
-    if (event.image_url) {
-      var img = document.createElement("img");
-      img.alt = "";
-      img.loading = "lazy";
-      img.src = event.image_url;
-      // Until the image loads (or if it can't), the box shows the initial.
-      img.addEventListener("load", function () { box.textContent = ""; box.appendChild(img); });
-    }
+    var img = document.createElement("img");
+    img.alt = "";
+    img.loading = "lazy";
+    img.addEventListener("error", function () { useDefaultImage(img); });
+    img.src = event.image_url || defaultImage;
+    box.appendChild(img);
     return box;
   }
 
@@ -389,7 +394,7 @@
         if (openIndex !== index) return;  // the user already moved on
         dialogContent.innerHTML = html;  // rendered (and escaped) by our server
         dialogContent.querySelectorAll("img").forEach(function (img) {
-          img.addEventListener("error", function () { img.hidden = true; });
+          img.addEventListener("error", function () { useDefaultImage(img); });
         });
       }).catch(function () {
         if (openIndex !== index) return;
@@ -458,7 +463,7 @@
     var parts = chipList(readFilters()).map(function (chip) { return chip.label; });
     if (statusBox.textContent) parts.push(statusBox.textContent);
     if (mode === "ai") parts.unshift("Ask AI");
-    summaryText.textContent = parts.length ? parts.join(" \u00b7 ") : "Search events";
+    summaryText.textContent = parts.length ? parts.join(" \u00b7 ") : "Search Events";
   }
 
   function runSearch() {
@@ -680,7 +685,7 @@
     }, { timeout: 10000, maximumAge: 60000 });
   });
 
-  // After a drag or zoom, preview the circle that "Search this area" would use.
+  // After a drag or zoom, preview the circle that "Search This Area" would use.
   if (window.eventMap) {
     // Phones: dragging the map tucks the panel away so the map is visible.
     window.eventMap.onUserMoveStart(function () {
@@ -688,7 +693,7 @@
     });
     window.eventMap.onUserMove(function () {
       previewArea = window.eventMap.viewCircle();
-      areaButton.textContent = "Search this area (" + previewArea.radius + " mi)";
+      areaButton.textContent = "Search This Area (" + previewArea.radius + " mi)";
       areaButton.hidden = false;
       showArea();
     });
@@ -783,7 +788,7 @@
     footer.appendChild(count);
     var edit = document.createElement("button");
     edit.type = "button";
-    edit.textContent = "Edit in filters";
+    edit.textContent = "Edit in Filters";
     edit.addEventListener("click", function () { editInFilters(entry.filters); });
     footer.appendChild(edit);
     item.appendChild(footer);
@@ -1093,7 +1098,7 @@
     muted = !muted;
     if (muted) stopSpeaking();
     aiVolume.setAttribute("aria-pressed", String(muted));
-    aiVolume.setAttribute("aria-label", muted ? "Turn spoken replies on" : "Mute spoken replies");
+    aiVolume.setAttribute("aria-label", muted ? "Turn Spoken Replies On" : "Mute Spoken Replies");
     aiVolume.title = aiVolume.getAttribute("aria-label");
     aiVolume.innerHTML = muted ? VOLUME_OFF_ICON : VOLUME_ON_ICON;  // constant SVG markup
   });
