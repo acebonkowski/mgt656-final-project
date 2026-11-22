@@ -211,6 +211,9 @@ OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "").strip()
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 # AI search (#36) uses OPENROUTER_MODEL unless this overrides it (vision-capable).
 OPENROUTER_SEARCH_MODEL = os.environ.get("OPENROUTER_SEARCH_MODEL", "").strip()
+# Event image generation (#59) needs a model that can output images; the text
+# model can't. No fallback: without it, "Generate with AI" says it's not configured.
+OPENROUTER_IMAGE_MODEL = os.environ.get("OPENROUTER_IMAGE_MODEL", "").strip()
 
 # Per-user AI usage limits (#36). Graders and staff are exempt from the per-user
 # limits; the global daily cap protects the course credits for everyone.

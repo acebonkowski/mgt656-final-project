@@ -56,6 +56,7 @@ All configuration comes from environment variables. Nothing secret is committed.
 | `OPENROUTER_API_KEY` | for AI features | OpenRouter key from the course credits. Server-side only: never commit it or expose it to browser JavaScript. Tests mock the LLM, so they don't need it |
 | `OPENROUTER_MODEL` | for AI features | Use `google/gemini-3.1-flash-lite` (text, image and audio input, structured output, low cost). Verify key + model on an environment with `python manage.py check_openrouter` (sends one tiny request, uses credits) |
 | `OPENROUTER_SEARCH_MODEL` | no | Optional model for AI search only (must read images and support structured output). Defaults to `OPENROUTER_MODEL` |
+| `OPENROUTER_IMAGE_MODEL` | for AI images | Model for "Generate with AI" event images and imported-event images. Must output images, so the text model won't work. Use `google/gemini-3.1-flash-lite-image`. No fallback: if unset, the form says "AI image generation is not configured." Each image uses credits |
 | `AI_SEARCH_DAILY_LIMIT` | no | AI search messages per user per day (America/New_York). Defaults to `15` |
 | `AI_SEARCH_PER_MINUTE_LIMIT` | no | AI search messages per user per minute. Defaults to `3` |
 | `AI_IMAGE_SEARCH_DAILY_LIMIT` | no | AI searches with an image per user per day. Defaults to `3` |
@@ -293,7 +294,7 @@ not a durable queue; interruptions require rerunning the idempotent job.
 `AGGREGATOR_MAX_IMAGES_PER_RUN=0` and
 `AGGREGATOR_MAX_CLASSIFICATIONS_PER_RUN=0` disable paid AI calls by default. After
 budget approval, set finite per-run caps to enable the existing server-side
-OpenRouter service. Configure an image-capable `OPENROUTER_MODEL` and the existing
+OpenRouter service. Configure `OPENROUTER_IMAGE_MODEL` (an image-output model) and the existing
 Supabase event-photo bucket (use `setup_photo_storage` with the existing project
 instructions). Failed requests consume their cap. Image failures and events over
 the cap retain a text placeholder; all valid events can still import. LLM
