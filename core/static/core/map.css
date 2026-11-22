@@ -110,19 +110,34 @@ body {
   padding-right: env(safe-area-inset-right);
 }
 
-/* Log out (#6): top-right, above the map and the headline overlay. */
-.logout {
+/* Top right (#64): Create, then a logout icon (#6). Above the map and the
+   search panel. On phones the panel starts below this row (search.css). */
+:root {
+  --create-bg: #7c3aed;   /* saturated violet: stands out on the light map and the dark panel */
+  --create-bg-hover: #6d28d9;
+  --create-text: #ffffff; /* 5.7:1 on --create-bg */
+}
+
+.top-actions {
   position: absolute;
   top: max(0.75rem, env(safe-area-inset-top));
   right: max(0.75rem, env(safe-area-inset-right));
-  z-index: 2;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logout {
   margin: 0;
 }
 
-.logout button {
-  padding: 0.45rem 0.9rem;
-  font: inherit;
-  font-size: 0.9rem;
+.logout-button {
+  display: inline-grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
   color: var(--map-text);
   background: var(--overlay-bg);
   border: 1px solid rgba(230, 236, 245, 0.25);
@@ -131,22 +146,31 @@ body {
 }
 
 .create-event-button {
-  position: absolute;
-  right: max(1rem, env(safe-area-inset-right));
-  /* Just above the map attribution (the ⓘ button on phones); #35. */
-  bottom: max(2.75rem, calc(env(safe-area-inset-bottom) + 2.5rem));
-  z-index: 3;
-  width: 3.25rem;
-  height: 3.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 2.5rem;
+  padding: 0 1rem 0 0.8rem;
   border: 0;
-  border-radius: 50%;
-  background: #4da3ff;
-  color: #08111f;
+  border-radius: 999px;
+  background: var(--create-bg);
+  color: var(--create-text);
   font: inherit;
-  font-size: 2rem;
+  font-size: 0.95rem;
+  font-weight: 700;
   line-height: 1;
   cursor: pointer;
   box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.35);
+}
+
+.create-event-button:hover {
+  background: var(--create-bg-hover);
+}
+
+.create-event-button:focus-visible,
+.logout-button:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
 }
 
 .poi-marker {
