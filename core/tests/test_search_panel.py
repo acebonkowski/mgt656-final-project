@@ -266,7 +266,8 @@ class AiModeTests(TestCase):
     def test_ai_view_is_hidden_until_chosen_and_has_a_back_arrow(self):
         self.assertContains(self.response, 'id="search-ai" class="search-ai" aria-labelledby="search-ai-title" hidden')
         self.assertContains(self.response, 'id="search-ai-back"')
-        self.assertContains(self.response, 'aria-label="Back to filters"')
+        self.assertContains(self.response, 'id="search-ai-back" class="search-icon-button" type="button"\n'
+                                           '              aria-label="Back"')
 
     def test_mode_is_kept_in_the_url_and_restored(self):
         self.assertIn('if (mode === "ai") page.set("mode", "ai");', self.source)
@@ -296,7 +297,6 @@ class AiChatPanelTests(TestCase):
         self.assertContains(self.response, 'id="search-ai-log" class="search-ai-log" role="log"')
         self.assertContains(self.response, 'id="search-ai-input" name="message" rows="2" maxlength="300"')
         self.assertContains(self.response, 'id="search-ai-send"')
-        self.assertContains(self.response, 'id="search-ai-new"')
         self.assertContains(self.response, 'id="search-ai-results"')
 
     def test_chat_form_carries_the_csrf_token(self):
@@ -315,11 +315,11 @@ class AiChatPanelTests(TestCase):
         self.assertIn("text.textContent = entry.text;", body)
         self.assertNotIn("innerHTML", body)
 
-    def test_transcript_survives_a_refresh_and_new_chat_clears_it(self):
+    def test_transcript_survives_a_refresh_and_reset_clears_it(self):
         self.assertIn("window.sessionStorage.setItem(CHAT_KEY", self.source)
-        new_chat = self.source.split('aiNew.addEventListener("click"', 1)[1].split("\n  });\n", 1)[0]
-        self.assertIn("aiResetUrl", new_chat)
-        self.assertIn("chat = [];", new_chat)
+        reset = self.source.split("function resetChat() {", 1)[1].split("\n  }\n", 1)[0]
+        self.assertIn("aiResetUrl", reset)
+        self.assertIn("chat = [];", reset)
 
     def test_edit_in_filters_applies_the_ai_filters(self):
         body = self.source.split("function editInFilters(filters) {", 1)[1].split("\n  }\n", 1)[0]
@@ -418,11 +418,13 @@ class AiVoiceTests(TestCase):
         self.assertIn('event.error === "not-allowed"', self.source)
         self.assertIn("Microphone access is blocked", self.source)
 
-    def test_voice_stops_when_leaving_ai_mode_or_starting_a_new_chat(self):
+    def test_voice_stops_when_leaving_ai_mode_or_resetting_the_chat(self):
         back = self.source.split('aiBack.addEventListener("click", function () {', 1)[1].split("});", 1)[0]
         self.assertIn("stopVoice();", back)
-        new_chat = self.source.split('aiNew.addEventListener("click"', 1)[1].split("\n  });\n", 1)[0]
-        self.assertIn("stopVoice();", new_chat)
+        manual = self.source.split('aiManual.addEventListener("click", function () {', 1)[1].split("});", 1)[0]
+        self.assertIn("stopVoice();", manual)
+        reset = self.source.split("function resetChat() {", 1)[1].split("\n  }\n", 1)[0]
+        self.assertIn("stopVoice();", reset)
 
     def test_listening_pulse_respects_reduced_motion(self):
         css = static_source("core/search.css")
@@ -464,7 +466,7 @@ class GlassIconBarTests(TestCase):
         self.assertNotIn("&#8963;", self.html)  # the old up-pointing chevron
 
     def test_chevron_collapses_and_the_summary_expands(self):
-        self.assertIn("setCollapsed(true);", self.source.split("[collapseButton, aiCollapse].forEach", 1)[1])
+        self.assertIn("setCollapsed(true);", self.source.split('collapseButton.addEventListener("click"', 1)[1])
         self.assertIn("setCollapsed(false);", self.source.split('summary.addEventListener("click"', 1)[1])
 
     def test_search_icon_opens_the_ai_view_and_filter_icon_opens_the_filters(self):
@@ -499,3 +501,71 @@ class GlassIconBarTests(TestCase):
         # the phone panel (overlay z-index 1).
         rule = static_source("core/map.css").split(".map-screen .map {", 1)[1].split("}", 1)[0]
         self.assertIn("z-index: 0;", rule)
+
+
+class SearchModeTests(TestCase):
+    """#66: search opens into the AI chat, with Back and "Search manually"."""
+
+    def setUp(self):
+        user = get_user_model().objects.create_user(username="search-mode@yale.edu")
+        self.client.force_login(user)
+        self.response = self.client.get("/map/")
+        self.html = self.response.content.decode()
+        self.header = self.html.split('class="search-ai-header"', 1)[1].split("</div>", 1)[0]
+        self.source = static_source("core/search.js")
+
+    def handler(self, variable):
+        return self.source.split(f'{variable}.addEventListener("click", function () {{', 1)[1].split("});", 1)[0]
+
+    def test_ai_view_replaces_the_whole_panel(self):
+        # The AI view sits outside the search form (icon bar, filters and
+        # results), and showing it hides that form.
+        self.assertGreater(self.html.index('id="search-ai"'), self.html.index("</form>"))
+        self.assertIn('form.hidden = collapsed || mode === "ai";', self.source)
+        self.assertIn('setMode("ai");', self.handler("aiToggle"))
+
+    def test_back_arrow_is_first_and_search_manually_is_last(self):
+        buttons = re.findall(r'<button id="([^"]+)"', self.header)
+        self.assertEqual(buttons[0], "search-ai-back")
+        self.assertEqual(buttons[-1], "search-ai-manual")
+        self.assertIn('<polyline points="11 6 5 12 11 18"/>', self.header)  # arrow pointing left
+
+    def test_no_new_chat_button(self):
+        self.assertNotIn("search-ai-new", self.html)
+        self.assertNotIn("New chat", self.html)
+        self.assertNotIn("aiNew", self.source)
+
+    def test_search_manually_is_a_tertiary_text_button(self):
+        self.assertIn('class="search-tertiary" type="button"', self.header)
+        self.assertIn(">Search manually</button>", self.header)
+        rule = static_source("core/search.css").split(".search-panel .search-tertiary {", 1)[1].split("}", 1)[0]
+        self.assertIn("background: transparent;", rule)
+        self.assertIn("border-color: transparent;", rule)
+
+    def test_search_manually_opens_the_filters_and_keeps_the_chat(self):
+        manual = self.handler("aiManual")
+        self.assertIn('setMode("filters");', manual)
+        self.assertIn("openFilters(true);", manual)
+        self.assertNotIn("resetChat", manual)
+
+    def test_back_returns_to_the_icon_bar_and_resets_the_chat(self):
+        back = self.handler("aiBack")
+        self.assertIn("resetChat();", back)
+        self.assertIn('setMode("filters");', back)
+        self.assertIn("openFilters(false);", back)
+        self.assertIn("aiToggle.focus();", back)
+
+    def test_reset_uses_the_existing_endpoint_only_when_there_is_a_conversation(self):
+        reset = self.source.split("function resetChat() {", 1)[1].split("\n  }\n", 1)[0]
+        self.assertIn("if (chat.length) {", reset)
+        self.assertIn("fetch(aiResetUrl", reset)
+
+    def test_existing_ai_features_are_kept(self):
+        for control in ("search-ai-mic", "search-ai-image", "search-ai-keyboard", "search-ai-volume",
+                        "search-ai-mic-small", "search-ai-voice-exit"):
+            self.assertIn(f'id="{control}"', self.html)
+
+    def test_no_template_comment_leaks_into_the_page(self):
+        # {# #} comments are single-line only; a multi-line one renders as text.
+        self.assertNotIn("{#", self.html)
+        self.assertNotIn("#}", self.html)

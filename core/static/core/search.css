@@ -240,6 +240,21 @@
   font-size: 1.05rem;
 }
 
+/* Tertiary button (#66): text only, no fill or border. */
+.search-panel .search-tertiary {
+  flex: none;
+  padding: 0.4rem 0.3rem;
+  border-color: transparent;
+  background: transparent;
+  color: #9fcbff;
+  font-weight: 600;
+}
+
+.search-panel .search-tertiary:hover,
+.search-panel .search-tertiary:focus-visible {
+  text-decoration: underline;
+}
+
 .search-ai-body {
   margin-top: 0.75rem;
 }

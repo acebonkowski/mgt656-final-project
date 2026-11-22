@@ -43,7 +43,6 @@
   var aiView = byId("search-ai");
   var aiToggle = byId("search-ai-toggle");
   var aiBack = byId("search-ai-back");
-  var aiCollapse = byId("search-ai-collapse");
   var mode = "filters";     // or "ai" (#34); kept in the URL as ?mode=ai
   var aiUrl = panel.dataset.aiUrl;
   var aiResetUrl = panel.dataset.aiResetUrl;
@@ -53,7 +52,7 @@
   var aiInput = byId("search-ai-input");
   var aiCount = byId("search-ai-count");
   var aiSend = byId("search-ai-send");
-  var aiNew = byId("search-ai-new");
+  var aiManual = byId("search-ai-manual");  // "Search manually" (#66)
   var aiImage = byId("search-ai-image");
   var aiAttachment = byId("search-ai-attachment");
   var aiAttachmentPreview = byId("search-ai-attachment-preview");
@@ -398,9 +397,7 @@
     form.hidden = collapsed || mode === "ai";
     aiView.hidden = collapsed || mode !== "ai";
     summary.hidden = !collapsed;
-    [collapseButton, aiCollapse].forEach(function (button) {
-      button.setAttribute("aria-expanded", String(!collapsed));
-    });
+    collapseButton.setAttribute("aria-expanded", String(!collapsed));
     summary.setAttribute("aria-expanded", String(!collapsed));
     summary.setAttribute("aria-controls", mode === "ai" ? "search-ai" : "search-form");
   }
@@ -525,11 +522,9 @@
     runSearch();
   });
   clearButton.addEventListener("click", clearAll);
-  [collapseButton, aiCollapse].forEach(function (button) {
-    button.addEventListener("click", function () {
-      setCollapsed(true);
-      summary.focus();
-    });
+  collapseButton.addEventListener("click", function () {
+    setCollapsed(true);
+    summary.focus();
   });
   summary.addEventListener("click", function () {
     setCollapsed(false);
@@ -541,11 +536,23 @@
     showAiResults();
     setInputMode(aiInputMode);
   });
+  // Back to the icon bar (#66). Leaving search ends the conversation, which
+  // replaced the "New chat" button.
   aiBack.addEventListener("click", function () {
     stopVoice();
+    resetChat();
     setMode("filters");
+    openFilters(false);
     runSearch();  // the pins go back to the manual filters
     aiToggle.focus();
+  });
+  // Switching to manual search keeps the conversation for "Search with AI".
+  aiManual.addEventListener("click", function () {
+    stopVoice();
+    setMode("filters");
+    openFilters(true);
+    runSearch();
+    qInput.focus();
   });
 
   function showLocationMessage(message) {
@@ -861,12 +868,14 @@
       sendToAi(aiInput.value.trim());
     }
   });
-  aiNew.addEventListener("click", function () {
-    var body = new FormData();
-    fetch(aiResetUrl, {
-      method: "POST", credentials: "same-origin",
-      headers: { "X-CSRFToken": csrfToken() }, body: body,
-    }).catch(function () { /* the server forgets it at the end of the session anyway */ });
+  // Forgets the conversation here and on the server (the AI's context).
+  function resetChat() {
+    if (chat.length) {  // nothing to forget on the server otherwise
+      fetch(aiResetUrl, {
+        method: "POST", credentials: "same-origin",
+        headers: { "X-CSRFToken": csrfToken() }, body: new FormData(),
+      }).catch(function () { /* the server forgets it at the end of the session anyway */ });
+    }
     chat = [];
     aiEvents = [];
     stopVoice();
@@ -875,9 +884,7 @@
     saveChat();
     renderChat();
     renderResults([], aiResults);
-    runSearch();  // the pins go back to the manual filters
-    aiInput.focus();
-  });
+  }
 
   // --- Input modes and voice (#36) --------------------------------------------------
   // start: attach | large microphone | type.  text: message box, small microphone
