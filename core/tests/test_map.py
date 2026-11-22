@@ -196,11 +196,11 @@ class MapEventTests(TestCase):
     def test_image_menu_offers_gallery_ai_files_camera_and_actions(self):
         response = self.client.get("/map/")
         self.assertContains(response, "Gallery")
-        self.assertContains(response, "Generate with AI")
+        self.assertContains(response, ">Generate</button>")  # "Generate with AI" until #68
         self.assertContains(response, "Files")
         self.assertContains(response, 'capture="environment"')
-        self.assertContains(response, "Replace")
-        self.assertContains(response, "Delete")
+        self.assertContains(response, 'aria-label="Change image"')  # replaced "Replace" (#68)
+        self.assertContains(response, 'aria-label="Remove image"')  # replaced "Delete" (#68)
 
     @override_settings(MAP_API_KEY=FAKE_KEY)
     def test_ai_generation_endpoint_returns_preview_and_never_exposes_key(self):

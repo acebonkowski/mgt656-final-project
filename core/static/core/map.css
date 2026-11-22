@@ -286,6 +286,12 @@ body {
   margin: 0;
 }
 
+/* map.js hides the raw image field (the square replaces it, #68); without
+   this, display: grid above overrode the hidden attribute. */
+.event-form p[hidden] {
+  display: none;
+}
+
 .event-form input,
 .event-form textarea,
 .event-form select {
@@ -357,28 +363,82 @@ body {
   cursor: pointer;
 }
 
+/* Event image (#68): a centred square. Empty, it shows a plus; with an image,
+   the image fills it and edit/remove icons sit in the top-right corner. */
 .image-menu {
   display: grid;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  border: 1px solid rgba(230, 236, 245, 0.22);
-  border-radius: 0.6rem;
+  justify-items: center;
+  gap: 0.5rem;
+}
+
+.image-square {
+  position: relative;
+  width: min(100%, 13rem);
+  aspect-ratio: 1 / 1;
+}
+
+.image-add {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border: 2px dashed rgba(230, 236, 245, 0.35);
+  border-radius: 0.75rem;
+  background: #0b1220;
+  color: var(--map-muted);
+  cursor: pointer;
+}
+
+.image-add:hover,
+.image-add:focus-visible,
+.image-add[aria-expanded="true"] {
+  border-color: #4da3ff;
+  color: #9fcbff;
 }
 
 .event-image-preview {
-  width: 100%;
-  aspect-ratio: 16 / 9;
+  position: absolute;
+  inset: 0;
   overflow: hidden;
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   background: #0b1220;
 }
 
 .event-image-preview img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
+.image-tools {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  display: flex;
+  gap: 0.35rem;
+}
+
+.image-tool {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(11, 18, 32, 0.78);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.image-tool:focus-visible,
+.image-add:focus-visible {
+  outline: 2px solid #9fcbff;
+  outline-offset: 2px;
+}
+
+.image-add[hidden],
 .event-image-preview[hidden],
 .image-sources[hidden],
 .image-loading[hidden],
@@ -386,27 +446,47 @@ body {
   display: none;
 }
 
-.image-menu-actions,
+/* The menu drops over the square, in the order Gallery, Generate, Files, Camera. */
 .image-sources {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  display: grid;
+  min-width: 10rem;
+  transform: translate(-50%, -50%);
+  overflow: hidden;
+  border: 1px solid rgba(230, 236, 245, 0.28);
+  border-radius: 0.6rem;
+  background: #111b2d;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.45);
 }
 
-.image-menu-actions button,
 .image-sources button,
 .image-sources label {
-  min-height: 2.5rem;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(230, 236, 245, 0.28);
-  border-radius: 0.5rem;
-  background: #0b1220;
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border: 0;
+  border-bottom: 1px solid rgba(230, 236, 245, 0.12);
+  background: transparent;
   color: var(--map-text);
-  padding: 0.55rem 0.75rem;
   font: inherit;
+  text-align: left;
   cursor: pointer;
+}
+
+.image-sources > :last-child {
+  border-bottom: 0;
+}
+
+.image-sources button:hover,
+.image-sources label:hover,
+.image-sources button:focus-visible,
+.image-sources label:focus-within {
+  background: rgba(77, 163, 255, 0.18);
+  outline: none;
 }
 
 .image-sources input {
@@ -420,10 +500,16 @@ body {
 }
 
 .image-loading {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.55rem;
+  border-radius: 0.75rem;
+  background: rgba(11, 18, 32, 0.85);
   color: var(--map-muted);
+  font-size: 0.9rem;
 }
 
 .spinner {

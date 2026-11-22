@@ -204,11 +204,13 @@
     });
   }
 
+  // Event image (#68): square placeholder with a plus; the plus and the edit
+  // icon open one menu (Gallery, Generate, Files, Camera); the cross removes.
   var imageMenu = document.querySelector(".image-menu");
   if (imageMenu) {
     var addButton = document.getElementById("event-image-add");
-    var replaceButton = document.getElementById("event-image-replace");
-    var deleteButton = document.getElementById("event-image-delete");
+    var editButton = document.getElementById("event-image-edit");
+    var removeButton = document.getElementById("event-image-remove");
     var sources = document.getElementById("event-image-sources");
     var aiButton = document.getElementById("event-image-ai");
     var loading = document.getElementById("event-image-loading");
@@ -222,17 +224,27 @@
       formImage.parentElement.hidden = true;
     }
 
-    function showSources() {
-      sources.hidden = !sources.hidden;
+    function setMenu(open) {
+      sources.hidden = !open;
+      [addButton, editButton].forEach(function (button) {
+        button.setAttribute("aria-expanded", String(open));
+      });
+      if (open) {
+        var first = sources.querySelector("input, button");
+        if (first) first.focus();
+      }
+    }
+
+    function toggleMenu(event) {
+      event.stopPropagation();  // the document click below would close it again
+      setMenu(sources.hidden);
     }
 
     function showSelectedImage(src) {
       previewImage.src = src;
       preview.hidden = false;
       addButton.hidden = true;
-      replaceButton.hidden = false;
-      deleteButton.hidden = false;
-      sources.hidden = true;
+      setMenu(false);
     }
 
     function clearImage() {
@@ -246,15 +258,24 @@
       previewImage.removeAttribute("src");
       preview.hidden = true;
       addButton.hidden = false;
-      replaceButton.hidden = true;
-      deleteButton.hidden = true;
-      sources.hidden = true;
+      setMenu(false);
       error.hidden = true;
+      addButton.focus();
     }
 
-    if (addButton) addButton.addEventListener("click", showSources);
-    if (replaceButton) replaceButton.addEventListener("click", showSources);
-    if (deleteButton) deleteButton.addEventListener("click", clearImage);
+    addButton.addEventListener("click", toggleMenu);
+    editButton.addEventListener("click", toggleMenu);
+    removeButton.addEventListener("click", clearImage);
+    // Close the menu on Escape (without closing the dialog) or a click elsewhere.
+    sources.addEventListener("keydown", function (event) {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      setMenu(false);
+      (preview.hidden ? addButton : editButton).focus();
+    });
+    document.addEventListener("click", function (event) {
+      if (!sources.hidden && !sources.contains(event.target)) setMenu(false);
+    });
 
     ["event-image-gallery", "event-image-files", "event-image-camera"].forEach(function (id) {
       var input = document.getElementById(id);
@@ -286,6 +307,7 @@
         body.set("name", name ? name.value : "");
         body.set("description", description ? description.value : "");
         error.hidden = true;
+        setMenu(false);
         loading.hidden = false;
         aiButton.disabled = true;
         fetch(imageMenu.dataset.generateUrl, {
