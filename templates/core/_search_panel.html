@@ -120,25 +120,25 @@
     </div>
     <ol id="search-results" class="search-results" aria-label="Search results"></ol>
   </form>
-  {# AI mode (#34): replaces the filters view; #36 adds the conversation. #}
+  {% comment %}Search mode (#66): the search icon replaces the whole panel with the AI
+     chat. Back (top left) returns to the icon bar and ends the conversation;
+     "Search manually" (top right) switches to the filters.{% endcomment %}
   <section id="search-ai" class="search-ai" aria-labelledby="search-ai-title" hidden>
     <div class="search-ai-header">
       <button id="search-ai-back" class="search-icon-button" type="button"
-              aria-label="Back to filters" title="Back to filters">&#8592;</button>
+              aria-label="Back" title="Back">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"
+             fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5"/><polyline points="11 6 5 12 11 18"/>
+        </svg>
+      </button>
       <h2 id="search-ai-title" class="search-ai-title">&#10024; Ask AI</h2>
       <button id="search-ai-mic-small" class="search-icon-button" type="button"
               aria-label="Speak instead" title="Speak instead" hidden>&#127908;</button>
       <button id="search-ai-voice-exit" class="search-icon-button" type="button"
               aria-label="Leave voice mode" title="Leave voice mode" hidden>&#10005;</button>
-      <button id="search-ai-new" type="button" title="Start a new conversation">New chat</button>
-      <button id="search-ai-collapse" class="search-icon-button search-collapse" type="button"
-              aria-controls="search-ai" aria-expanded="true"
-              aria-label="Collapse search panel" title="Collapse">
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"
-             fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="15 6 9 12 15 18"/>
-        </svg>
-      </button>
+      <button id="search-ai-manual" class="search-tertiary" type="button"
+              aria-controls="search-filters">Search manually</button>
     </div>
     <div id="search-ai-body" class="search-ai-body">
       <ol id="search-ai-log" class="search-ai-log" role="log" aria-live="polite" aria-label="Conversation">
