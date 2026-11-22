@@ -63,10 +63,10 @@ MAP_TILE_MIN_ZOOM = 8
 MAP_TILE_MAX_ZOOM = 16
 
 
-def find_duplicate_event(location, date, start_time, end_time):
+def find_duplicate_event(location, date, start_time, end_time, end_date=None):
     new_york = ZoneInfo("America/New_York")
     start_at = datetime.combine(date, start_time, tzinfo=new_york)
-    end_at = datetime.combine(date, end_time, tzinfo=new_york)
+    end_at = datetime.combine(end_date or date, end_time, tzinfo=new_york)  # #70
     return Event.objects.filter(
         location=location,
         start_at=start_at,
@@ -92,6 +92,7 @@ def map_view(request):
             form.cleaned_data["date"],
             form.cleaned_data["start_time"],
             form.cleaned_data["end_time"],
+            form.cleaned_data.get("end_date"),
         )
         if duplicate:
             form.add_error(None, "An event already exists at this location and time.")
@@ -258,15 +259,17 @@ def duplicate_event(request):
     date_value = (request.GET.get("date") or "").strip()
     start_value = (request.GET.get("start_time") or "").strip()
     end_value = (request.GET.get("end_time") or "").strip()
+    end_date_value = (request.GET.get("end_date") or "").strip()  # overnight events (#70)
     if not all((location, date_value, start_value, end_value)):
         return JsonResponse({"match": None})
     try:
         date = datetime.strptime(date_value, "%Y-%m-%d").date()
         start_time = datetime.strptime(start_value, "%H:%M").time()
         end_time = datetime.strptime(end_value, "%H:%M").time()
+        end_date = datetime.strptime(end_date_value, "%Y-%m-%d").date() if end_date_value else None
     except ValueError:
         return JsonResponse({"match": None})
-    event = find_duplicate_event(location, date, start_time, end_time)
+    event = find_duplicate_event(location, date, start_time, end_time, end_date)
     if not event:
         return JsonResponse({"match": None})
     return JsonResponse({
@@ -326,6 +329,8 @@ def event_form_initial(event):
         "date": start_at.date(),
         "start_time": start_at.time().replace(tzinfo=None),
         "end_time": end_at.time().replace(tzinfo=None),
+        # Only set for overnight and multi-day events, so the field shows (#70).
+        "end_date": end_at.date() if end_at.date() != start_at.date() else None,
         "location": event.location,
         "location_confirmed": event.location,
         "latitude": event.latitude,
@@ -356,6 +361,7 @@ def edit_event(request, event_id):
             form.cleaned_data["date"],
             form.cleaned_data["start_time"],
             form.cleaned_data["end_time"],
+            form.cleaned_data.get("end_date"),
         )
         if duplicate and duplicate.pk != event.pk:
             form.add_error(None, "An event already exists at this location and time.")

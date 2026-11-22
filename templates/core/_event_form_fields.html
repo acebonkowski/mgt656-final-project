@@ -49,6 +49,16 @@ and Price | Link. The image field is rendered by each page.
     </div>
   </div>
 
+  {# Overnight and multi-day events (#70): under End time; event_form.js shows it. #}
+  <div id="end-date-row" class="event-row"{% if not form.end_date.value and not form.end_date.errors %} hidden{% endif %}>
+    <div aria-hidden="true"></div>
+    <div class="event-field">
+      {{ form.end_date.label_tag }}
+      {{ form.end_date }}
+      {{ form.end_date.errors }}
+    </div>
+  </div>
+
   <div class="event-field">
     {{ form.location.label_tag }}
     {{ form.location }}

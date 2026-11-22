@@ -107,6 +107,7 @@
     // 12-hour groups (#69); Time12.read gives "HH:MM", "" or null (invalid).
     var startInput = document.getElementById("id_start_time");
     var endInput = document.getElementById("id_end_time");
+    var endDateInput = document.getElementById("id_end_date");
     function timeValue(group) {
       return group && window.Time12 ? (window.Time12.read(group) || "") : "";
     }
@@ -133,7 +134,9 @@
           date: dateInput ? dateInput.value : "",
           start_time: timeValue(startInput),
           end_time: timeValue(endInput),
+          end_date: endDateInput ? endDateInput.value : "",  // overnight events (#70)
         });
+        if (!params.get("end_date")) params.delete("end_date");
         if (!params.get("location") || !params.get("date") ||
             !params.get("start_time") || !params.get("end_time")) {
           duplicateMatch = null;
@@ -162,7 +165,7 @@
       }, 250);
     }
 
-    [locationInput, dateInput, startInput, endInput].forEach(function (input) {
+    [locationInput, dateInput, startInput, endInput, endDateInput].forEach(function (input) {
       if (input) input.addEventListener("change", checkDuplicate);
       if (input) input.addEventListener("input", checkDuplicate);
     });
