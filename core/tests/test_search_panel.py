@@ -169,9 +169,9 @@ class SidePanelLayoutTests(TestCase):
                             "width: var(--search-panel-width);"):
             self.assertIn(declaration, rule)
 
-    def test_map_and_legend_sit_beside_the_open_panel(self):
-        self.assertIn("body.map-screen:not(.search-collapsed) .map {\n    left: var(--search-panel-width);",
-                      self.desktop)
+    def test_map_runs_under_the_glass_panel_and_legend_sits_beside_it(self):
+        # #65: the map is visible through the translucent panel.
+        self.assertNotIn("body.map-screen:not(.search-collapsed) .map {", self.desktop)
         self.assertIn("body.map-screen:not(.search-collapsed) .poi-legend {\n"
                       "    left: calc(var(--search-panel-width) + 0.75rem);", self.desktop)
 
@@ -254,10 +254,11 @@ class AiModeTests(TestCase):
         self.html = self.response.content.decode()
         self.source = static_source("core/search.js")
 
-    def test_ai_button_sits_next_to_filters(self):
-        row = self.html.split('class="search-row"', 1)[1].split("</div>", 1)[0]
-        self.assertLess(row.index('id="search-filters-toggle"'), row.index('id="search-ai-toggle"'))
-        self.assertContains(self.response, 'aria-controls="search-ai" aria-pressed="false"')
+    def test_search_icon_sits_next_to_the_filter_icon(self):
+        bar = self.html.split('class="search-bar"', 1)[1].split("</div>", 1)[0]
+        self.assertLess(bar.index('id="search-filters-toggle"'), bar.index('id="search-ai-toggle"'))
+        self.assertContains(self.response, 'id="search-ai-toggle" class="search-icon-button" type="button"\n'
+                                           '              aria-controls="search-ai"')
 
     def test_search_button_is_an_icon_with_a_label(self):
         self.assertContains(self.response, 'aria-label="Search" title="Search"')
@@ -427,3 +428,74 @@ class AiVoiceTests(TestCase):
         css = static_source("core/search.css")
         self.assertIn(".search-panel .search-ai-mic.is-listening", css)
         self.assertIn("@media (prefers-reduced-motion: reduce)", css)
+
+
+class GlassIconBarTests(TestCase):
+    """#65: a translucent glass panel whose header is three icon buttons."""
+
+    def setUp(self):
+        user = get_user_model().objects.create_user(username="glass@yale.edu")
+        self.client.force_login(user)
+        self.response = self.client.get("/map/")
+        self.html = self.response.content.decode()
+        self.bar = self.html.split('class="search-bar"', 1)[1].split("</div>", 1)[0]
+        self.css = static_source("core/search.css")
+        self.source = static_source("core/search.js")
+
+    def test_header_has_only_filter_search_and_chevron_buttons_with_names(self):
+        buttons = re.findall(r"<button\b[^>]*>", self.bar)
+        ids = [re.search(r'id="([^"]+)"', b).group(1) for b in buttons]
+        self.assertEqual(ids, ["search-filters-toggle", "search-ai-toggle", "search-collapse"])
+        labels = [re.search(r'aria-label="([^"]+)"', b).group(1) for b in buttons]
+        self.assertEqual(labels, ["Filters", "Search", "Collapse search panel"])
+        # The text box, the magnifier submit, "Filters" text and "AI" toggle left the header.
+        for gone in ('id="search-q"', 'id="search-submit"', ">Filters<", "AI</button>", "<input"):
+            self.assertNotIn(gone, self.bar)
+
+    def test_search_text_moved_into_the_filters(self):
+        filters = self.html.split('id="search-filters"', 1)[1]
+        self.assertIn('id="search-q"', filters.split('id="search-chips"', 1)[0])
+
+    def test_chevron_points_left_and_the_collapsed_one_points_right(self):
+        collapse = self.bar.split('id="search-collapse"', 1)[1].split("</button>", 1)[0]
+        self.assertIn('points="15 6 9 12 15 18"', collapse)  # <
+        summary = self.html.split('id="search-summary"', 1)[1].split("</button>", 1)[0]
+        self.assertIn('points="9 6 15 12 9 18"', summary)    # >
+        self.assertNotIn("&#8963;", self.html)  # the old up-pointing chevron
+
+    def test_chevron_collapses_and_the_summary_expands(self):
+        self.assertIn("setCollapsed(true);", self.source.split("[collapseButton, aiCollapse].forEach", 1)[1])
+        self.assertIn("setCollapsed(false);", self.source.split('summary.addEventListener("click"', 1)[1])
+
+    def test_search_icon_opens_the_ai_view_and_filter_icon_opens_the_filters(self):
+        ai = self.source.split('aiToggle.addEventListener("click", function () {', 1)[1].split("});", 1)[0]
+        self.assertIn('setMode("ai");', ai)
+        filt = self.source.split('filtersToggle.addEventListener("click", function () {', 1)[1].split("});", 1)[0]
+        self.assertIn("openFilters(", filt)
+
+    def test_glass_is_translucent_and_blurred_with_a_legible_fallback(self):
+        glass = self.css.split("@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {", 1)
+        self.assertEqual(len(glass), 2, "glass @supports block missing")
+        rule = glass[1].split(".search-panel {", 1)[1].split("}", 1)[0]
+        self.assertIn("background: var(--search-panel-glass);", rule)
+        self.assertIn("-webkit-backdrop-filter: blur(", rule)
+        self.assertIn("\n    backdrop-filter: blur(", rule)
+        def alpha(name):
+            return float(re.search(rf"--{name}: rgba\([^)]*, ([0-9.]+)\)", self.css).group(1))
+
+        self.assertLess(alpha("search-panel-glass"), 1)
+        # Without backdrop-filter the panel stays close to opaque.
+        self.assertGreaterEqual(alpha("search-panel-solid"), 0.9)
+        base = self.css.split(".search-panel {", 1)[1].split("}", 1)[0]
+        self.assertIn("background: var(--search-panel-solid);", base)
+
+    def test_no_later_rule_paints_the_panel_opaque(self):
+        desktop = self.css.split("@media (min-width: 768px) {", 1)[1].split("@supports", 1)[0]
+        for rule in re.findall(r"\.search-panel \{([^}]*)\}", desktop):
+            self.assertNotIn("background", rule)
+
+    def test_map_pins_stay_under_the_panel(self):
+        # Without its own stacking context the map's pins (z-index 2) drew over
+        # the phone panel (overlay z-index 1).
+        rule = static_source("core/map.css").split(".map-screen .map {", 1)[1].split("}", 1)[0]
+        self.assertIn("z-index: 0;", rule)

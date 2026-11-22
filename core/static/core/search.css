@@ -5,6 +5,8 @@
 
 :root {
   --search-panel-width: 24rem;
+  --search-panel-solid: rgba(11, 18, 32, 0.94);
+  --search-panel-glass: rgba(11, 18, 32, 0.8); /* keeps muted text ~4.5:1 over the light map */
 }
 
 .search-panel {
@@ -16,7 +18,9 @@
   padding: 0.6rem;
   border: 1px solid rgba(230, 236, 245, 0.18);
   border-radius: 0.75rem;
-  background: var(--overlay-bg);
+  /* Solid enough to read where backdrop-filter is unsupported; the glass
+     version is at the end of this file (#65). */
+  background: var(--search-panel-solid);
   color: var(--map-text);
   font-size: 0.95rem;
 }
@@ -60,22 +64,30 @@
   cursor: pointer;
 }
 
-.search-row {
+/* Icon bar (#65): filter and search on the left, the chevron on the right. */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.search-panel .search-collapse {
+  margin-left: auto;
+}
+
+.search-panel #search-filters-toggle[aria-expanded="true"] {
+  border-color: #4da3ff;
+  background: rgba(77, 163, 255, 0.25);
+}
+
+.search-text-row {
   display: flex;
   gap: 0.5rem;
 }
 
-.search-row input {
+.search-text-row input {
   flex: 1;
   min-width: 0;
-}
-
-.search-panel .search-collapse {
-  flex: none;
-  width: 2.5rem;
-  padding: 0;
-  font-size: 1.2rem;
-  line-height: 1;
 }
 
 /* Collapsed panel: one tappable line summarising the search. */
@@ -99,7 +111,6 @@
 
 .search-summary-icon {
   flex: none;
-  font-size: 1.2rem;
 }
 
 .search-panel .search-this-area {
@@ -109,7 +120,6 @@
   color: #9fcbff;
 }
 
-.search-filters-toggle[aria-expanded="true"],
 .search-submit {
   background: #4da3ff !important;
   border-color: #4da3ff !important;
@@ -218,16 +228,6 @@
 }
 
 /* AI mode (#34). */
-.search-panel .search-ai-toggle {
-  flex: none;
-  border-color: rgba(176, 140, 255, 0.6);
-  color: #d7c8ff;
-}
-
-.search-panel .search-ai-toggle[aria-pressed="true"] {
-  background: rgba(176, 140, 255, 0.25);
-}
-
 .search-ai-header {
   display: flex;
   align-items: center;
@@ -658,7 +658,6 @@
     overflow: hidden;
     border-width: 0 1px 0 0;
     border-radius: 0;
-    background: #0f1828;
   }
 
   .search-panel .search-form {
@@ -681,11 +680,7 @@
     overflow-y: auto;
   }
 
-  body.map-screen:not(.search-collapsed) .map {
-    left: var(--search-panel-width);
-    width: auto;
-  }
-
+  /* The map runs under the glass panel so it shows through (#65). */
   body.map-screen:not(.search-collapsed) .poi-legend {
     left: calc(var(--search-panel-width) + 0.75rem);
   }
@@ -697,6 +692,15 @@
     padding: 0.6rem;
     border-width: 1px;
     border-radius: 0.75rem;
-    background: var(--overlay-bg);
+  }
+}
+
+/* Glass (#65): translucent and blurred wherever the browser can blur what is
+   behind it; elsewhere the solid background above keeps the text legible. */
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .search-panel {
+    background: var(--search-panel-glass);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    backdrop-filter: blur(12px) saturate(140%);
   }
 }
