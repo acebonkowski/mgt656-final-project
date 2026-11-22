@@ -1,5 +1,26 @@
 from django.conf import settings
 from django.db import models
+from django.templatetags.static import static
+from django.urls import reverse
+
+# Event text limits (#79). Forms cap user input; importers shorten with "...".
+EVENT_NAME_MAX_LENGTH = 50
+EVENT_DESCRIPTION_MAX_LENGTH = 300
+# Stored in Event.image for events without their own image (#79). It is not a
+# storage key: image_url serves the static bulldog for it instead.
+DEFAULT_EVENT_IMAGE = "default"
+DEFAULT_EVENT_IMAGE_STATIC = "core/img/default-event.svg"
+
+
+def fit_to_limit(text, limit):
+    """Shorten imported text to at most `limit` characters, ending in "..." (#79).
+
+    Text that already fits is returned unchanged. Only importers use this;
+    user-created events are validated by the form instead.
+    """
+    if len(text) <= limit:
+        return text
+    return text[:limit - 3] + "..."
 
 
 class School(models.Model):
@@ -53,8 +74,8 @@ class Event(models.Model):
         CAMPUS_ADMIN = "campus_admin", "Campus & Admin"
 
     image = models.CharField(max_length=500)
-    name = models.CharField(max_length=30)
-    description = models.CharField(max_length=150)
+    name = models.CharField(max_length=EVENT_NAME_MAX_LENGTH)
+    description = models.CharField(max_length=EVENT_DESCRIPTION_MAX_LENGTH)
     category = models.CharField(max_length=32, choices=Category.choices)
     start_at = models.DateTimeField()
     end_at = models.DateTimeField()
@@ -100,10 +121,16 @@ class Event(models.Model):
 
     @property
     def price_label(self):
-        # Imported events (#33) may have no price.
-        if self.price is None:
-            return "Price not listed"
-        return "Free" if self.price == 0 else f"${self.price:.2f}"
+        # A number or "Free" (#79). Imported events (#33) may have no price.
+        if not self.price:
+            return "Free"
+        return f"${self.price:.2f}"
+
+    @property
+    def image_url(self):
+        if not self.image or self.image == DEFAULT_EVENT_IMAGE:
+            return static(DEFAULT_EVENT_IMAGE_STATIC)
+        return reverse("event_photo", kwargs={"object_key": self.image})
 
     @property
     def source_label(self):

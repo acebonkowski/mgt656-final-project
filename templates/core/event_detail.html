@@ -19,7 +19,7 @@
   {% endif %}
   <button id="share-event" class="event-share" type="button"
           data-share-url="{{ share_url }}" data-share-title="{{ event.name }}"
-          aria-label="Share this event" title="Share this event">
+          aria-label="Share This Event" title="Share This Event">
     <svg aria-hidden="true" focusable="false" width="22" height="22" viewBox="0 0 24 24"
          fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/>
@@ -30,7 +30,7 @@
 </header>
 <p id="share-status" class="event-share-status" role="status" aria-live="polite"></p>
 <p id="share-fallback" class="event-share-fallback" hidden>
-  <label for="share-fallback-url">Copy this link:</label>
+  <label for="share-fallback-url">Copy This Link:</label>
   <input id="share-fallback-url" type="text" readonly value="{{ share_url }}">
 </p>
 <main class="event-main">
@@ -46,16 +46,13 @@
       </nav>
     {% endif %}
     {# Field order is fixed by #32: image, name + description, category, date & time, location, price, link. #}
-    {% if event.image %}
-      <img class="event-detail-image" src="{% url 'event_photo' event.image %}" alt="">
-    {% else %}
-      <p class="event-image-placeholder">Image unavailable</p>
-    {% endif %}
+    <img class="event-detail-image" src="{{ event.image_url }}" alt=""
+         data-fallback="{% static 'core/img/default-event.svg' %}">
     <h1 id="event-detail-title">{{ event.name }}</h1>
     <p class="event-description">{{ event.description }}</p>
     <dl>
       <dt>Category</dt><dd data-field="category">{{ event.get_category_display }}</dd>
-      <dt>Date &amp; time</dt>
+      <dt>Date &amp; Time</dt>
       {% timezone "America/New_York" %}
       <dd data-field="datetime">
         <time datetime="{{ event.start_at|date:'c' }}">{{ event.start_at|date:"D, M j, Y · g:i A" }}</time>–<time datetime="{{ event.end_at|date:'c' }}">{% if event.start_at|date:"Ymd" == event.end_at|date:"Ymd" %}{{ event.end_at|date:"g:i A" }}{% else %}{{ event.end_at|date:"D, M j, Y · g:i A" }}{% endif %}</time>
@@ -71,11 +68,11 @@
 </main>
 <footer class="event-footer">
   <a id="save-to-calendar" class="event-calendar-button"
-     href="{% url 'event_calendar' event.pk %}" download>Save to calendar</a>
+     href="{% url 'event_calendar' event.pk %}" download>Save to Calendar</a>
   {% if not user.is_authenticated %}
     <section class="event-join" aria-label="Join Yale Events">
       <p>See every event happening around Yale on one map.</p>
-      <a id="join-cta" class="event-join-button" href="{{ join_url }}">Join to discover more</a>
+      <a id="join-cta" class="event-join-button" href="{{ join_url }}">Join to Discover More</a>
     </section>
   {% endif %}
 </footer>

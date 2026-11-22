@@ -53,3 +53,14 @@
     await copy();
   });
 })();
+
+// An event image that can't be loaded falls back to the default bulldog (#79).
+(() => {
+  document.querySelectorAll('img[data-fallback]').forEach((img) => {
+    const useFallback = () => {
+      if (img.getAttribute('src') !== img.dataset.fallback) img.src = img.dataset.fallback;
+    };
+    img.addEventListener('error', useFallback);
+    if (img.complete && img.naturalWidth === 0) useFallback();  // failed before this ran
+  });
+})();

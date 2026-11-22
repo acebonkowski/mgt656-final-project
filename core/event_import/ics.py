@@ -8,6 +8,8 @@ from urllib.parse import parse_qs, urlsplit
 
 from icalendar import Calendar
 
+from core.models import EVENT_DESCRIPTION_MAX_LENGTH, EVENT_NAME_MAX_LENGTH, fit_to_limit
+
 from .categories import classify
 
 SOURCES = ("yale_connect", "som")
@@ -110,7 +112,8 @@ def parse_feed(data, source, *, now, until=None):
             if category is None:
                 result.counts["not_discoverable"] += 1
                 continue
-            candidate = Candidate(source, external_id, name[:30], description[:150],
+            candidate = Candidate(source, external_id, fit_to_limit(name, EVENT_NAME_MAX_LENGTH),
+                                  fit_to_limit(description, EVENT_DESCRIPTION_MAX_LENGTH),
                                   start, end, location, link, category, method)
             if candidate.identity in identities or candidate.duplicate_key in duplicates:
                 result.counts["duplicates"] += 1

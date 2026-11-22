@@ -9,7 +9,7 @@ from decimal import Decimal, InvalidOperation
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 
-from core.models import Event
+from core.models import DEFAULT_EVENT_IMAGE, Event
 
 
 def persist_candidates(candidates, enrichments, *, now):
@@ -44,7 +44,7 @@ def persist_candidates(candidates, enrichments, *, now):
                           category=candidate.category, start_at=candidate.starts_at,
                           end_at=candidate.ends_at, location=candidate.location_text,
                           link=candidate.link, creator=None, latitude=lat, longitude=lon,
-                          price=price, image="")
+                          price=price, image=DEFAULT_EVENT_IMAGE)
             event = Event(**values)
             # Imported images are optional (placeholder); user forms still require them.
             event.full_clean(exclude=["image", "description"], validate_unique=False,

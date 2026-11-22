@@ -34,7 +34,7 @@ def event_json(event):
         "category_label": event.get_category_display(),
         "start_at": event.start_at.astimezone(NEW_YORK).isoformat(),
         "end_at": event.end_at.astimezone(NEW_YORK).isoformat(),
-        "image_url": reverse("event_photo", kwargs={"object_key": event.image}) if event.image else "",
+        "image_url": event.image_url,  # the default bulldog when there is none (#79)
         # Same key the map's own event list uses (#32).
         "url": reverse("event_detail", kwargs={"event_id": event.pk}),
         "detail_url": reverse("event_detail", kwargs={"event_id": event.pk}),
