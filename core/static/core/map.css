@@ -908,3 +908,22 @@ span.time12 input.time12-minute {
   object-fit: contain;
   background: #e9eef5;
 }
+
+/* Delete on the edit page (#79): under the card, at the card's width, and
+   styled as a destructive action instead of a second primary button. */
+.event-delete-form {
+  width: min(92vw, 34rem);
+  margin: -1rem auto 2rem;
+}
+
+.event-delete-form .delete-event {
+  width: 100%;
+  border: 1px solid rgba(255, 138, 138, 0.6);
+  background: transparent;
+  color: #ff8a8a;
+}
+
+.event-delete-form .delete-event:hover,
+.event-delete-form .delete-event:focus-visible {
+  background: rgba(255, 120, 100, 0.12);
+}

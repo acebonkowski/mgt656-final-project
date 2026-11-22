@@ -25,7 +25,8 @@
     {% include "core/_event_form_fields.html" with form=event_form %}
     <button type="submit">Save Changes</button>
   </form>
-  <form method="post" action="{% url 'delete_event' event.pk %}">
+  {# Sits under the edit card at the same width (#79). #}
+  <form method="post" action="{% url 'delete_event' event.pk %}" class="event-delete-form">
     {% csrf_token %}
     <button type="submit" class="delete-event">Delete Event</button>
   </form>
