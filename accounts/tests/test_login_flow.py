@@ -234,7 +234,8 @@ class RoutingAndLogoutTests(TestCase):
         self.client.force_login(self.user)
         response = self.client.get("/map/")
         self.assertContains(response, 'action="/logout/"')
-        self.assertContains(response, ">Log out</button>")
+        # An icon button since #64; its accessible name is still "Log out".
+        self.assertContains(response, 'aria-label="Log out"')
         response = self.client.post("/logout/")
         self.assertRedirects(response, "/login/")
         self.assertNotIn("_auth_user_id", self.client.session)
