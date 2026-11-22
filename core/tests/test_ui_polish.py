@@ -323,8 +323,6 @@ class TitleCaseTests(TestCase):
         collector.feed(html)
         self.assertTrue(collector.found, page)
         for tag, text, attrs in collector.found:
-            if attrs.get("id") == "abtest":
-                continue  # the brief requires exactly "kudos" or "thanks"
             with self.subTest(page=page, tag=tag, text=text):
                 self.assertEqual(apa_violations(text), [], f"{tag}: {text!r} on {page}")
 
@@ -343,7 +341,6 @@ class TitleCaseTests(TestCase):
         self.assert_title_case(self.client.get("/login/code/").content.decode(), "/login/code/")
         event = make_event()
         self.assert_title_case(self.client.get(f"/events/{event.pk}/").content.decode(), "event page")
-        self.assert_title_case(self.client.get(reverse("abtest:page")).content.decode(), "A/B page")
 
     def test_logged_in_pages(self):
         user = make_user()
@@ -375,3 +372,24 @@ class TitleCaseTests(TestCase):
             self.assertNotIn(old, source)
         self.assertIn('"Turn Spoken Replies On" : "Mute Spoken Replies"', source)
         self.assertIn("'Edit Picture' : 'Add a Picture'", static_source("core/onboarding.js"))
+
+
+class ExceptionsAndEditPageTests(TestCase):
+    def test_ab_page_is_exempt_from_title_case(self):
+        # The brief fixes the A/B page (button text exactly "kudos"/"thanks"), so #79 leaves it alone.
+        response = self.client.get(reverse("abtest:page"))
+        self.assertContains(response, "<h1>A/B test</h1>", html=True)
+        self.assertContains(response, "<h2>Team members</h2>", html=True)
+        self.assertRegex(response.content.decode(), r'<button id="abtest"[^>]*>\s*(kudos|thanks)\s*</button>')
+
+    def test_delete_sits_under_the_edit_card_as_a_destructive_button(self):
+        user = make_user()
+        self.client.force_login(user)
+        event = make_event(creator=user)
+        html = self.client.get(f"/events/{event.pk}/edit/").content.decode()
+        self.assertIn('class="event-delete-form"', html)
+        self.assertLess(html.index('class="event-edit-form"'), html.index('class="event-delete-form"'))
+        css = static_source("core/map.css")
+        rule = css[css.index(".event-delete-form {"):]
+        self.assertIn("width: min(92vw, 34rem);", rule[:rule.index("}")])
+        self.assertIn("margin: -1rem auto 2rem;", rule[:rule.index("}")])
