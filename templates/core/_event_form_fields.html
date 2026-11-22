@@ -1,0 +1,76 @@
+{% comment %}
+Event fields, rendered by hand for a compact layout (#69). Used by the create
+dialog (map.html) and the edit page. Title and Description are full width
+with live counters; then Category | Date, Start | End, the full-width Address,
+and Price | Link. The image field is rendered by each page.
+{% endcomment %}
+<div class="event-fields">
+  <div class="event-field">
+    <div class="event-label-row">
+      {{ form.name.label_tag }}
+      <span id="id_name_count" class="char-count" data-count-for="id_name" data-max="30">{{ form.name.value|default_if_none:""|length }}/30</span>
+    </div>
+    {{ form.name }}
+    {{ form.name.errors }}
+  </div>
+
+  <div class="event-field">
+    <div class="event-label-row">
+      {{ form.description.label_tag }}
+      <span id="id_description_count" class="char-count" data-count-for="id_description" data-max="150">{{ form.description.value|default_if_none:""|length }}/150</span>
+    </div>
+    {{ form.description }}
+    {{ form.description.errors }}
+  </div>
+
+  <div class="event-row">
+    <div class="event-field">
+      {{ form.category.label_tag }}
+      {{ form.category }}
+      {{ form.category.errors }}
+    </div>
+    <div class="event-field">
+      {{ form.date.label_tag }}
+      {{ form.date }}
+      {{ form.date.errors }}
+    </div>
+  </div>
+
+  <div class="event-row">
+    <div class="event-field">
+      {{ form.start_time.label_tag }}
+      {{ form.start_time }}
+      {{ form.start_time.errors }}
+    </div>
+    <div class="event-field">
+      {{ form.end_time.label_tag }}
+      {{ form.end_time }}
+      {{ form.end_time.errors }}
+    </div>
+  </div>
+
+  <div class="event-field">
+    {{ form.location.label_tag }}
+    {{ form.location }}
+    {{ form.location.errors }}
+  </div>
+
+  <div class="event-row">
+    <div class="event-field">
+      {{ form.price.label_tag }}
+      {{ form.price }}
+      {{ form.price.errors }}
+    </div>
+    <div class="event-field">
+      <div class="event-label-row">
+        {{ form.link.label_tag }}
+        <span class="field-optional">Optional</span>
+      </div>
+      {{ form.link }}
+      {{ form.link.errors }}
+    </div>
+  </div>
+
+  {{ form.ai_image }}{{ form.location_confirmed }}{{ form.latitude }}{{ form.longitude }}
+  {% if include_remove_image %}{{ form.remove_image }}{% endif %}
+</div>

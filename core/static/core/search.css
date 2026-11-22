@@ -210,61 +210,7 @@
   }
 }
 
-/* 12-hour time: hh : mm [AM|PM] (templates/core/widgets/time12.html). */
-.time12 {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.time12 input.time12-hour,
-.time12 input.time12-minute {
-  width: 2.6rem;
-  min-height: 2.5rem;
-  padding: 0.4rem 0.3rem;
-  border: 1px solid rgba(230, 236, 245, 0.25);
-  border-radius: 0.5rem;
-  background: #0b1220;
-  color: var(--map-text);
-  font: inherit;
-  text-align: center;
-}
-
-.time12-period {
-  display: inline-flex;
-  margin-left: 0.25rem;
-  border: 1px solid rgba(230, 236, 245, 0.25);
-  border-radius: 0.5rem;
-  overflow: hidden;
-}
-
-.time12-period input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.time12-period label {
-  display: inline-grid;
-  place-items: center;
-  min-width: 2.3rem;
-  min-height: 2.4rem;
-  padding: 0 0.4rem;
-  color: var(--map-muted);
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.time12-period input:checked + label {
-  background: #4da3ff;
-  color: #08111f;
-}
-
-.time12-period input:focus-visible + label {
-  outline: 2px solid #9fcbff;
-  outline-offset: -2px;
-}
+/* 12-hour time controls are styled in map.css (shared with the event form). */
 
 .search-inline {
   display: flex;

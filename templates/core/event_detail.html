@@ -63,7 +63,7 @@
       {% endtimezone %}
       <dt>Location</dt><dd data-field="location">{{ event.location }}</dd>
       <dt>Price</dt><dd data-field="price">{{ event.price_label }}</dd>
-      <dt>Link</dt><dd data-field="link"><a href="{{ event.link }}" target="_blank" rel="noopener">{{ event.link }}</a></dd>
+      {% if event.link %}<dt>Link</dt><dd data-field="link"><a href="{{ event.link }}" target="_blank" rel="noopener">{{ event.link }}</a></dd>{% endif %}
       {% if event.source %}<dt>Source</dt><dd data-field="source">{{ event.source_label }}</dd>{% endif %}
     </dl>
   </article>

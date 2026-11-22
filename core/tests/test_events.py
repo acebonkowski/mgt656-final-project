@@ -168,9 +168,10 @@ class EventFormTests(TestCase):
         self.assertFalse(form.is_valid())
         for field in (
             "image", "name", "description", "category", "date", "start_time",
-            "end_time", "location", "latitude", "longitude", "price", "link",
+            "end_time", "location", "latitude", "longitude", "price",
         ):
             self.assertIn(field, form.errors)
+        self.assertNotIn("link", form.errors)  # optional since #69
 
     def test_end_must_be_after_start(self):
         form = self.valid_form(data={"end_time": "18:00"})
