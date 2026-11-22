@@ -43,21 +43,30 @@ class SearchPanelTests(TestCase):
         self.assertContains(self.response, 'id="search-clear" type="button" hidden')
 
     def test_category_list_has_exactly_the_12_categories(self):
-        values = re.findall(r'name="category" value="([a-z_]+)"', self.html)
+        select = self.html.split('<select id="search-category" name="category">', 1)[1].split("</select>", 1)[0]
+        values = re.findall(r'<option value="([a-z_]+)"', select)
         self.assertEqual(values, list(Event.Category.values))
         self.assertEqual(len(values), 12)
         self.assertIn('data-label="Food &amp; Drink"', self.html)
 
     def test_date_quick_picks_and_pick_dates(self):
-        values = re.findall(r'name="when" value="([a-z]*)"', self.html)
+        select = self.html.split('<select id="search-when" name="when">', 1)[1].split("</select>", 1)[0]
+        values = re.findall(r'<option value="([a-z]*)"', select)
         self.assertEqual(values, ["", "today", "tomorrow", "weekend", "dates"])
+        self.assertContains(self.response, 'id="search-pick-dates" type="button"')
         self.assertContains(self.response, 'id="search-date-range"')
         self.assertContains(self.response, 'id="search-date-from"')
         self.assertContains(self.response, 'id="search-date-to"')
 
     def test_start_time_window(self):
-        self.assertContains(self.response, 'id="search-time-from" type="time"')
-        self.assertContains(self.response, 'id="search-time-to" type="time"')
+        for group in ("search-time-from", "search-time-to"):
+            self.assertContains(self.response, f'<span class="time12" id="{group}" role="group"')
+            self.assertContains(self.response, f'id="{group}_hour" class="time12-hour"')
+            self.assertContains(self.response, f'id="{group}_minute" class="time12-minute"')
+            self.assertContains(self.response, f'id="{group}_am" name="{group}_period" value="AM"')
+            self.assertContains(self.response, f'id="{group}_pm" name="{group}_period" value="PM"')
+        panel = self.html.split('id="search-panel"', 1)[1]
+        self.assertNotIn('type="time"', panel)
 
     def test_location_radius_defaults_to_one_mile(self):
         self.assertContains(self.response, 'id="search-address"')
@@ -470,8 +479,8 @@ class GlassIconBarTests(TestCase):
         self.assertIn("setCollapsed(false);", self.source.split('summary.addEventListener("click"', 1)[1])
 
     def test_search_icon_opens_the_ai_view_and_filter_icon_opens_the_filters(self):
-        ai = self.source.split('aiToggle.addEventListener("click", function () {', 1)[1].split("});", 1)[0]
-        self.assertIn('setMode("ai");', ai)
+        self.assertIn('aiToggle.addEventListener("click", openAi);', self.source)
+        self.assertIn('setMode("ai");', self.source.split("function openAi() {", 1)[1].split("}", 1)[0])
         filt = self.source.split('filtersToggle.addEventListener("click", function () {', 1)[1].split("});", 1)[0]
         self.assertIn("openFilters(", filt)
 
@@ -522,7 +531,8 @@ class SearchModeTests(TestCase):
         # results), and showing it hides that form.
         self.assertGreater(self.html.index('id="search-ai"'), self.html.index("</form>"))
         self.assertIn('form.hidden = collapsed || mode === "ai";', self.source)
-        self.assertIn('setMode("ai");', self.handler("aiToggle"))
+        self.assertIn('aiToggle.addEventListener("click", openAi);', self.source)
+        self.assertIn('setMode("ai");', self.source.split("function openAi() {", 1)[1].split("}", 1)[0])
 
     def test_back_arrow_is_first_and_search_manually_is_last(self):
         buttons = re.findall(r'<button id="([^"]+)"', self.header)
@@ -569,3 +579,96 @@ class SearchModeTests(TestCase):
         # {# #} comments are single-line only; a multi-line one renders as text.
         self.assertNotIn("{#", self.html)
         self.assertNotIn("#}", self.html)
+
+
+class ManualSearchTests(TestCase):
+    """#67: manual search with flat filters and 12-hour times."""
+
+    def setUp(self):
+        user = get_user_model().objects.create_user(username="manual@yale.edu")
+        self.client.force_login(user)
+        self.response = self.client.get("/map/")
+        self.html = self.response.content.decode()
+        self.filters = self.html.split('id="search-filters"', 1)[1].split('id="search-chips"', 1)[0]
+        self.source = static_source("core/search.js")
+
+    def handler(self, variable):
+        return self.source.split(f'{variable}.addEventListener("click", function () {{', 1)[1].split("});", 1)[0]
+
+    def test_every_filter_is_visible_with_nothing_collapsible(self):
+        self.assertNotIn("<details", self.filters)
+        self.assertNotIn("<summary", self.filters)
+        rows = re.findall(r'<(?:label for="search-[a-z]+"|span id="[^"]+" class="search-row-label")>([^<]+)<',
+                          self.filters)
+        self.assertEqual(rows, ["Category", "Date", "Start time", "Address"])
+        self.assertIn('id="search-q"', self.filters)
+        # The text input comes after the filters.
+        self.assertGreater(self.filters.index('id="search-q"'), self.filters.index('id="search-address"'))
+
+    def test_header_has_back_and_search_with_ai(self):
+        header = self.filters.split('class="search-manual-header"', 1)[1].split("</div>", 1)[0]
+        buttons = re.findall(r'<button id="([^"]+)"', header)
+        self.assertEqual(buttons, ["search-filters-back", "search-filters-ai"])
+        self.assertIn('aria-label="Back"', header)
+        self.assertIn(">Search with AI</button>", header)
+        self.assertNotIn("search-filters-toggle", self.filters)
+
+    def test_the_filter_icon_is_hidden_in_manual_search(self):
+        body = self.source.split("function openFilters(open) {", 1)[1].split("\n  }\n", 1)[0]
+        self.assertIn("iconBar.hidden = open;", body)
+        self.assertIn("filters.hidden = !open;", body)
+
+    def test_search_with_ai_opens_the_chat_and_back_returns_to_the_icon_bar(self):
+        self.assertIn('filtersAi.addEventListener("click", openAi);', self.source)
+        self.assertIn('setMode("ai");', self.source.split("function openAi() {", 1)[1].split("}", 1)[0])
+        back = self.handler("filtersBack")
+        self.assertIn("openFilters(false);", back)
+        self.assertIn("resetChat();", back)
+
+    def test_quick_dates_and_pick_dates_are_separate_controls(self):
+        self.assertIn('<select id="search-when" name="when">', self.filters)
+        self.assertIn('<button id="search-pick-dates" type="button"', self.filters)
+        pick = self.handler("pickDates")
+        self.assertIn('setWhen("dates");', pick)
+        self.assertIn("dateFrom.showPicker()", pick)
+
+    def test_category_is_one_dropdown_that_keeps_several_ai_categories(self):
+        self.assertIn('<select id="search-category" name="category">', self.filters)
+        self.assertIn('<option value="">Any</option>', self.filters)
+        body = self.source.split("function setCategories(values) {", 1)[1].split("\n  }\n", 1)[0]
+        self.assertIn("multi.dataset.values = values.join(\",\");", body)
+
+    def test_times_are_sent_as_24_hour(self):
+        self.assertIn("time_from: readTime(timeFrom),", self.source)
+        self.assertIn("time_to: readTime(timeTo),", self.source)
+        self.assertIn("window.Time12.read(group)", self.source)
+        self.assertLess(self.html.index("core/time12.js"), self.html.index("core/search.js"))
+
+    def test_filter_changes_still_apply(self):
+        self.assertIn("window.Time12.inputs(timeFrom), window.Time12.inputs(timeTo)", self.source)
+        self.assertIn('whenSelect.addEventListener("change", function () { setWhen(whenSelect.value); applySoon(); });',
+                      self.source)
+
+    def test_invalid_times_are_reported_not_sent(self):
+        body = self.source.split("function runSearch() {", 1)[1].split("var f = readFilters();", 1)[0]
+        self.assertIn("window.Time12.read(timeFrom) === null", body)
+        self.assertIn("return;", body)
+
+    def test_today_limits_results_to_today(self):
+        # The dropdown sends the same `when` value as the old radio did.
+        from datetime import datetime, timedelta
+        from unittest import mock
+        from zoneinfo import ZoneInfo
+
+        from core.tests.test_search_endpoint import make_event
+
+        noon = datetime(2026, 12, 1, 12, 0, tzinfo=ZoneInfo("America/New_York"))
+        evening = noon + timedelta(hours=6)
+        today = make_event("Today Talk", start_at=evening, end_at=evening + timedelta(hours=1))
+        later = make_event("Later Talk", start_at=evening + timedelta(days=3),
+                           end_at=evening + timedelta(days=3, hours=1))
+        with mock.patch("django.utils.timezone.now", return_value=noon):
+            response = self.client.get("/events/search/", {"when": "today"})
+        names = [e["name"] for e in response.json()["events"]]
+        self.assertIn(today.name, names)
+        self.assertNotIn(later.name, names)
