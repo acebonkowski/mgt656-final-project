@@ -101,12 +101,12 @@ class EventPageLoggedInTests(TestCase):
     def test_logged_in_user_gets_back_to_map_and_no_join_cta(self):
         response = self.client.get(self.url)
         self.assertContains(response, 'href="/map/"')
-        self.assertNotContains(response, "Join to discover more")
+        self.assertNotContains(response, "Join to Discover More")
 
     def test_save_to_calendar_button_links_to_ics(self):
         self.assertContains(
             self.client.get(self.url),
-            f'href="/events/{self.event.pk}/calendar.ics" download>Save to calendar</a>',
+            f'href="/events/{self.event.pk}/calendar.ics" download>Save to Calendar</a>',
             html=False,
         )
 
@@ -125,8 +125,8 @@ class EventPageLoggedOutTests(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Jazz Night")
-        self.assertContains(response, "Join to discover more")
-        self.assertContains(response, "Save to calendar")
+        self.assertContains(response, "Join to Discover More")
+        self.assertContains(response, "Save to Calendar")
         # No map and no app navigation.
         self.assertNotContains(response, 'id="map"')
         self.assertNotContains(response, 'href="/map/"')
@@ -160,7 +160,7 @@ class EventPopupTests(TestCase):
         self.assertContains(response, ">Free<")
         self.assertNotContains(response, "<html")
         self.assertNotContains(response, 'id="share-event"')
-        self.assertNotContains(response, "Join to discover more")
+        self.assertNotContains(response, "Join to Discover More")
 
 
 class EventCalendarDownloadTests(TestCase):

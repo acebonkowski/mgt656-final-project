@@ -89,14 +89,14 @@ class SearchEndpointTests(TestCase):
         self.assertEqual(response.status_code, 200)
         results = {event["id"]: event for event in response.json()["events"]}
         self.assertEqual(set(results), {imported.pk, pictured.pk})
-        self.assertEqual(results[imported.pk]["image_url"], "")
-        self.assertEqual(results[imported.pk]["price"], "Price not listed")
+        self.assertEqual(results[imported.pk]["image_url"], "/static/core/img/default-event.svg")
+        self.assertEqual(results[imported.pk]["price"], "Free")
         self.assertEqual(results[imported.pk]["detail_url"], f"/events/{imported.pk}/")
         self.assertEqual(results[pictured.pk]["image_url"], "/event-photo/events/1/test.jpg")
 
-    def test_imported_event_without_a_price_says_price_not_listed(self):
+    def test_imported_event_without_a_price_says_free(self):
         make_event("Imported Talk", price=None, source="ticketmaster", external_id="tm-1")
-        self.assertEqual(self.client.get(self.url).json()["events"][0]["price"], "Price not listed")
+        self.assertEqual(self.client.get(self.url).json()["events"][0]["price"], "Free")
 
     def test_results_share_the_map_event_format(self):
         make_event("Jazz Night", price="5")

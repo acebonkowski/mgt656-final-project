@@ -49,7 +49,7 @@ class HeaderMarkupTests(TestCase):
         self.assertIn('method="post"', form)
         self.assertIn('action="/logout/"', form)
         self.assertIn('name="csrfmiddlewaretoken"', form)
-        self.assertIn('aria-label="Log out"', form)
+        self.assertIn('aria-label="Log Out"', form)
         self.assertNotIn(">Log out<", self.html)
 
     def test_create_sits_next_to_logout_in_one_row(self):

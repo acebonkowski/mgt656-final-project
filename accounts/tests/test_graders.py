@@ -88,7 +88,7 @@ class GraderLoginTests(TestCase):
     def test_logged_out_admin_visit_goes_to_welcome_not_a_password_form(self):
         response = self.client.get("/admin/", follow=True)
         self.assertEqual(response.redirect_chain[-1][0], "/login/?next=%2Fadmin%2F")
-        self.assertContains(response, "Your Yale email address")
+        self.assertContains(response, "Your Yale Email Address")
         self.assertNotContains(response, 'type="password"')
 
     def test_admin_password_login_post_is_not_available(self):

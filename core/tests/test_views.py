@@ -9,10 +9,11 @@ class HomeViewTests(TestCase):
         self.assertRedirects(self.client.get("/"), "/login/")
 
     @override_settings(APP_ENV="staging")
-    def test_welcome_screen_is_public_and_shows_environment(self):
+    def test_welcome_screen_is_public_and_hides_environment(self):
+        # #79: the environment line was removed from the login page.
         response = self.client.get("/login/")
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Environment: staging")
+        self.assertNotContains(response, "Environment:")
 
 
 class HealthzViewTests(TestCase):

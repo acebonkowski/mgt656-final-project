@@ -30,7 +30,7 @@ class EventImportTests(SimpleTestCase):
         event = result.events[0]
         self.assertEqual(event.external_id, "1001")
         self.assertEqual(event.category, "career_networking")
-        self.assertEqual(len(event.name), 30)
+        self.assertEqual(event.name, "A fictional career networking evening")  # fits in 50 (#79)
         self.assertIsNone(event.price)
         self.assertEqual(event.location_text, "Example Hall, New Haven")
 
@@ -65,10 +65,10 @@ class EventImportTests(SimpleTestCase):
 
     def test_duration_uid_fallback_and_description_limit(self):
         result = parse_feed(feed("DTSTART:20261201T230000Z\r\nDURATION:PT1H\r\n"
-                                 "DESCRIPTION:" + "x" * 200), "som", now=NOW)
+                                 "DESCRIPTION:" + "x" * 400), "som", now=NOW)
         event = result.events[0]
         self.assertEqual(event.external_id, "test")
-        self.assertEqual(len(event.description), 150)
+        self.assertEqual(event.description, "x" * 297 + "...")  # #79
         self.assertEqual((event.ends_at - event.starts_at).total_seconds(), 3600)
 
     def test_explicit_skip_reasons(self):
