@@ -868,3 +868,43 @@ span.time12 input.time12-minute {
   color: #174ea6;
   text-decoration: underline;
 }
+
+/* Dropdowns (#79): the native arrow could sit outside the field's padding,
+   so draw our own inside the right padding instead. */
+.event-form select,
+.event-fields select,
+.event-edit-form select {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 2.25rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23e6ecf5' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 0.75rem 0.5rem;
+}
+
+/* Start and End time (#79): one row, each control fills its whole column. */
+.event-fields .time12 {
+  display: flex;
+  flex-wrap: nowrap;
+  width: 100%;
+  min-width: 0;
+}
+
+.event-fields .time12 input.time12-hour,
+.event-fields .time12 input.time12-minute {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+}
+
+.event-fields .time12-period {
+  flex: 0 0 auto;
+}
+
+/* The default bulldog (#79) is shown whole, not cropped like a photo. The
+   match is on "default-event" because the deployed file name gets a hash. */
+.event-detail-image[src*="default-event"] {
+  object-fit: contain;
+  background: #e9eef5;
+}
