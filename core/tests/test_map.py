@@ -67,7 +67,7 @@ class MapScreenTests(TestCase):
         response = self.client.get("/map/")
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "core/map.html")
-        self.assertContains(response, '<h1 class="visually-hidden">Find events in New Haven</h1>')
+        self.assertContains(response, '<h1 class="visually-hidden">Find Events in New Haven</h1>')
         self.assertContains(response, 'id="map"')
         self.assertEqual(response.context["map_config"]["center"], [41.3083, -72.9279])
         self.assertEqual(
@@ -143,7 +143,7 @@ class MapEventTests(TestCase):
     def test_plus_button_opens_create_form_and_valid_post_saves_pin(self):
         response = self.client.get("/map/")
         self.assertContains(response, 'id="open-event-form"')
-        self.assertContains(response, "Create event")
+        self.assertContains(response, "Create Event")
         # The test client always posts multipart, so it can't catch a missing
         # enctype; a real browser then drops the uploaded image (#55).
         create_form = re.search(r'<form[^>]*action="/map/"[^>]*>', response.content.decode())
@@ -199,8 +199,8 @@ class MapEventTests(TestCase):
         self.assertContains(response, ">Generate</button>")  # "Generate with AI" until #68
         self.assertContains(response, "Files")
         self.assertContains(response, 'capture="environment"')
-        self.assertContains(response, 'aria-label="Change image"')  # replaced "Replace" (#68)
-        self.assertContains(response, 'aria-label="Remove image"')  # replaced "Delete" (#68)
+        self.assertContains(response, 'aria-label="Change Image"')  # replaced "Replace" (#68)
+        self.assertContains(response, 'aria-label="Remove Image"')  # replaced "Delete" (#68)
 
     @override_settings(MAP_API_KEY=FAKE_KEY)
     def test_ai_generation_endpoint_returns_preview_and_never_exposes_key(self):
@@ -456,9 +456,9 @@ class MapEventTests(TestCase):
         self.assertContains(response, 'id="duplicate-event-dialog"')
         self.assertContains(response, 'id="view-duplicate-event"')
         self.assertContains(response, 'id="event-detail-popup"')
-        self.assertContains(response, "That's my event")
-        self.assertContains(response, "Request collab")
-        self.assertContains(response, "Return to map")
+        self.assertContains(response, "That's My Event")
+        self.assertContains(response, "Request Collab")
+        self.assertContains(response, "Return to Map")
 
     def test_event_detail_page_and_popup_use_shared_view(self):
         event = Event.objects.create(
@@ -667,7 +667,7 @@ class MapScreenWithoutKeyTests(TestCase):
     def test_missing_maptiler_key_does_not_disable_local_basemap(self):
         response = self.client.get("/map/")
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, '<h1 class="visually-hidden">Find events in New Haven</h1>')
+        self.assertContains(response, '<h1 class="visually-hidden">Find Events in New Haven</h1>')
         self.assertTrue(response.context["map_enabled"])
         self.assertContains(response, '<p id="map-fallback" class="fallback" role="status" hidden>')
         self.assertContains(response, "core/map_provider.js")

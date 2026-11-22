@@ -13,20 +13,20 @@ from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 
 from accounts.models import Profile
-from core.models import Event, Program, School
+from core.models import EVENT_DESCRIPTION_MAX_LENGTH, EVENT_NAME_MAX_LENGTH, Event, Program, School
 from core.photo_validation import validate_event_photo
 from core.photo_storage import StorageUnavailable
 
 
 class OnboardingForm(forms.ModelForm):
-    display_name = forms.CharField(max_length=100, label="First name or nickname",
+    display_name = forms.CharField(max_length=100, label="First Name or Nickname",
                                   widget=forms.TextInput(attrs={"autocomplete": "given-name"}))
     school = forms.ModelChoiceField(queryset=School.objects.filter(is_active=True), empty_label="Choose your school")
 
     class Meta:
         model = Profile
         fields = ["display_name", "school", "program"]
-        labels = {"display_name": "First name or nickname", "program": "Program at Yale"}
+        labels = {"display_name": "First Name or Nickname", "program": "Program at Yale"}
         widgets = {"display_name": forms.TextInput(attrs={"autocomplete": "given-name"})}
 
     def __init__(self, *args, **kwargs):
@@ -149,18 +149,20 @@ class EventForm(forms.Form):
     )
     ai_image = forms.CharField(required=False, widget=forms.HiddenInput)
     # Compact form (#69): "Title" with live counters, 12-hour times.
-    name = forms.CharField(max_length=30, label="Title",
+    name = forms.CharField(max_length=EVENT_NAME_MAX_LENGTH, label="Title",
                            widget=forms.TextInput(attrs={"aria-describedby": "id_name_count"}))
-    description = forms.CharField(max_length=150, widget=forms.Textarea(
+    description = forms.CharField(max_length=EVENT_DESCRIPTION_MAX_LENGTH, widget=forms.Textarea(
         attrs={"rows": 2, "aria-describedby": "id_description_count"}))
     category = forms.ChoiceField(choices=Event.Category.choices)
     date = forms.DateField(widget=forms.DateInput(attrs={"type": "date"}))
-    start_time = forms.TimeField(widget=TwelveHourTimeWidget(attrs={"aria-label": "Start time"}))
-    end_time = forms.TimeField(widget=TwelveHourTimeWidget(attrs={"aria-label": "End time"}))
+    start_time = forms.TimeField(label="Start Time",
+                                 widget=TwelveHourTimeWidget(attrs={"aria-label": "Start Time"}))
+    end_time = forms.TimeField(label="End Time",
+                               widget=TwelveHourTimeWidget(attrs={"aria-label": "End Time"}))
     # Overnight and multi-day events (#70). Empty means the start date;
     # event_form.js shows it (default: the next day) when the end time is
     # earlier than the start time.
-    end_date = forms.DateField(required=False, label="End date",
+    end_date = forms.DateField(required=False, label="End Date",
                                widget=forms.DateInput(attrs={"type": "date"}))
     location = forms.CharField(max_length=500, label="Address")
     location_confirmed = forms.CharField(required=False, widget=forms.HiddenInput)

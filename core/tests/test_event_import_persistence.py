@@ -12,7 +12,7 @@ from django.test import TestCase
 
 from core.event_import.ics import parse_feed
 from core.event_import.persistence import persist_candidates
-from core.models import Event
+from core.models import DEFAULT_EVENT_IMAGE, Event
 
 FIXTURE = Path(__file__).parent / "fixtures" / "event_import.ics"
 NOW = datetime(2026, 11, 17, tzinfo=timezone.utc)
@@ -38,9 +38,9 @@ class ImportPersistenceTests(TestCase):
         self.assertEqual(event.source, "som")
         self.assertEqual(event.price, 0)
         self.assertIsNone(event.creator)
-        self.assertEqual(event.image, "")
-        self.assertLessEqual(len(event.name), 30)
-        self.assertLessEqual(len(event.description), 150)
+        self.assertEqual(event.image, DEFAULT_EVENT_IMAGE)  # #79
+        self.assertLessEqual(len(event.name), 50)
+        self.assertLessEqual(len(event.description), 300)
         self.assertIn(event.category, Event.Category.values)
         self.assertIsNotNone(event.latitude)
         self.assertIsNotNone(event.longitude)

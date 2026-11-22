@@ -88,7 +88,7 @@
       if (!response.ok) throw new Error(result.error || 'The photo could not be saved.');
       picture.src = result.has_photo ? result.url : picture.dataset.default;
       picture.alt = result.has_photo ? 'Your profile picture' : 'Default Bulldog profile picture';
-      choosePhoto.textContent = result.has_photo ? 'Edit picture' : 'Add a picture';
+      choosePhoto.textContent = result.has_photo ? 'Edit Picture' : 'Add a Picture';
       removePhoto.hidden = !result.has_photo;
       reportPhoto(result.has_photo ? 'Picture saved.' : 'Picture removed. The Bulldog is your profile picture again.');
       if (!result.has_photo) choosePhoto.focus();

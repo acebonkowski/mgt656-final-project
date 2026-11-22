@@ -21,7 +21,7 @@ from django.utils.text import slugify
 from core.forms import EventForm, OnboardingForm
 from core.ics import build_ics
 from accounts.models import Profile
-from core.models import Event, Program
+from core.models import DEFAULT_EVENT_IMAGE, Event, Program
 from core.map_places import YALE_AREA_PLACES
 from core import photo_storage
 from core import llm
@@ -185,8 +185,8 @@ def map_tile(request, z, x, y):
 def event_photo(request, object_key):
     # Public (#32, team decision): shared event pages are viewable logged out,
     # so their image must be too. Only keys that belong to an event are served.
-    event = Event.objects.filter(image=object_key).first()
-    if not event:
+    event = Event.objects.filter(image=object_key).exclude(image=DEFAULT_EVENT_IMAGE).first()
+    if not event:  # the default image is a static file (#79), not a stored object
         raise Http404
     try:
         data = photo_storage.download(

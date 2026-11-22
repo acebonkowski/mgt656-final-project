@@ -35,9 +35,9 @@ class OnboardingTests(TestCase):
 
     def test_page_contains_required_fields_and_default_image(self):
         response = self.client.get(reverse("onboarding"))
-        self.assertContains(response, "Let's get to know you better.")
+        self.assertContains(response, "Let's Get to Know You Better.")
         self.assertContains(response, "core/bulldog.svg")
-        self.assertContains(response, "Start discovering")
+        self.assertContains(response, "Start Discovering")
         self.assertEqual(set(response.context["form"].fields), {"display_name", "school", "program"})
 
     def test_empty_fields_and_whitespace_name_rejected(self):

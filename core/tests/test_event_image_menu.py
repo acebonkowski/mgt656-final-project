@@ -40,7 +40,7 @@ class ImagePlaceholderMarkupTests(TestCase):
 
     def test_empty_state_is_a_centred_square_with_a_plus(self):
         add = self.menu.split('id="event-image-add"', 1)[1].split("</button>", 1)[0]
-        self.assertIn('aria-label="Add image"', add)
+        self.assertIn('aria-label="Add Image"', add)
         self.assertIn('<path d="M12 5v14M5 12h14"/>', add)  # plus
         self.assertIn('aria-controls="event-image-sources"', add)
         square = self.css.split(".image-square {", 1)[1].split("}", 1)[0]

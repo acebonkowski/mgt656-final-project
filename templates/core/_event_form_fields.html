@@ -8,7 +8,7 @@ and Price | Link. The image field is rendered by each page.
   <div class="event-field">
     <div class="event-label-row">
       {{ form.name.label_tag }}
-      <span id="id_name_count" class="char-count" data-count-for="id_name" data-max="30">{{ form.name.value|default_if_none:""|length }}/30</span>
+      <span id="id_name_count" class="char-count" data-count-for="id_name" data-max="50">{{ form.name.value|default_if_none:""|length }}/50</span>
     </div>
     {{ form.name }}
     {{ form.name.errors }}
@@ -17,7 +17,7 @@ and Price | Link. The image field is rendered by each page.
   <div class="event-field">
     <div class="event-label-row">
       {{ form.description.label_tag }}
-      <span id="id_description_count" class="char-count" data-count-for="id_description" data-max="150">{{ form.description.value|default_if_none:""|length }}/150</span>
+      <span id="id_description_count" class="char-count" data-count-for="id_description" data-max="300">{{ form.description.value|default_if_none:""|length }}/300</span>
     </div>
     {{ form.description }}
     {{ form.description.errors }}

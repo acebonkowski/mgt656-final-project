@@ -59,10 +59,10 @@ class CreateFormLayoutTests(TestCase):
     def test_title_label_and_limits(self):
         self.assertIn('<label for="id_name">Title</label>', self.form)
         self.assertNotIn(">Name", self.form)
-        self.assertIn('data-count-for="id_name" data-max="30">0/30</span>', self.form)
-        self.assertIn('data-count-for="id_description" data-max="150">0/150</span>', self.form)
-        self.assertIn('maxlength="30"', self.form)
-        self.assertIn('maxlength="150"', self.form)
+        self.assertIn('data-count-for="id_name" data-max="50">0/50</span>', self.form)
+        self.assertIn('data-count-for="id_description" data-max="300">0/300</span>', self.form)
+        self.assertIn('maxlength="50"', self.form)
+        self.assertIn('maxlength="300"', self.form)
 
     def test_two_column_rows(self):
         self.assertEqual([row[:2] for row in self.rows()],

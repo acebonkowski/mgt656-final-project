@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1220">
   <title>Home · Yale Events</title>
-  <link rel="stylesheet" href="{% static 'core/map.css' %}?v=ui-70">
-  <link rel="stylesheet" href="{% static 'core/search.css' %}?v=search-69">
+  <link rel="stylesheet" href="{% static 'core/map.css' %}?v=ui-79">
+  <link rel="stylesheet" href="{% static 'core/search.css' %}?v=search-79">
 </head>
 <body class="map-screen">
   <main>
@@ -23,7 +23,7 @@
       </button>
       <form class="logout" method="post" action="{% url 'accounts:logout' %}">
         {% csrf_token %}
-        <button type="submit" class="logout-button" aria-label="Log out" title="Log out">
+        <button type="submit" class="logout-button" aria-label="Log Out" title="Log Out">
           <svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24"
                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -41,7 +41,7 @@
       <form method="post" action="{% url 'map' %}" enctype="multipart/form-data" class="event-form">
         {% csrf_token %}
         <div class="event-form-heading">
-          <h2 id="event-form-title">Create event</h2>
+          <h2 id="event-form-title">Create Event</h2>
           <button id="close-event-form" type="button" aria-label="Close">×</button>
         </div>
         {% if event_form.non_field_errors %}
@@ -53,7 +53,7 @@
         <div class="image-menu" role="group" aria-label="Event image"
              data-generate-url="{% url 'generate_event_image' %}">
           <div class="image-square">
-            <button id="event-image-add" class="image-add" type="button" aria-label="Add image"
+            <button id="event-image-add" class="image-add" type="button" aria-label="Add Image"
                     aria-haspopup="true" aria-expanded="false" aria-controls="event-image-sources">
               <svg aria-hidden="true" focusable="false" width="40" height="40" viewBox="0 0 24 24"
                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -63,16 +63,16 @@
             <div id="event-image-preview" class="event-image-preview" hidden>
               <img id="event-image-preview-img" alt="Selected event image">
               <div class="image-tools">
-                <button id="event-image-edit" class="image-tool" type="button" aria-label="Change image"
-                        title="Change image" aria-haspopup="true" aria-expanded="false"
+                <button id="event-image-edit" class="image-tool" type="button" aria-label="Change Image"
+                        title="Change Image" aria-haspopup="true" aria-expanded="false"
                         aria-controls="event-image-sources">
                   <svg aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 24 24"
                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>
                   </svg>
                 </button>
-                <button id="event-image-remove" class="image-tool" type="button" aria-label="Remove image"
-                        title="Remove image">
+                <button id="event-image-remove" class="image-tool" type="button" aria-label="Remove Image"
+                        title="Remove Image">
                   <svg aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 24 24"
                        fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
                     <path d="M6 6l12 12M18 6 6 18"/>
@@ -96,16 +96,16 @@
           <div class="event-image-field" hidden>{{ event_form.image }}</div>
         </div>
         {% include "core/_event_form_fields.html" with form=event_form include_remove_image=True %}
-        <button id="create-event-submit" class="event-submit" type="submit">Create event</button>
+        <button id="create-event-submit" class="event-submit" type="submit">Create Event</button>
       </form>
     </dialog>
     <dialog id="duplicate-event-dialog" class="duplicate-event-dialog"
             aria-labelledby="duplicate-event-title">
       <div class="duplicate-alert" role="alert">
-        <h2 id="duplicate-event-title">Possible duplicate event</h2>
+        <h2 id="duplicate-event-title">Possible Duplicate Event</h2>
         <p>An event already exists at the same location and time.</p>
         <button id="view-duplicate-event" type="button">View</button>
-        <button id="close-duplicate-alert" type="button" aria-label="Close duplicate alert">×</button>
+        <button id="close-duplicate-alert" type="button" aria-label="Close Duplicate Alert">×</button>
       </div>
     </dialog>
     <dialog id="event-detail-popup" class="event-detail-popup"
@@ -113,11 +113,11 @@
       <button id="close-event-detail" class="popup-close" type="button" aria-label="Close">×</button>
       <div id="event-detail-content"></div>
       <div id="event-detail-first-step">
-        <button id="thats-my-event" type="button">That's my event</button>
+        <button id="thats-my-event" type="button">That's My Event</button>
       </div>
       <div id="event-detail-second-step" hidden>
-        <button id="request-collab" type="button">Request collab</button>
-        <button id="return-to-map" type="button">Return to map</button>
+        <button id="request-collab" type="button">Request Collab</button>
+        <button id="return-to-map" type="button">Return to Map</button>
       </div>
     </dialog>
     <div id="map" class="map" role="region" aria-label="Map of New Haven"></div>
@@ -128,7 +128,7 @@
     </aside>
     <div class="overlay">
       <!-- The placeholder headline (#8) made way for the search panel (#35). -->
-      <h1 class="visually-hidden">Find events in New Haven</h1>
+      <h1 class="visually-hidden">Find Events in New Haven</h1>
       <p id="map-fallback" class="fallback" role="status"{% if map_enabled %} hidden{% endif %}>
         The map isn't available right now.
       </p>
@@ -139,7 +139,7 @@
   {% if map_enabled %}{% include "core/_map_provider.html" %}{% endif %}
   <script src="{% static 'core/time12.js' %}?v=time12-67"></script>
   <script src="{% static 'core/event_form.js' %}?v=form-70"></script>
-  <script src="{% static 'core/map.js' %}?v=ui-70"></script>
-  <script src="{% static 'core/search.js' %}?v=search-67"></script>
+  <script src="{% static 'core/map.js' %}?v=ui-79"></script>
+  <script src="{% static 'core/search.js' %}?v=search-79"></script>
 </body>
 </html>

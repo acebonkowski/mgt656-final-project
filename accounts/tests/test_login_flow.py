@@ -32,9 +32,12 @@ class WelcomeScreenTests(TestCase):
         response = self.client.get("/login/")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "<h1>Welcome.</h1>", html=True)
-        self.assertContains(response, "Your Yale email address")
-        self.assertContains(response, "Only yale.edu addresses are accepted.")
-        self.assertContains(response, ">Send code</button>")
+        self.assertContains(response, "Your Yale Email Address")
+        # #79: no hint under the field and no environment line.
+        self.assertNotContains(response, "Only yale.edu addresses are accepted.")
+        self.assertNotContains(response, "email-hint")
+        self.assertNotContains(response, "Environment:")
+        self.assertContains(response, ">Send Code</button>")
         self.assertContains(response, 'name="viewport"')
         self.assertContains(response, "accounts/auth.css")
 
@@ -47,7 +50,7 @@ class WelcomeScreenTests(TestCase):
         record = LoginCode.objects.get(email=STUDENT)
         self.assertNotIn(code, record.code_hash)  # only a hash is stored
         response = self.client.get("/login/code/")
-        self.assertContains(response, "<h1>Code was sent.</h1>", html=True)
+        self.assertContains(response, "<h1>Code Was Sent.</h1>", html=True)
         self.assertContains(response, STUDENT)
 
     def test_empty_invalid_or_non_yale_email_shows_error_and_sends_nothing(self):
@@ -138,7 +141,7 @@ class VerifyCodeTests(TestCase):
         self.assertFalse(user.profile.onboarding_complete)
         self.assertEqual(int(self.client.session["_auth_user_id"]), user.pk)
         response = self.client.get("/onboarding/")
-        self.assertContains(response, "Let's get to know you better.")
+        self.assertContains(response, "Let's Get to Know You Better.")
 
     def test_existing_user_with_completed_profile_goes_to_the_map(self):
         user = User.objects.create_user(username=STUDENT, email=STUDENT)
@@ -235,7 +238,7 @@ class RoutingAndLogoutTests(TestCase):
         response = self.client.get("/map/")
         self.assertContains(response, 'action="/logout/"')
         # An icon button since #64; its accessible name is still "Log out".
-        self.assertContains(response, 'aria-label="Log out"')
+        self.assertContains(response, 'aria-label="Log Out"')
         response = self.client.post("/logout/")
         self.assertRedirects(response, "/login/")
         self.assertNotIn("_auth_user_id", self.client.session)

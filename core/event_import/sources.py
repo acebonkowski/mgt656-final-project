@@ -8,6 +8,8 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from django.conf import settings
 
+from core.models import EVENT_DESCRIPTION_MAX_LENGTH, EVENT_NAME_MAX_LENGTH, fit_to_limit
+
 from .categories import classify
 from .ics import Candidate, Preview, aware_datetime, parse_feed
 
@@ -92,7 +94,9 @@ def parse_ticketmaster(payload, *, now, until):
                           and p.get("min") is not None and p.get("min") == p.get("max")), None)
             location = ", ".join(filter(None, [venue.get("name"), venue.get("address", {}).get("line1"), city, state]))
             coordinates = venue.get("location", {})
-            result.events.append(Candidate("ticketmaster", str(raw["id"]), name[:30], description[:150],
+            result.events.append(Candidate("ticketmaster", str(raw["id"]),
+                                           fit_to_limit(name, EVENT_NAME_MAX_LENGTH),
+                                           fit_to_limit(description, EVENT_DESCRIPTION_MAX_LENGTH),
                                            start, end, location, link, category, method, price,
                                            coordinates.get("latitude"), coordinates.get("longitude"), city, state))
             result.counts["prepared"] += 1

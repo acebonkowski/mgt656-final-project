@@ -39,7 +39,7 @@ class SearchPanelTests(TestCase):
         self.assertContains(self.response, 'aria-controls="search-filters"')
 
     def test_only_one_clear_filters_button(self):
-        self.assertEqual(self.html.count(">Clear filters<"), 1)
+        self.assertEqual(self.html.count(">Clear Filters<"), 1)
         self.assertContains(self.response, 'id="search-clear" type="button" hidden')
 
     def test_category_list_has_exactly_the_12_categories(self):
@@ -77,7 +77,7 @@ class SearchPanelTests(TestCase):
 
     def test_panel_collapses_to_a_one_line_summary(self):
         self.assertContains(self.response, 'id="search-collapse"')
-        self.assertContains(self.response, 'aria-label="Collapse search panel"')
+        self.assertContains(self.response, 'aria-label="Collapse Search Panel"')
         self.assertContains(self.response, 'id="search-summary" class="search-summary"')
         self.assertContains(self.response, 'id="search-summary-text"')
         self.assertNotContains(self.response, "search-list-toggle")
@@ -99,7 +99,7 @@ class SearchPanelTests(TestCase):
 
     def test_placeholder_headline_is_replaced_by_an_accessible_heading(self):
         self.assertNotContains(self.response, "More coming soon.")
-        self.assertContains(self.response, '<h1 class="visually-hidden">Find events in New Haven</h1>')
+        self.assertContains(self.response, '<h1 class="visually-hidden">Find Events in New Haven</h1>')
 
     def test_existing_map_screen_content_is_kept(self):
         self.assertContains(self.response, 'id="open-event-form"')
@@ -204,8 +204,8 @@ class EventDialogTests(TestCase):
 
     def test_dialog_markup(self):
         self.assertContains(self.response, 'id="search-event-dialog" class="event-detail-popup search-event-dialog"')
-        self.assertContains(self.response, 'id="search-event-prev" type="button" aria-label="Previous event"')
-        self.assertContains(self.response, 'id="search-event-next" type="button" aria-label="Next event"')
+        self.assertContains(self.response, 'id="search-event-prev" type="button" aria-label="Previous Event"')
+        self.assertContains(self.response, 'id="search-event-next" type="button" aria-label="Next Event"')
         self.assertContains(self.response, 'id="search-event-close"')
         self.assertContains(self.response, 'id="search-event-position"')
         self.assertContains(self.response, 'data-popup-url="/events/0/popup/"')
@@ -241,9 +241,12 @@ class EventDialogTests(TestCase):
         self.assertIn('window.location.href = event.detail_url || event.url || "/events/" + event.id + "/"',
                       self.provider)
 
-    def test_cards_have_a_thumbnail_with_initial_fallback(self):
+    def test_cards_have_a_thumbnail_with_default_image_fallback(self):
+        # #79: the default bulldog replaces the first-letter fallback.
         self.assertIn('box.className = "search-result-thumb"', self.source)
-        self.assertIn("box.textContent = event.name.charAt(0).toUpperCase()", self.source)
+        self.assertNotIn("charAt(0).toUpperCase()", self.source)
+        self.assertIn("img.src = event.image_url || defaultImage;", self.source)
+        self.assertIn('img.addEventListener("error", function () { useDefaultImage(img); });', self.source)
         self.assertIn(".search-result-thumb img", static_source("core/search.css"))
 
     def test_list_loads_on_arrival(self):
@@ -352,7 +355,7 @@ class AiImageAttachTests(TestCase):
     def test_attach_control_accepts_the_supported_types(self):
         self.assertContains(self.response, 'id="search-ai-image" class="visually-hidden" type="file" name="image"')
         self.assertContains(self.response, 'accept="image/png,image/jpeg,image/heic,image/heif"')
-        self.assertContains(self.response, 'aria-label="Remove attached image"')
+        self.assertContains(self.response, 'aria-label="Remove Attached Image"')
         self.assertContains(self.response, 'id="search-ai-attachment" class="search-ai-attachment" hidden')
 
     def test_image_is_checked_in_the_browser_and_sent_with_the_message(self):
@@ -382,13 +385,13 @@ class AiVoiceTests(TestCase):
         keyboard = controls.index('id="search-ai-keyboard"')
         self.assertLess(attach, mic)
         self.assertLess(mic, keyboard)
-        self.assertIn('aria-label="Speak your request"', controls)
+        self.assertIn('aria-label="Speak Your Request"', controls)
         self.assertIn('id="search-ai-volume" class="search-ai-round" type="button" aria-pressed="false"', controls)
 
     def test_text_box_small_mic_and_voice_exit_start_hidden(self):
         self.assertContains(self.response, 'id="search-ai-form" class="search-ai-form" novalidate hidden')
-        self.assertContains(self.response, 'aria-label="Speak instead" title="Speak instead" hidden')
-        self.assertContains(self.response, 'aria-label="Leave voice mode" title="Leave voice mode" hidden')
+        self.assertContains(self.response, 'aria-label="Speak Instead" title="Speak Instead" hidden')
+        self.assertContains(self.response, 'aria-label="Leave Voice Mode" title="Leave Voice Mode" hidden')
 
     def test_modes_show_the_right_controls(self):
         body = self.source.split("function setInputMode(value) {", 1)[1].split("\n  }\n", 1)[0]
@@ -458,7 +461,7 @@ class GlassIconBarTests(TestCase):
         ids = [re.search(r'id="([^"]+)"', b).group(1) for b in buttons]
         self.assertEqual(ids, ["search-filters-toggle", "search-ai-toggle", "search-collapse"])
         labels = [re.search(r'aria-label="([^"]+)"', b).group(1) for b in buttons]
-        self.assertEqual(labels, ["Filters", "Search", "Collapse search panel"])
+        self.assertEqual(labels, ["Filters", "Search", "Collapse Search Panel"])
         # The text box, the magnifier submit, "Filters" text and "AI" toggle left the header.
         for gone in ('id="search-q"', 'id="search-submit"', ">Filters<", "AI</button>", "<input"):
             self.assertNotIn(gone, self.bar)
@@ -547,7 +550,7 @@ class SearchModeTests(TestCase):
 
     def test_search_manually_is_a_tertiary_text_button(self):
         self.assertIn('class="search-tertiary" type="button"', self.header)
-        self.assertIn(">Search manually</button>", self.header)
+        self.assertIn(">Search Manually</button>", self.header)
         rule = static_source("core/search.css").split(".search-panel .search-tertiary {", 1)[1].split("}", 1)[0]
         self.assertIn("background: transparent;", rule)
         self.assertIn("border-color: transparent;", rule)
@@ -600,7 +603,7 @@ class ManualSearchTests(TestCase):
         self.assertNotIn("<summary", self.filters)
         rows = re.findall(r'<(?:label for="search-[a-z]+"|span id="[^"]+" class="search-row-label")>([^<]+)<',
                           self.filters)
-        self.assertEqual(rows, ["Category", "Date", "Start time", "Address"])
+        self.assertEqual(rows, ["Category", "Date", "Start Time", "Address"])
         self.assertIn('id="search-q"', self.filters)
         # The text input comes after the filters.
         self.assertGreater(self.filters.index('id="search-q"'), self.filters.index('id="search-address"'))
@@ -610,7 +613,7 @@ class ManualSearchTests(TestCase):
         buttons = re.findall(r'<button id="([^"]+)"', header)
         self.assertEqual(buttons, ["search-filters-back", "search-filters-ai"])
         self.assertIn('aria-label="Back"', header)
-        self.assertIn(">Search with AI</button>", header)
+        self.assertIn(">Search With AI</button>", header)
         self.assertNotIn("search-filters-toggle", self.filters)
 
     def test_the_filter_icon_is_hidden_in_manual_search(self):

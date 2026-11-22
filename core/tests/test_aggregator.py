@@ -12,7 +12,7 @@ from django.urls import reverse
 
 from core.event_import import enrichment, runner, sources
 from core.event_import.ics import Preview, parse_feed
-from core.models import Event, EventGeocodeCache, EventImportLock
+from core.models import DEFAULT_EVENT_IMAGE, Event, EventGeocodeCache, EventImportLock
 
 NOW = datetime(2026, 11, 17, tzinfo=timezone.utc)
 UNTIL = datetime(2027, 1, 1, tzinfo=timezone.utc)
@@ -98,7 +98,7 @@ class AggregatorTests(TestCase):
             result = self.run_batch([self.candidate, second])
             self.assertEqual(result["already_imported"], 2)
             generate.assert_called_once()
-        self.assertEqual(Event.objects.filter(image="").count(), 2)
+        self.assertEqual(Event.objects.filter(image=DEFAULT_EVENT_IMAGE).count(), 2)
 
     @override_settings(AGGREGATOR_MAX_IMAGES_PER_RUN=1)
     def test_image_failure_keeps_import_and_consumes_cap(self):
@@ -108,7 +108,7 @@ class AggregatorTests(TestCase):
         self.assertEqual(result["imported"], 2)
         self.assertEqual(result["image_failed"], 1)
         generate.assert_called_once()
-        self.assertEqual(Event.objects.filter(image="").count(), 2)
+        self.assertEqual(Event.objects.filter(image=DEFAULT_EVENT_IMAGE).count(), 2)
 
     @override_settings(AGGREGATOR_MAX_IMAGES_PER_RUN=0, AGGREGATOR_MAX_CLASSIFICATIONS_PER_RUN=0)
     def test_default_budget_makes_no_ai_calls(self):
@@ -206,12 +206,14 @@ class AggregatorTests(TestCase):
         self.client.force_login(user)
         event = Event.objects.get()
         response = self.client.get(reverse("event_detail", args=[event.pk]))
-        self.assertContains(response, "Price not listed")
+        self.assertContains(response, "<dd data-field=\"price\">Free</dd>", html=True)
+        self.assertNotContains(response, "Price not listed")
         self.assertContains(response, "Yale SOM")
-        self.assertContains(response, "Image unavailable")
+        self.assertContains(response, "core/img/default-event.svg")
+        self.assertNotContains(response, "Image unavailable")
         with mock.patch("core.views.timezone.now", return_value=NOW):
             response = self.client.get("/map/")
-        self.assertEqual(response.context["map_config"]["events"][0]["price"], "Price not listed")
+        self.assertEqual(response.context["map_config"]["events"][0]["price"], "Free")
 
     def test_deadline_releases_lock_without_fetching(self):
         with mock.patch.object(runner.time, "monotonic", side_effect=[0, 1000]), \

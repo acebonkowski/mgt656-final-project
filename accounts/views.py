@@ -88,7 +88,6 @@ def welcome(request):
     return render(request, "accounts/welcome.html", {
         "email": email,
         "error": error,
-        "app_env": settings.APP_ENV,
     }, status=400 if error else 200)
 
 

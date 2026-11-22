@@ -80,8 +80,8 @@ class EventModelTests(TestCase):
 
     def test_name_description_and_location_length_limits(self):
         for field, value, limit in (
-            ("name", "n" * 31, 30),
-            ("description", "d" * 151, 150),
+            ("name", "n" * 51, 50),
+            ("description", "d" * 301, 300),
             ("location", "l" * 501, 500),
         ):
             with self.subTest(field=field):
