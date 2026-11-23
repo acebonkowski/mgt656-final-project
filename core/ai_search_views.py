@@ -69,7 +69,7 @@ def ai_search_view(request):
 
     history = request.session.get(ai_search.HISTORY_SESSION_KEY, [])
     try:
-        result = ai_search.search(message, history, now=now, image=image)
+        result = ai_search.search(message, history, now=now, image=image, user=request.user)
     except llm.LLMInvalidResponse:
         return error(UNREADABLE, 502)
     except llm.LLMUnavailable:

@@ -19,9 +19,10 @@ from django.utils.http import urlencode
 from django.utils.text import slugify
 
 from core.forms import EventForm, OnboardingForm
+from core.attendance import can_answer, exclude_not_going
 from core.ics import build_ics
 from accounts.models import Profile
-from core.models import DEFAULT_EVENT_IMAGE, Event, Program
+from core.models import DEFAULT_EVENT_IMAGE, Event, EventAttendance, Program
 from core.map_places import YALE_AREA_PLACES
 from core import photo_storage
 from core import llm
@@ -121,7 +122,7 @@ def map_view(request):
         # Field names only, never values, so the reason shows in the logs (#57).
         logger.info("Create event rejected: %s", ", ".join(sorted(form.errors)))
 
-    active_events = Event.objects.filter(end_at__gt=timezone.now())
+    active_events = exclude_not_going(Event.objects.filter(end_at__gt=timezone.now()), request.user)
     event_data = [
         {
             "id": event.pk,
@@ -281,6 +282,20 @@ def duplicate_event(request):
     })
 
 
+def going_context(request, event):
+    """Going dropdown state (#84): who sees it, and the user's saved answer."""
+    user = request.user
+    context = {
+        "show_going": can_answer(user, event),
+        "is_host": user.is_authenticated and event.creator_id == user.pk,
+        "going_status": "",
+    }
+    if context["show_going"]:
+        saved = EventAttendance.objects.filter(user=user, event=event).first()
+        context["going_status"] = saved.status if saved else ""
+    return context
+
+
 @never_cache
 def event_detail(request, event_id):
     """Shareable event page (#32): public, so a shared link works logged out."""
@@ -291,6 +306,7 @@ def event_detail(request, event_id):
     return render(request, "core/event_detail.html", {
         "event": event,
         "popup": False,
+        **going_context(request, event),
         "share_url": request.build_absolute_uri(page_path),
         # Visitors who join from a shared link come back to this event.
         "join_url": f"{reverse('accounts:welcome')}?{urlencode({'next': page_path})}",
@@ -315,6 +331,7 @@ def event_detail_popup(request, event_id):
     return render(request, "core/event_detail.html", {
         "event": event,
         "popup": True,
+        **going_context(request, event),
     })
 
 

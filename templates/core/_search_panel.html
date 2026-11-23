@@ -118,6 +118,12 @@
         </div>
       </div>
 
+      {# Events marked "Not going" (#84) are hidden unless this is on. #}
+      <label class="search-include-row">
+        <input id="search-include-not-going" type="checkbox">
+        <span>Include Events I'm Not Going To</span>
+      </label>
+
       <div class="search-text-row">
         <label class="visually-hidden" for="search-q">Search Text</label>
         <input id="search-q" name="q" type="search" maxlength="200" autocomplete="off"

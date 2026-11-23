@@ -52,5 +52,5 @@ def search_events_view(request):
         errors = {field: [str(message) for message in messages]
                   for field, messages in form.errors.items()}
         return JsonResponse({"errors": errors}, status=400)
-    events = [event_json(event) for event in form.search()]
+    events = [event_json(event) for event in form.search(user=request.user)]
     return JsonResponse({"count": len(events), "events": events})
