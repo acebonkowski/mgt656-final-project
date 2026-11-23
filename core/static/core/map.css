@@ -963,3 +963,40 @@ span.time12 input.time12-minute {
   margin: 1rem 0 0;
   font-weight: 700;
 }
+
+/* My Events link next to Create (#82); icon only on phones. */
+.my-events-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 2.5rem;
+  padding: 0 0.8rem;
+  border: 1px solid rgba(230, 236, 245, 0.25);
+  border-radius: 999px;
+  background: var(--overlay-bg);
+  color: var(--map-text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.my-events-link:hover {
+  border-color: rgba(230, 236, 245, 0.5);
+}
+
+.my-events-link:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+@media (max-width: 479px) {
+  .my-events-link {
+    width: 2.5rem;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .my-events-link span {
+    display: none;
+  }
+}
