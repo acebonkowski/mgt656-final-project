@@ -6,6 +6,7 @@ from core import views
 from core.photo_views import profile_photo
 from core.event_import.views import trigger_import
 from core.ai_search_views import ai_search_reset_view, ai_search_view
+from core.attendance_views import set_going
 from core.search_views import search_events_view
 
 urlpatterns = [
@@ -24,6 +25,7 @@ urlpatterns = [
     path("events/search/ai/", ai_search_view, name="ai_search"),
     path("events/search/ai/reset/", ai_search_reset_view, name="ai_search_reset"),
     path("events/<int:event_id>/", views.event_detail, name="event_detail"),
+    path("events/<int:event_id>/going/", set_going, name="set_going"),
     path("events/<int:event_id>/popup/", views.event_detail_popup, name="event_detail_popup"),
     path("events/<int:event_id>/calendar.ics", views.event_calendar, name="event_calendar"),
     path("events/<int:event_id>/edit/", views.edit_event, name="edit_event"),

@@ -190,6 +190,35 @@ class AIUsage(models.Model):
         return f"{self.kind} by {self.user_id} at {self.created_at:%Y-%m-%d %H:%M}"
 
 
+class EventAttendance(models.Model):
+    """
+    A user's answer to "Are you going?" for one event (#84). No row means the
+    user has not answered. Hosts are not stored here: they count as going.
+    """
+
+    class Status(models.TextChoices):
+        GOING = "going", "Going"
+        MAYBE = "maybe", "Maybe"
+        NOT_GOING = "not_going", "Not going"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="attendances"
+    )
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="attendances")
+    status = models.CharField(max_length=10, choices=Status.choices)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "event"], name="attendance_user_event_unique"),
+        ]
+        indexes = [models.Index(fields=["user", "status"], name="attendance_user_status_idx")]
+
+    def __str__(self):
+        return f"{self.user_id} {self.status} {self.event_id}"
+
+
 class EventImportLock(models.Model):
     name = models.CharField(max_length=40, primary_key=True)
     token = models.CharField(max_length=36, blank=True)
