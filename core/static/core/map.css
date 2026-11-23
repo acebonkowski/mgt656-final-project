@@ -927,3 +927,39 @@ span.time12 input.time12-minute {
 .event-delete-form .delete-event:focus-visible {
   background: rgba(255, 120, 100, 0.12);
 }
+
+/* Going status (#84): the dropdown under an event's details. */
+.event-going {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 1rem;
+}
+
+.event-going label {
+  color: var(--map-muted, #9fb0c8);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.going-select {
+  min-height: 2.5rem;
+  padding: 0 0.6rem;
+  border: 1px solid rgba(230, 236, 245, 0.25);
+  border-radius: 0.6rem;
+  background: #111b2d;
+  color: inherit;
+  font: inherit;
+}
+
+.going-status {
+  min-height: 1.1rem;
+  margin: 0;
+  color: var(--map-muted, #9fb0c8);
+  font-size: 0.85rem;
+}
+
+.event-hosting {
+  margin: 1rem 0 0;
+  font-weight: 700;
+}
