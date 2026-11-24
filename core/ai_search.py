@@ -164,7 +164,7 @@ def validated_form(data, now):
     return form, {}
 
 
-def search(message, history, now=None, geocode=None, image=None):
+def search(message, history, now=None, geocode=None, image=None, user=None):
     """
     Ask the model for filters, validate them and search.
     `image` is an optional (bytes, content_type) pair, already validated and
@@ -197,7 +197,8 @@ def search(message, history, now=None, geocode=None, image=None):
         "reply": reply,
         "filters": data,
         "notes": notes,
-        "events": list(form.search()),
+        # Never "Not going" events (#84): the model cannot set include_not_going.
+        "events": list(form.search(user=user)),
         "history": [
             # Only the text is remembered; the image is never stored, even in the session.
             {"role": "user", "content": f"[Image attached] {message}" if image else message},

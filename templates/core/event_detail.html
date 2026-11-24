@@ -63,6 +63,21 @@
       {% if event.link %}<dt>Link</dt><dd data-field="link"><a href="{{ event.link }}" target="_blank" rel="noopener">{{ event.link }}</a></dd>{% endif %}
       {% if event.source %}<dt>Source</dt><dd data-field="source">{{ event.source_label }}</dd>{% endif %}
     </dl>
+    {# Going status (#84): logged-in non-hosts, until the event ends. #}
+    {% if is_host %}
+      <p class="event-hosting">You're hosting</p>
+    {% elif show_going %}
+      <div class="event-going" data-going-url="{% url 'set_going' event.pk %}" data-csrf="{{ csrf_token }}">
+        <label for="going-select-{{ event.pk }}">Are you going?</label>
+        <select id="going-select-{{ event.pk }}" class="going-select" data-saved="{{ going_status }}">
+          <option value=""{% if not going_status %} selected{% endif %}>Going?</option>
+          <option value="going"{% if going_status == "going" %} selected{% endif %}>✓ Going</option>
+          <option value="maybe"{% if going_status == "maybe" %} selected{% endif %}>? Maybe</option>
+          <option value="not_going"{% if going_status == "not_going" %} selected{% endif %}>✗ Not going</option>
+        </select>
+        <p class="going-status" role="status" aria-live="polite"></p>
+      </div>
+    {% endif %}
   </article>
 {% if not popup %}
 </main>
@@ -77,6 +92,7 @@
   {% endif %}
 </footer>
 <script src="{% static 'core/event.js' %}"></script>
+<script src="{% static 'core/going.js' %}"></script>
 </body>
 </html>
 {% endif %}

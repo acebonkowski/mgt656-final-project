@@ -19,6 +19,7 @@ from django.db import connection
 from django.db.models import Case, IntegerField, Q, Value, When
 from django.utils import timezone
 
+from core.attendance import exclude_not_going
 from core.models import Event
 
 NEW_YORK = ZoneInfo("America/New_York")
@@ -70,6 +71,8 @@ class EventSearchForm(forms.Form):
         choices=RADIUS_CHOICES, coerce=float, required=False, empty_value=None
     )
     area = forms.CharField(required=False)  # "lat,lng,radius_mi" from Search this area
+    # Off by default: events the user marked "Not going" are hidden (#84).
+    include_not_going = forms.BooleanField(required=False)
 
     def __init__(self, *args, now=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -117,9 +120,9 @@ class EventSearchForm(forms.Form):
             data["radius_mi"] = DEFAULT_RADIUS_MI
         return data
 
-    def search(self):
-        """Run the search. Call only after is_valid()."""
-        return search_events(self.cleaned_data, now=self.now)
+    def search(self, user=None):
+        """Run the search. Call only after is_valid(). `user` hides their "Not going" events."""
+        return search_events(self.cleaned_data, now=self.now, user=user)
 
 
 def distance_mi(lat1, lng1, lat2, lng2):
@@ -202,14 +205,17 @@ def _filter_distance(events, lat, lng, radius_mi):
     return events.filter(pk__in=within)
 
 
-def search_events(filters, now=None):
+def search_events(filters, now=None, user=None):
     """
     Return upcoming events matching every filter in `filters`
     (EventSearchForm.cleaned_data). Ordered by relevance when there is text,
-    otherwise by start time.
+    otherwise by start time. Events `user` marked "Not going" are left out unless
+    filters["include_not_going"] is set (#84).
     """
     now = now or timezone.now()
     events = Event.objects.filter(end_at__gt=now)
+    if not filters.get("include_not_going"):
+        events = exclude_not_going(events, user)
 
     if filters.get("category"):
         events = events.filter(category__in=filters["category"])

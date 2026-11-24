@@ -36,6 +36,7 @@
   var suggestions = byId("search-address-suggestions");
   var myLocation = byId("search-my-location");
   var radius = byId("search-radius");
+  var includeNotGoing = byId("search-include-not-going");  // #84
   var locationMessage = byId("search-location-message");
   var clearButton = byId("search-clear");
   var results = byId("search-results");
@@ -139,6 +140,7 @@
       near_label: near.lat ? near.label : "",
       radius_mi: near.lat ? radius.value : "",
       area: area,
+      include_not_going: includeNotGoing.checked ? "1" : "",
     };
   }
 
@@ -176,6 +178,7 @@
     address.value = near.lat ? (near.label || "Selected location") : "";
     radius.value = f.radius_mi || defaultRadius;
     area = f.area || "";
+    includeNotGoing.checked = Boolean(f.include_not_going);
   }
 
   function toParams(f) {
@@ -205,6 +208,7 @@
       near_label: params.get("near_label") || "",
       radius_mi: params.get("radius_mi") || "",
       area: params.get("area") || "",
+      include_not_going: params.get("include_not_going") || "",
     };
   }
 
@@ -261,6 +265,10 @@
     if (f.area) {
       list.push({ label: "Map area (" + f.area.split(",")[2] + " mi)", focus: null,
         remove: function () { area = ""; } });
+    }
+    if (f.include_not_going) {
+      list.push({ label: "Including Not Going", focus: includeNotGoing,
+        remove: function () { includeNotGoing.checked = false; } });
     }
     return list;
   }
@@ -568,6 +576,7 @@
       input.addEventListener("change", applySoon);
     });
   radius.addEventListener("change", function () { if (near.lat) applySoon(); });
+  includeNotGoing.addEventListener("change", applySoon);
 
   form.addEventListener("submit", function (event) {
     event.preventDefault();
