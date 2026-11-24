@@ -1,0 +1,152 @@
+/* My Events (#82). Loaded after map.css and event.css. */
+
+.my-events-topbar,
+.my-events-main {
+  width: 100%;
+  max-width: 64rem;
+  margin-inline: auto;
+}
+
+.my-events-topbar h1 {
+  margin: 0;
+  font-size: 1.15rem;
+  text-align: center;
+}
+
+.my-events-topbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+}
+
+.my-events-row {
+  margin-top: 1.5rem;
+}
+
+.my-events-row-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.6rem;
+}
+
+.my-events-row-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.my-events-view-all {
+  color: #4da3ff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.my-events-view-all:hover,
+.my-events-view-all:focus-visible {
+  text-decoration: underline;
+}
+
+/* A row scrolls sideways; the card widths leave the last one cut off. */
+.my-events-scroller {
+  display: flex;
+  gap: 0.75rem;
+  margin: 0 -1rem;
+  padding: 0 1rem 0.5rem;
+  overflow-x: auto;
+  list-style: none;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 1rem;
+}
+
+.my-events-scroller > li {
+  flex: 0 0 min(15rem, 72vw);
+  scroll-snap-align: start;
+}
+
+.my-events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.my-event-card {
+  display: grid;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(230, 236, 245, 0.18);
+  border-radius: 0.9rem;
+  background: #111b2d;
+  color: var(--map-text);
+  text-decoration: none;
+}
+
+.my-event-card:hover {
+  border-color: rgba(77, 163, 255, 0.6);
+}
+
+.my-event-card:focus-visible {
+  outline: 3px solid #4da3ff;
+  outline-offset: 2px;
+}
+
+.my-event-image {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: #e9eef6;
+}
+
+.my-event-body {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.7rem 0.8rem 0.85rem;
+  align-content: start;
+}
+
+.my-event-title {
+  overflow-wrap: anywhere;
+}
+
+.my-event-when,
+.my-event-location,
+.my-event-price {
+  color: var(--map-muted);
+  font-size: 0.9rem;
+}
+
+.my-event-price {
+  color: var(--map-text);
+  font-weight: 600;
+}
+
+.my-event-badge {
+  justify-self: start;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: #1f2f4a;
+  color: #cfe3ff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.my-event-badge--hosting {
+  background: #5b21b6;
+  color: #fff;
+}
+
+.my-event-badge--going {
+  background: #14532d;
+  color: #d6f5df;
+}
+
+.my-events-empty {
+  margin: 0.4rem 0 0;
+  padding: 1rem;
+  border: 1px dashed rgba(230, 236, 245, 0.25);
+  border-radius: 0.9rem;
+  color: var(--map-muted);
+}

@@ -1,0 +1,15 @@
+{% load tz %}{% timezone "America/New_York" %}
+<a class="my-event-card" href="{% url 'event_detail' event.pk %}">
+  <img class="my-event-image" src="{{ event.image_url }}" alt="" loading="lazy">
+  <span class="my-event-body">
+    {% if event.badge %}<span class="my-event-badge my-event-badge--{{ event.badge|lower }}">{{ event.badge }}</span>{% endif %}
+    <strong class="my-event-title">{{ event.name }}</strong>
+    <span class="my-event-when">
+      <time datetime="{{ event.start_at|date:'c' }}">{{ event.start_at|date:"D, M j" }}</time>
+      · {{ event.start_at|date:"g:i A" }}
+    </span>
+    <span class="my-event-location">{{ event.location }}</span>
+    <span class="my-event-price">{{ event.price_label }}</span>
+  </span>
+</a>
+{% endtimezone %}

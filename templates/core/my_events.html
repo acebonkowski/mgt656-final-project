@@ -1,0 +1,39 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220">
+  <title>My Events · Yale Events</title>
+  <link rel="stylesheet" href="{% static 'core/map.css' %}?v=ui-84">
+  <link rel="stylesheet" href="{% static 'core/event.css' %}">
+  <link rel="stylesheet" href="{% static 'core/my_events.css' %}?v=my-events-82b">
+</head>
+<body class="event-detail-page my-events-page">
+<header class="event-topbar my-events-topbar">
+  <a class="event-back" href="{% url 'map' %}">← Map</a>
+  <h1>My Events</h1>
+  <span aria-hidden="true"></span>
+</header>
+<main class="my-events-main">
+  {% for row in rows %}
+    <section class="my-events-row" aria-labelledby="row-{{ row.key }}">
+      <div class="my-events-row-header">
+        <h2 id="row-{{ row.key }}">{{ row.title }}</h2>
+        <a class="my-events-view-all" href="{% url 'my_events_list' row.key %}"
+           aria-label="View All {{ row.title }}">View All</a>
+      </div>
+      {% if row.events %}
+        <ul class="my-events-scroller">
+          {% for event in row.events %}
+            <li>{% include "core/_my_event_card.html" %}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="my-events-empty">{{ row.empty }}</p>
+      {% endif %}
+    </section>
+  {% endfor %}
+</main>
+</body>
+</html>

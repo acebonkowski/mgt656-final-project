@@ -7,6 +7,7 @@ from core.photo_views import profile_photo
 from core.event_import.views import trigger_import
 from core.ai_search_views import ai_search_reset_view, ai_search_view
 from core.attendance_views import set_going
+from core.my_events_views import my_events, my_events_list
 from core.search_views import search_events_view
 
 urlpatterns = [
@@ -21,6 +22,8 @@ urlpatterns = [
     path("event-image/generate/", views.generate_event_image, name="generate_event_image"),
     path("map/geocode/", views.geocode_address, name="geocode_address"),
     path("map/duplicate/", views.duplicate_event, name="duplicate_event"),
+    path("my-events/", my_events, name="my_events"),
+    path("my-events/<slug:row>/", my_events_list, name="my_events_list"),
     path("events/search/", search_events_view, name="search_events"),
     path("events/search/ai/", ai_search_view, name="ai_search"),
     path("events/search/ai/reset/", ai_search_reset_view, name="ai_search_reset"),
