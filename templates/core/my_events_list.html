@@ -16,6 +16,7 @@
   <span aria-hidden="true"></span>
 </header>
 <main class="my-events-main">
+  {% if filter_form %}{% include "core/_favorite_filters.html" %}{% endif %}
   {% if events %}
     <ul class="my-events-grid">
       {% for event in events %}
@@ -26,5 +27,6 @@
     <p class="my-events-empty">{{ empty }}</p>
   {% endif %}
 </main>
+<script src="{% static 'core/favorite_filters.js' %}"></script>
 </body>
 </html>

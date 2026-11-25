@@ -190,6 +190,21 @@ class AIUsage(models.Model):
         return f"{self.kind} by {self.user_id} at {self.created_at:%Y-%m-%d %H:%M}"
 
 
+class EventFavorite(models.Model):
+    """A saved event, independent of the user's attendance answer."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="favorites"
+    )
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="favorites")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "event"], name="favorite_user_event_unique"),
+        ]
+
+
 class EventAttendance(models.Model):
     """
     A user's answer to "Are you going?" for one event (#84). No row means the

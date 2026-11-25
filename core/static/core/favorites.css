@@ -1,0 +1,9 @@
+/* Shared by full event details and map popups. */
+
+.event-favorite { margin: 1rem 0; display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+.favorite-button { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; padding: .5rem .85rem; border: 1px solid #8394ad; border-radius: .65rem; background: #111b2d; color: #fff; font: inherit; text-decoration: none; cursor: pointer; }
+.favorite-button[aria-pressed="true"] { color: #ff9cba; border-color: #ff9cba; }
+.favorite-button:disabled { opacity: .6; cursor: default; }
+.favorite-button:focus-visible { outline: 3px solid #4da3ff; outline-offset: 3px; }
+.favorite-heart { font-size: 1.5rem; line-height: 1; }
+.favorite-status { font-size: .9rem; }

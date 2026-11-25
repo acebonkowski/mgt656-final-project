@@ -1,8 +1,7 @@
 """
 My Events (#82): what each row of the dashboard lists.
 
-Upcoming comes from #84's going status. Favorites is filled in by #38: until
-then favorite_events() returns nothing, and #38 only replaces its body.
+Upcoming comes from #84's going status. Favorites is independent of attendance.
 """
 
 from django.utils import timezone
@@ -23,8 +22,10 @@ def hosted_events(user, now=None):
 
 
 def favorite_events(user, now=None):
-    """Events I marked as favorites (#38 fills this in)."""
-    return Event.objects.none()
+    """Saved events that have not ended, including events marked Not going."""
+    return Event.objects.filter(
+        favorites__user=user, end_at__gt=now or timezone.now()
+    ).order_by("start_at", "pk")
 
 
 ROWS = {

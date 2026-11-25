@@ -126,7 +126,8 @@ class DashboardTests(MyEventsTestCase):
     def test_no_n_plus_one_queries(self):
         for number in range(8):
             answer(self.user, make_event(f"Going {number}", days_ahead=number + 1, creator=self.host), "going")
-        with self.assertNumQueries(6):
+        # Favorites adds one bounded query, regardless of the number of cards.
+        with self.assertNumQueries(7):
             self.client.get(DASHBOARD)
 
 
@@ -197,7 +198,7 @@ class ViewAllTests(MyEventsTestCase):
 
 
 class FavoritesStubTests(MyEventsTestCase):
-    def test_favorites_is_empty_until_38(self):
+    def test_favorites_is_empty_without_saved_events(self):
         make_event("Anything", creator=self.user)
         self.assertEqual(list(favorite_events(self.user)), [])
 
