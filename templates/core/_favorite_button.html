@@ -1,0 +1,14 @@
+<div class="event-favorite">
+  {% if user.is_authenticated %}
+    <button type="button" class="favorite-button" data-favorite-url="{% url 'set_favorite' event.pk %}"
+            data-csrf="{{ csrf_token }}" aria-pressed="{{ is_favorited|yesno:'true,false' }}"
+            {% if favorite_ended and not is_favorited %}disabled{% endif %}
+            aria-label="{% if is_favorited %}Remove from Favorites{% else %}Add to Favorites{% endif %}">
+      <span class="favorite-heart" aria-hidden="true">{{ is_favorited|yesno:'♥,♡' }}</span>
+      <span class="favorite-label">{% if is_favorited %}Favorited{% elif favorite_ended %}Event Ended{% else %}Favorite{% endif %}</span>
+    </button>
+    <span class="favorite-status" role="status" aria-live="polite"></span>
+  {% else %}
+    <a class="favorite-button" href="{{ favorite_login_url }}" aria-label="Log in to favorite this event"><span aria-hidden="true">♡</span> Favorite</a>
+  {% endif %}
+</div>

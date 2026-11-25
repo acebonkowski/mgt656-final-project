@@ -19,6 +19,7 @@ from django.utils.http import urlencode
 from django.utils.text import slugify
 
 from core.forms import EventForm, OnboardingForm
+from core.favorite_views import favorite_context
 from core.attendance import can_answer, exclude_not_going
 from core.ics import build_ics
 from accounts.models import Profile
@@ -307,6 +308,7 @@ def event_detail(request, event_id):
         "event": event,
         "popup": False,
         **going_context(request, event),
+        **favorite_context(request, event),
         "share_url": request.build_absolute_uri(page_path),
         # Visitors who join from a shared link come back to this event.
         "join_url": f"{reverse('accounts:welcome')}?{urlencode({'next': page_path})}",
@@ -332,6 +334,7 @@ def event_detail_popup(request, event_id):
         "event": event,
         "popup": True,
         **going_context(request, event),
+        **favorite_context(request, event),
     })
 
 

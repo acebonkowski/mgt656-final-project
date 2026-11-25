@@ -1,0 +1,25 @@
+<form method="get" class="favorite-filters" id="favorite-filters" data-geocode-url="{% url 'geocode_address' %}" role="search">
+  {% if filter_form.errors %}<div role="alert">Please correct the filters below. {{ filter_form.non_field_errors }}</div>{% endif %}
+  <div class="favorite-filter-grid">
+    {% for field in filter_form %}
+      {% if field.is_hidden %}{{ field }}{{ field.errors }}
+      {% elif field.name == 'category' %}
+        <fieldset><legend>Category</legend>{{ field }}{{ field.errors }}</fieldset>
+      {% else %}
+        <div class="favorite-filter-field">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>
+      {% endif %}
+    {% endfor %}
+  </div>
+  <div class="favorite-filter-actions">
+    <button type="button" id="favorite-find-address">Find Address</button>
+    <button type="button" id="favorite-my-location">Use My Location</button>
+    <button type="button" id="favorite-clear-location">Clear Location</button>
+  </div>
+  <div id="favorite-address-options" aria-label="Address suggestions"></div>
+  <p id="favorite-location-status" role="status" aria-live="polite"></p>
+  <p class="favorite-filter-hint">Location is optional. Choose an address suggestion or use your location to filter by distance. A date preset overrides custom dates.</p>
+  <div class="favorite-filter-actions">
+    <button type="submit">Search Favorites</button>
+    <a href="{% url 'my_events_list' 'favorites' %}">Clear Filters</a>
+  </div>
+</form>

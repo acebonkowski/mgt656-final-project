@@ -205,15 +205,16 @@ def _filter_distance(events, lat, lng, radius_mi):
     return events.filter(pk__in=within)
 
 
-def search_events(filters, now=None, user=None):
+def search_events(filters, now=None, user=None, queryset=None):
     """
     Return upcoming events matching every filter in `filters`
     (EventSearchForm.cleaned_data). Ordered by relevance when there is text,
     otherwise by start time. Events `user` marked "Not going" are left out unless
-    filters["include_not_going"] is set (#84).
+    filters["include_not_going"] is set (#84). An optional queryset restricts
+    the search to an existing collection, such as the user's favorites.
     """
     now = now or timezone.now()
-    events = Event.objects.filter(end_at__gt=now)
+    events = (Event.objects.all() if queryset is None else queryset).filter(end_at__gt=now)
     if not filters.get("include_not_going"):
         events = exclude_not_going(events, user)
 

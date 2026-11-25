@@ -9,6 +9,7 @@
   <title>{{ event.name }} · Yale Events</title>
   <link rel="stylesheet" href="{% static 'core/map.css' %}">
   <link rel="stylesheet" href="{% static 'core/event.css' %}">
+  <link rel="stylesheet" href="{% static 'core/favorites.css' %}">
 </head>
 <body class="event-detail-page">
 <header class="event-topbar">
@@ -48,6 +49,7 @@
     {# Field order is fixed by #32: image, name + description, category, date & time, location, price, link. #}
     <img class="event-detail-image" src="{{ event.image_url }}" alt=""
          data-fallback="{% static 'core/img/default-event.svg' %}">
+    {% include "core/_favorite_button.html" %}
     <h1 id="event-detail-title">{{ event.name }}</h1>
     <p class="event-description">{{ event.description }}</p>
     <dl>
@@ -93,6 +95,7 @@
 </footer>
 <script src="{% static 'core/event.js' %}"></script>
 <script src="{% static 'core/going.js' %}"></script>
+<script src="{% static 'core/favorites.js' %}"></script>
 </body>
 </html>
 {% endif %}

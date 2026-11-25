@@ -7,7 +7,9 @@ from django.http import Http404
 from django.shortcuts import render
 from django.views.decorators.cache import never_cache
 
-from core.my_events import ROW_LIMIT, ROWS, add_badges
+from core.my_events import ROW_LIMIT, ROWS, add_badges, favorite_events
+from core.favorite_forms import FavoriteSearchForm
+from core.search import search_events
 
 
 def row_events(key, user, limit=None):
@@ -34,9 +36,24 @@ def my_events_list(request, row):
     """View All for one row, with a back arrow to the dashboard."""
     if row not in ROWS:
         raise Http404
+    form = None
+    events = row_events(row, request.user) if row != "favorites" else favorite_events(request.user)
+    empty = ROWS[row]["empty"]
+    if row == "favorites":
+        has_favorites = events.exists()
+        form = FavoriteSearchForm(request.GET)
+        if form.is_valid():
+            events = search_events(
+                {**form.cleaned_data, "include_not_going": True}, queryset=events
+            ).order_by("start_at", "pk")
+        else:
+            events = events.none()
+        if has_favorites:
+            empty = "No matching favorites. Try changing or clearing your filters."
     return render(request, "core/my_events_list.html", {
         "key": row,
         "title": ROWS[row]["title"],
-        "empty": ROWS[row]["empty"],
-        "events": row_events(row, request.user),
+        "empty": empty,
+        "events": events,
+        "filter_form": form,
     })
