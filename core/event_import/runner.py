@@ -12,6 +12,7 @@ from django.db import close_old_connections
 from django.utils import timezone
 
 from core.models import Event, EventImportLock
+from core.saved_searches import run_saved_searches
 from . import enrichment
 from .persistence import persist_candidates
 from .sources import source_batches
@@ -143,5 +144,11 @@ def background_import(token):
         run_import(token)
     except Exception as exc:
         logger.error("event_import aborted type=%s", type(exc).__name__)
+    try:
+        # Recurring searches (#37) run right after the daily import so they see
+        # the new events. They must never make the import look failed.
+        run_saved_searches()
+    except Exception as exc:
+        logger.error("saved_searches aborted type=%s", type(exc).__name__)
     finally:
         close_old_connections()

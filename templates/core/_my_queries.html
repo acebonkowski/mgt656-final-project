@@ -1,0 +1,22 @@
+{% if queries %}
+  <ul class="my-queries">
+    {% for item in queries %}
+      <li class="my-query">
+        <div class="my-query-text">
+          <strong class="my-query-label">{{ item.saved.label }}</strong>
+          {% if item.summary %}
+            <ul class="my-query-filters" aria-label="Filters">
+              {% for part in item.summary %}<li>{{ part }}</li>{% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+        <div class="my-query-actions">
+          <a href="{% url 'map' %}?mode=ai&amp;edit={{ item.saved.pk }}" aria-label="Edit {{ item.saved.label }}">Edit</a>
+          <a class="my-query-delete" href="{% url 'delete_saved_search' item.saved.pk %}" aria-label="Delete {{ item.saved.label }}">Delete</a>
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="my-events-empty">{{ empty }}</p>
+{% endif %}

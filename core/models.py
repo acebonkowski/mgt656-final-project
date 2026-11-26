@@ -244,6 +244,58 @@ class EventAttendance(models.Model):
         return f"{self.user_id} {self.status} {self.event_id}"
 
 
+class SavedSearch(models.Model):
+    """
+    A search a student asked the AI to keep running every day (#37). `filters`
+    is the validated filter set in query-parameter shape (what EventSearchForm
+    accepts), so the daily run needs no AI call. `last_seen_event_id` is the
+    highest Event id that existed when the search was saved or last scanned:
+    only events with a higher id count as new. Event has no created timestamp.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="saved_searches"
+    )
+    label = models.CharField(max_length=200)
+    filters = models.JSONField(default=dict)
+    last_seen_event_id = models.BigIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["created_at", "pk"]
+
+    def __str__(self):
+        return f"{self.label} (user {self.user_id})"
+
+
+class SearchSuggestion(models.Model):
+    """
+    An event suggested to a user by a saved search (#37). One row per user and
+    event. Hiding keeps the row (hidden=True) so the event is never suggested
+    again, even by another saved search.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="search_suggestions"
+    )
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="search_suggestions")
+    search = models.ForeignKey(
+        SavedSearch, on_delete=models.SET_NULL, null=True, blank=True, related_name="suggestions"
+    )
+    hidden = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "event"], name="suggestion_user_event_unique"),
+        ]
+        indexes = [models.Index(fields=["user", "hidden"], name="suggestion_user_hidden_idx")]
+
+    def __str__(self):
+        return f"{self.user_id} {'hidden ' if self.hidden else ''}{self.event_id}"
+
+
 class EventImportLock(models.Model):
     name = models.CharField(max_length=40, primary_key=True)
     token = models.CharField(max_length=36, blank=True)

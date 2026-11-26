@@ -9,6 +9,9 @@ from core.ai_search_views import ai_search_reset_view, ai_search_view
 from core.attendance_views import set_going
 from core.favorite_views import set_favorite
 from core.my_events_views import my_events, my_events_list
+from core.saved_search_views import (
+    delete_search_view, hide_suggestion_view, save_search_view, update_search_view,
+)
 from core.search_views import search_events_view
 
 urlpatterns = [
@@ -25,9 +28,13 @@ urlpatterns = [
     path("map/duplicate/", views.duplicate_event, name="duplicate_event"),
     path("my-events/", my_events, name="my_events"),
     path("my-events/<slug:row>/", my_events_list, name="my_events_list"),
+    path("my-events/suggested/<int:event_id>/hide/", hide_suggestion_view, name="hide_suggestion"),
     path("events/search/", search_events_view, name="search_events"),
     path("events/search/ai/", ai_search_view, name="ai_search"),
     path("events/search/ai/reset/", ai_search_reset_view, name="ai_search_reset"),
+    path("saved-searches/", save_search_view, name="save_search"),
+    path("saved-searches/<int:search_id>/update/", update_search_view, name="update_saved_search"),
+    path("saved-searches/<int:search_id>/delete/", delete_search_view, name="delete_saved_search"),
     path("events/<int:event_id>/", views.event_detail, name="event_detail"),
     path("events/<int:event_id>/favorite/", set_favorite, name="set_favorite"),
     path("events/<int:event_id>/going/", set_going, name="set_going"),

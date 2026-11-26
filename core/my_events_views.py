@@ -5,10 +5,13 @@ My Events pages (#82). Kept apart from core/views.py like search_views.py.
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import render
+from django.urls import reverse
 from django.views.decorators.cache import never_cache
 
 from core.my_events import ROW_LIMIT, ROWS, add_badges, favorite_events
 from core.favorite_forms import FavoriteSearchForm
+from core.models import SavedSearch
+from core.saved_searches import describe_filters
 from core.search import search_events
 
 
@@ -21,24 +24,37 @@ def row_events(key, user, limit=None):
 @login_required
 @never_cache
 def my_events(request):
-    """The dashboard: Upcoming, Hosted and Favorites, a scrolling row each."""
+    """The dashboard: Upcoming, Suggested, Hosted and Favorites, a scrolling row each."""
     rows = [
         {"key": key, "title": row["title"], "empty": row["empty"],
          "events": row_events(key, request.user, ROW_LIMIT)}
         for key, row in ROWS.items()
     ]
-    return render(request, "core/my_events.html", {"rows": rows})
+    return render(request, "core/my_events.html", {"rows": rows, "hide_next": reverse("my_events")})
 
 
 @login_required
 @never_cache
 def my_events_list(request, row):
-    """View All for one row, with a back arrow to the dashboard."""
+    """
+    View All for one row, with a back arrow to the dashboard. Suggested has two
+    tabs: Suggested Events and My Queries (?tab=queries, #37).
+    """
     if row not in ROWS:
         raise Http404
     form = None
-    events = row_events(row, request.user) if row != "favorites" else favorite_events(request.user)
+    tab, queries = "suggested", None
     empty = ROWS[row]["empty"]
+    if row == "suggested" and request.GET.get("tab") == "queries":
+        tab = "queries"
+        events = []
+        queries = [
+            {"saved": saved, "summary": describe_filters(saved.filters)}
+            for saved in SavedSearch.objects.filter(user=request.user)
+        ]
+        empty = "No saved searches yet. Ask AI to keep looking for events you like."
+    else:
+        events = row_events(row, request.user) if row != "favorites" else favorite_events(request.user)
     if row == "favorites":
         has_favorites = events.exists()
         form = FavoriteSearchForm(request.GET)
@@ -56,4 +72,7 @@ def my_events_list(request, row):
         "empty": empty,
         "events": events,
         "filter_form": form,
+        "tab": tab,
+        "queries": queries,
+        "hide_next": reverse("my_events_list", args=[row]),
     })
