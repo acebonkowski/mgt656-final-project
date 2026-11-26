@@ -4,6 +4,9 @@
          data-popup-url="{% url 'event_detail_popup' 0 %}"
          data-ai-url="{% url 'ai_search' %}"
          data-ai-reset-url="{% url 'ai_search_reset' %}"
+         data-save-url="{% url 'save_search' %}"
+         {% if edit_search %}data-edit-id="{{ edit_search.pk }}" data-edit-label="{{ edit_search.label }}"
+         data-update-url="{% url 'update_saved_search' edit_search.pk %}"{% endif %}
          data-default-image="{% static 'core/img/default-event.svg' %}">
   {# Collapsed: one line summarising the search; tap to open the panel again. #}
   {# Chevron points right: tapping it opens the panel again (#65). #}

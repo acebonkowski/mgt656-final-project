@@ -7,7 +7,7 @@
   <title>{{ title }} · Yale Events</title>
   <link rel="stylesheet" href="{% static 'core/map.css' %}?v=ui-84">
   <link rel="stylesheet" href="{% static 'core/event.css' %}">
-  <link rel="stylesheet" href="{% static 'core/my_events.css' %}?v=my-events-82b">
+  <link rel="stylesheet" href="{% static 'core/my_events.css' %}?v=my-events-37">
 </head>
 <body class="event-detail-page my-events-page">
 <header class="event-topbar my-events-topbar">
@@ -16,11 +16,22 @@
   <span aria-hidden="true"></span>
 </header>
 <main class="my-events-main">
+  {% if key == "suggested" %}
+    <nav class="my-events-tabs" aria-label="Suggested">
+      <a href="{% url 'my_events_list' 'suggested' %}"{% if tab == "suggested" %} aria-current="page"{% endif %}>Suggested Events</a>
+      <a href="{% url 'my_events_list' 'suggested' %}?tab=queries"{% if tab == "queries" %} aria-current="page"{% endif %}>My Queries</a>
+    </nav>
+  {% endif %}
   {% if filter_form %}{% include "core/_favorite_filters.html" %}{% endif %}
-  {% if events %}
+  {% if tab == "queries" %}
+    {% include "core/_my_queries.html" %}
+  {% elif events %}
     <ul class="my-events-grid">
       {% for event in events %}
-        <li>{% include "core/_my_event_card.html" %}</li>
+        <li>
+          {% include "core/_my_event_card.html" %}
+          {% if key == "suggested" %}{% include "core/_hide_suggestion.html" %}{% endif %}
+        </li>
       {% endfor %}
     </ul>
   {% else %}

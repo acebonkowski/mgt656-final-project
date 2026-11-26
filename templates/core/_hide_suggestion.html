@@ -1,0 +1,5 @@
+<form class="suggestion-hide" method="post" action="{% url 'hide_suggestion' event.pk %}">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ hide_next }}">
+  <button type="submit" aria-label="Hide {{ event.name }}" title="Hide This Suggestion"><span aria-hidden="true">&times;</span></button>
+</form>

@@ -6,6 +6,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from core.models import Event, EventAttendance
+from core.visibility import visible_events
 
 
 def exclude_not_going(events, user):
@@ -28,7 +29,7 @@ def upcoming_events(user, now=None):
         attendances__status__in=[EventAttendance.Status.GOING, EventAttendance.Status.MAYBE],
     )
     return (
-        Event.objects.filter(end_at__gt=now)
+        visible_events(Event.objects.filter(end_at__gt=now), user)
         .filter(Q(creator=user) | answered)
         .distinct()
         .order_by("start_at", "pk")

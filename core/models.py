@@ -73,6 +73,12 @@ class Event(models.Model):
         FAITH_SPIRITUALITY = "faith_spirituality", "Faith & Spirituality"
         CAMPUS_ADMIN = "campus_admin", "Campus & Admin"
 
+    class Visibility(models.TextChoices):
+        EVERYONE = "everyone", "Everyone"
+        SCHOOL = "school", "My school"
+        PROGRAM = "program", "My program"
+        FRIENDS = "friends", "Friends"  # no friends model yet (#39): creator only
+
     image = models.CharField(max_length=500)
     name = models.CharField(max_length=EVENT_NAME_MAX_LENGTH)
     description = models.CharField(max_length=EVENT_DESCRIPTION_MAX_LENGTH)
@@ -93,6 +99,10 @@ class Event(models.Model):
     )
     source = models.CharField(max_length=100, blank=True)
     external_id = models.CharField(max_length=255, blank=True)
+    # Who can see the event (#41). Enforced by core.visibility.
+    visibility = models.CharField(
+        max_length=10, choices=Visibility.choices, default=Visibility.EVERYONE
+    )
 
     class Meta:
         ordering = ["start_at"]
@@ -232,6 +242,58 @@ class EventAttendance(models.Model):
 
     def __str__(self):
         return f"{self.user_id} {self.status} {self.event_id}"
+
+
+class SavedSearch(models.Model):
+    """
+    A search a student asked the AI to keep running every day (#37). `filters`
+    is the validated filter set in query-parameter shape (what EventSearchForm
+    accepts), so the daily run needs no AI call. `last_seen_event_id` is the
+    highest Event id that existed when the search was saved or last scanned:
+    only events with a higher id count as new. Event has no created timestamp.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="saved_searches"
+    )
+    label = models.CharField(max_length=200)
+    filters = models.JSONField(default=dict)
+    last_seen_event_id = models.BigIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["created_at", "pk"]
+
+    def __str__(self):
+        return f"{self.label} (user {self.user_id})"
+
+
+class SearchSuggestion(models.Model):
+    """
+    An event suggested to a user by a saved search (#37). One row per user and
+    event. Hiding keeps the row (hidden=True) so the event is never suggested
+    again, even by another saved search.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="search_suggestions"
+    )
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="search_suggestions")
+    search = models.ForeignKey(
+        SavedSearch, on_delete=models.SET_NULL, null=True, blank=True, related_name="suggestions"
+    )
+    hidden = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "event"], name="suggestion_user_event_unique"),
+        ]
+        indexes = [models.Index(fields=["user", "hidden"], name="suggestion_user_hidden_idx")]
+
+    def __str__(self):
+        return f"{self.user_id} {'hidden ' if self.hidden else ''}{self.event_id}"
 
 
 class EventImportLock(models.Model):

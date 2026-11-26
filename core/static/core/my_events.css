@@ -162,3 +162,149 @@
 .favorite-filter-hint { color: var(--map-muted); font-size: .9rem; }
 .favorite-filters .errorlist { color: #ffb0bc; }
 .favorite-filters :focus-visible { outline: 3px solid #4da3ff; outline-offset: 2px; }
+
+/* Recurring searches (#37): the hide cross on Suggested cards, tabs and My Queries. */
+.my-events-scroller > li,
+.my-events-grid > li {
+  position: relative;
+}
+
+.suggestion-hide {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  margin: 0;
+}
+
+.suggestion-hide button {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid rgba(230, 236, 245, 0.35);
+  border-radius: 50%;
+  background: rgba(11, 18, 32, 0.8);
+  color: #fff;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.suggestion-hide button:hover {
+  background: #7f1d1d;
+}
+
+.suggestion-hide button:focus-visible,
+.my-events-tabs a:focus-visible,
+.my-query-actions a:focus-visible,
+.my-query-confirm a:focus-visible,
+.my-query-confirm button:focus-visible {
+  outline: 3px solid #4da3ff;
+  outline-offset: 2px;
+}
+
+.my-events-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.my-events-tabs a {
+  padding: 0.6rem 1rem;
+  border: 1px solid rgba(230, 236, 245, 0.25);
+  border-radius: 999px;
+  color: var(--map-text);
+  text-decoration: none;
+}
+
+.my-events-tabs a[aria-current="page"] {
+  border-color: #4da3ff;
+  background: #1f2f4a;
+  font-weight: 700;
+}
+
+.my-queries {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.my-query,
+.my-query-confirm {
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(230, 236, 245, 0.18);
+  border-radius: 0.9rem;
+  background: #111b2d;
+}
+
+.my-query {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.my-query-label {
+  overflow-wrap: anywhere;
+}
+
+.my-query-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.my-query-filters li {
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  background: #1f2f4a;
+  color: #cfe3ff;
+  font-size: 0.85rem;
+}
+
+.my-query-actions,
+.my-query-confirm-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.my-query-actions a,
+.my-query-confirm a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: #8ec5ff;
+  font-weight: 600;
+}
+
+.my-query-actions .my-query-delete {
+  color: #ffb0bc;
+}
+
+.my-query-confirm {
+  margin-top: 1.5rem;
+}
+
+.my-query-confirm h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.my-query-danger {
+  min-height: 44px;
+  padding: 0.5rem 1.1rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: #b91c1c;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}

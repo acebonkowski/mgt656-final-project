@@ -289,6 +289,27 @@ updates/cancellations do not overwrite existing event identities. Expired events
 stay in the database and disappear from the map. A server background thread is
 not a durable queue; interruptions require rerunning the idempotent job.
 
+### Recurring searches (#37)
+
+After an Ask AI answer, the student can choose to keep looking every day. The
+search is stored per user (`SavedSearch`) as the validated filters the AI used.
+No new cron job is needed: the same 6 PM job above runs the saved searches
+right after the import finishes (a failure there never fails the import). The
+run re-runs each stored search through the normal event search, so it makes no
+AI calls and costs no credits. Events the student marked Not going, events they
+host or have answered, and events added before the search was saved are never
+suggested; at most 10 new suggestions per search per run, and at most 10 saved
+searches per student. Matches appear in **My Events > Suggested**, where each
+card has a cross to hide it for good. **View All > My Queries** lists the
+searches; Delete asks for confirmation on its own page, and Edit opens Ask AI,
+where replacing the search needs a second confirmation.
+
+To run it by hand (safe to repeat):
+
+```sh
+python manage.py run_saved_searches
+```
+
 ### AI budgets and images
 
 `AGGREGATOR_MAX_IMAGES_PER_RUN=0` and
