@@ -2,7 +2,7 @@
 from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
@@ -10,6 +10,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from core.models import Event, EventFavorite
+from core.visibility import can_view
 
 
 def favorite_context(request, event):
@@ -30,6 +31,8 @@ def favorite_context(request, event):
 @require_POST
 def set_favorite(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
+    if not can_view(request.user, event):
+        raise Http404
     value = request.POST.get("favorited")
     if value not in ("true", "false"):
         return JsonResponse({"error": "Choose true or false for favorited."}, status=400)

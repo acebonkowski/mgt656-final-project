@@ -16,6 +16,7 @@ from accounts.models import Profile
 from core.models import EVENT_DESCRIPTION_MAX_LENGTH, EVENT_NAME_MAX_LENGTH, Event, Program, School
 from core.photo_validation import validate_event_photo
 from core.photo_storage import StorageUnavailable
+from core.visibility import FORM_CHOICES
 
 
 class OnboardingForm(forms.ModelForm):
@@ -186,10 +187,24 @@ class EventForm(forms.Form):
     link = forms.URLField(max_length=2048, required=False,
                           widget=forms.URLInput(attrs={"placeholder": "Optional"}))
 
-    def __init__(self, *args, existing_image=None, **kwargs):
+    # Who can see the event (#41). "Friends" is stored but not offered until #39.
+    visibility = forms.ChoiceField(
+        choices=FORM_CHOICES, initial=Event.Visibility.EVERYONE, label="Who Can See It",
+        required=False,
+    )
+
+    def __init__(self, *args, existing_image=None, creator=None, existing_visibility=None, **kwargs):
         kwargs.setdefault("label_suffix", "")  # "Title", not "Title:" (#69)
         super().__init__(*args, **kwargs)
         self.existing_image = existing_image
+        self.creator = creator
+        self.existing_visibility = existing_visibility
+
+    def clean_visibility(self):
+        # A missing value keeps the event's current setting (so editing a friends
+        # event never widens it), or the default for a new event.
+        return (self.cleaned_data.get("visibility") or self.existing_visibility
+                or Event.Visibility.EVERYONE)
 
     def clean_image(self):
         upload = self.cleaned_data.get("image")
@@ -233,6 +248,11 @@ class EventForm(forms.Form):
 
     def clean(self):
         cleaned = super().clean()
+        visibility = cleaned.get("visibility")
+        if visibility in (Event.Visibility.SCHOOL, Event.Visibility.PROGRAM) and self.creator:
+            profile = getattr(self.creator, "profile", None)
+            if not getattr(profile, "program_id", None):
+                self.add_error("visibility", "Choose your program in your profile first.")
         location = cleaned.get("location")
         location_confirmed = cleaned.get("location_confirmed")
         if location and not location_confirmed:
@@ -271,6 +291,7 @@ class EventForm(forms.Form):
             "price": cleaned["price"],
             "link": cleaned["link"],
             "creator": creator,
+            "visibility": cleaned["visibility"],
         }
         if instance is not None:
             for field, value in values.items():
