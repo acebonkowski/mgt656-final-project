@@ -167,7 +167,8 @@ class FormPageTests(VisibilityTestCase):
         create = self.client.get("/map/").content.decode()
         self.assertIn('name="visibility"', create)
         self.assertIn("My school", create)
-        self.assertNotIn(">Friends<", create)
+        # Check the option, not the text: the profile menu also says "Friends" (#81).
+        self.assertNotIn('<option value="friends"', create)
         edit = self.client.get(f"/events/{event.pk}/edit/")
         self.assertEqual(edit.context["event_form"].initial["visibility"], E.PROGRAM)
 
