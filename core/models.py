@@ -73,6 +73,12 @@ class Event(models.Model):
         FAITH_SPIRITUALITY = "faith_spirituality", "Faith & Spirituality"
         CAMPUS_ADMIN = "campus_admin", "Campus & Admin"
 
+    class Visibility(models.TextChoices):
+        EVERYONE = "everyone", "Everyone"
+        SCHOOL = "school", "My school"
+        PROGRAM = "program", "My program"
+        FRIENDS = "friends", "Friends"  # no friends model yet (#39): creator only
+
     image = models.CharField(max_length=500)
     name = models.CharField(max_length=EVENT_NAME_MAX_LENGTH)
     description = models.CharField(max_length=EVENT_DESCRIPTION_MAX_LENGTH)
@@ -93,6 +99,10 @@ class Event(models.Model):
     )
     source = models.CharField(max_length=100, blank=True)
     external_id = models.CharField(max_length=255, blank=True)
+    # Who can see the event (#41). Enforced by core.visibility.
+    visibility = models.CharField(
+        max_length=10, choices=Visibility.choices, default=Visibility.EVERYONE
+    )
 
     class Meta:
         ordering = ["start_at"]
