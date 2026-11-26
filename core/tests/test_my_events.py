@@ -216,7 +216,8 @@ class AccessTests(MyEventsTestCase):
 
     def test_map_has_the_my_events_link(self):
         html = self.page("/map/")
-        self.assertIn('id="my-events-link"', html)
+        self.assertIn('id="profile-my-events"', html)
+        self.assertNotIn('id="my-events-link"', html)
         self.assertIn(f'href="{reverse("my_events")}"', html)
 
     def test_dashboard_links_back_to_the_map(self):

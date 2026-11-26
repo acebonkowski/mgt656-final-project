@@ -111,7 +111,7 @@ body {
   padding-right: env(safe-area-inset-right);
 }
 
-/* Top right (#64): Create, then a logout icon (#6). Above the map and the
+/* Top right (#81): Create, then the profile menu. Above the map and the
    search panel. On phones the panel starts below this row (search.css). */
 :root {
   --create-bg: #7c3aed;   /* saturated violet: stands out on the light map and the dark panel */
@@ -131,19 +131,6 @@ body {
 
 .logout {
   margin: 0;
-}
-
-.logout-button {
-  display: inline-grid;
-  place-items: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  padding: 0;
-  color: var(--map-text);
-  background: var(--overlay-bg);
-  border: 1px solid rgba(230, 236, 245, 0.25);
-  border-radius: 0.6rem;
-  cursor: pointer;
 }
 
 .create-event-button {
@@ -168,8 +155,7 @@ body {
   background: var(--create-bg-hover);
 }
 
-.create-event-button:focus-visible,
-.logout-button:focus-visible {
+.create-event-button:focus-visible {
   outline: 2px solid #ffffff;
   outline-offset: 2px;
 }
@@ -962,41 +948,4 @@ span.time12 input.time12-minute {
 .event-hosting {
   margin: 1rem 0 0;
   font-weight: 700;
-}
-
-/* My Events link next to Create (#82); icon only on phones. */
-.my-events-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  height: 2.5rem;
-  padding: 0 0.8rem;
-  border: 1px solid rgba(230, 236, 245, 0.25);
-  border-radius: 999px;
-  background: var(--overlay-bg);
-  color: var(--map-text);
-  font-size: 0.95rem;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.my-events-link:hover {
-  border-color: rgba(230, 236, 245, 0.5);
-}
-
-.my-events-link:focus-visible {
-  outline: 2px solid #ffffff;
-  outline-offset: 2px;
-}
-
-@media (max-width: 479px) {
-  .my-events-link {
-    width: 2.5rem;
-    padding: 0;
-    justify-content: center;
-  }
-
-  .my-events-link span {
-    display: none;
-  }
 }
