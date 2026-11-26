@@ -60,10 +60,10 @@ class MyEventsTestCase(TestCase):
 
 
 class DashboardTests(MyEventsTestCase):
-    def test_three_rows_in_order(self):
+    def test_rows_in_order(self):
         html = self.page()
         titles = re.findall(r'<h2 id="row-\w+">(.*?)</h2>', html)
-        self.assertEqual(titles, ["Upcoming Events", "Hosted Events", "Favorites"])
+        self.assertEqual(titles, ["Upcoming Events", "Suggested", "Hosted Events", "Favorites"])
 
     def test_empty_rows_show_their_messages(self):
         html = self.page()
@@ -126,8 +126,8 @@ class DashboardTests(MyEventsTestCase):
     def test_no_n_plus_one_queries(self):
         for number in range(8):
             answer(self.user, make_event(f"Going {number}", days_ahead=number + 1, creator=self.host), "going")
-        # Favorites adds one bounded query, regardless of the number of cards.
-        with self.assertNumQueries(7):
+        # Favorites and Suggested each add one bounded query, regardless of the number of cards.
+        with self.assertNumQueries(8):
             self.client.get(DASHBOARD)
 
 
@@ -171,7 +171,7 @@ class CardTests(MyEventsTestCase):
 class ViewAllTests(MyEventsTestCase):
     def test_each_row_links_to_its_view_all_page(self):
         html = self.page()
-        for key in ("upcoming", "hosted", "favorites"):
+        for key in ("upcoming", "suggested", "hosted", "favorites"):
             self.assertIn(f'href="/my-events/{key}/"', self.section(html, key))
 
     def test_view_all_lists_the_row_with_a_back_arrow(self):

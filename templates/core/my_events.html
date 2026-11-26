@@ -7,7 +7,7 @@
   <title>My Events · Yale Events</title>
   <link rel="stylesheet" href="{% static 'core/map.css' %}?v=ui-84">
   <link rel="stylesheet" href="{% static 'core/event.css' %}">
-  <link rel="stylesheet" href="{% static 'core/my_events.css' %}?v=my-events-82b">
+  <link rel="stylesheet" href="{% static 'core/my_events.css' %}?v=my-events-37">
 </head>
 <body class="event-detail-page my-events-page">
 <header class="event-topbar my-events-topbar">
@@ -26,7 +26,10 @@
       {% if row.events %}
         <ul class="my-events-scroller">
           {% for event in row.events %}
-            <li>{% include "core/_my_event_card.html" %}</li>
+            <li>
+              {% include "core/_my_event_card.html" %}
+              {% if row.key == "suggested" %}{% include "core/_hide_suggestion.html" %}{% endif %}
+            </li>
           {% endfor %}
         </ul>
       {% else %}

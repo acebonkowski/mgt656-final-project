@@ -273,7 +273,7 @@ class DeleteAndUpdateTests(SavedSearchTestCase):
         for data in ({}, {"confirm": "0"}, {"confirm": "yes"}):
             self.assertEqual(self.delete(saved, **data).status_code, 409)
         self.assertTrue(SavedSearch.objects.filter(pk=saved.pk).exists())
-        self.assertEqual(self.delete(saved, confirm="1").status_code, 200)
+        self.assertEqual(self.delete(saved, confirm="1").status_code, 302)  # back to My Queries
         self.assertFalse(SavedSearch.objects.filter(pk=saved.pk).exists())
 
     def test_delete_removes_its_visible_suggestions_but_keeps_hidden_ones(self):
@@ -321,9 +321,9 @@ class DeleteAndUpdateTests(SavedSearchTestCase):
         theirs.refresh_from_db()
         self.assertEqual(theirs.filters, MUSIC)
 
-    def test_login_required_and_post_only(self):
+    def test_update_is_post_only_and_login_is_required(self):
         saved = self.saved()
-        self.assertEqual(self.client.get(reverse("delete_saved_search", args=[saved.pk])).status_code, 405)
+        self.assertEqual(self.client.get(reverse("update_saved_search", args=[saved.pk])).status_code, 405)
         self.client.logout()
         self.assertEqual(self.delete(saved, confirm="1").status_code, 302)
         self.assertEqual(self.update(saved, confirm="1").status_code, 302)

@@ -1,0 +1,37 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220">
+  <title>Delete Saved Search · Yale Events</title>
+  <link rel="stylesheet" href="{% static 'core/map.css' %}?v=ui-84">
+  <link rel="stylesheet" href="{% static 'core/event.css' %}">
+  <link rel="stylesheet" href="{% static 'core/my_events.css' %}?v=my-events-37">
+</head>
+<body class="event-detail-page my-events-page">
+<header class="event-topbar my-events-topbar">
+  <a class="event-back" href="{{ cancel_url }}" aria-label="Back to My Queries">← My Queries</a>
+  <h1>Delete Saved Search</h1>
+  <span aria-hidden="true"></span>
+</header>
+<main class="my-events-main">
+  <form class="my-query-confirm" method="post" action="{% url 'delete_saved_search' saved.pk %}">
+    {% csrf_token %}
+    <input type="hidden" name="confirm" value="1">
+    <h2>Delete This Saved Search?</h2>
+    <p class="my-query-label">{{ saved.label }}</p>
+    {% if summary %}
+      <ul class="my-query-filters" aria-label="Filters">
+        {% for part in summary %}<li>{{ part }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+    <p>We will stop looking for new events like this and remove its suggestions. Suggestions you already hid stay hidden.</p>
+    <div class="my-query-confirm-actions">
+      <button type="submit" class="my-query-danger">Delete</button>
+      <a href="{{ cancel_url }}">Cancel</a>
+    </div>
+  </form>
+</main>
+</body>
+</html>

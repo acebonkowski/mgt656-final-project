@@ -11,6 +11,7 @@ come back.
 import json
 import logging
 from collections import Counter
+from datetime import datetime
 
 from django.db import transaction
 from django.db.models import Max
@@ -18,7 +19,7 @@ from django.utils import timezone
 
 from core import ai_search
 from core.models import Event, SavedSearch, SearchSuggestion
-from core.search import EventSearchForm
+from core.search import WHEN_CHOICES, EventSearchForm
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,54 @@ MEANINGFUL_KEYS = ("q", "category", "when", "date_from", "date_to", "time_from",
 
 class SavedSearchError(Exception):
     """The message is safe to show to the user."""
+
+
+def _day(value):
+    try:
+        day = datetime.strptime(value, "%Y-%m-%d")
+    except (TypeError, ValueError):
+        return value
+    return f"{day:%b} {day.day}"
+
+
+def _clock(value):
+    try:
+        return datetime.strptime(value, "%H:%M").strftime("%I:%M %p").lstrip("0")
+    except (TypeError, ValueError):
+        return value
+
+
+def describe_filters(filters):
+    """A saved search in plain words, one short phrase per filter (My Queries)."""
+    filters = filters or {}
+    parts = []
+    if filters.get("q"):
+        parts.append(f"“{filters['q']}”")
+    categories = filters.get("category") or []
+    if categories:
+        labels = [Event.Category(value).label for value in categories if value in Event.Category.values]
+        if labels:
+            parts.append(", ".join(labels))
+    when = dict(WHEN_CHOICES).get(filters.get("when"))
+    if when:
+        parts.append(when)
+    first, last = filters.get("date_from"), filters.get("date_to")
+    if first and last and last != first:
+        parts.append(f"{_day(first)} – {_day(last)}")
+    elif first or last:
+        parts.append(_day(first or last))
+    start, end = filters.get("time_from"), filters.get("time_to")
+    if start and end:
+        parts.append(f"Starts {_clock(start)} – {_clock(end)}")
+    elif start:
+        parts.append(f"Starts after {_clock(start)}")
+    elif end:
+        parts.append(f"Starts before {_clock(end)}")
+    if filters.get("near_lat"):
+        place = filters.get("near_label") or "a place you chose"
+        radius = filters.get("radius_mi")
+        parts.append(f"Within {radius} mi of {place}" if radius else f"Near {place}")
+    return parts
 
 
 def newest_event_id():

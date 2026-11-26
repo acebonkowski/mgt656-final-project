@@ -6,7 +6,7 @@ Upcoming comes from #84's going status. Favorites is independent of attendance.
 
 from django.utils import timezone
 
-from core.attendance import upcoming_events
+from core.attendance import exclude_not_going, upcoming_events
 from core.models import Event, EventAttendance
 
 ROW_LIMIT = 10  # events shown in a dashboard row; View All lists the rest
@@ -28,11 +28,31 @@ def favorite_events(user, now=None):
     ).order_by("start_at", "pk")
 
 
+def suggested_events(user, now=None):
+    """
+    Events recurring searches (#37) found for me and I haven't hidden. Checked
+    again now, because things change after the daily scan: ended events and
+    events I've since marked Not going drop out. (When #41's visibility lands,
+    filter with visible_events() here too.)
+    """
+    events = Event.objects.filter(
+        search_suggestions__user=user,
+        search_suggestions__hidden=False,
+        end_at__gt=now or timezone.now(),
+    )
+    return exclude_not_going(events, user).order_by("start_at", "pk")
+
+
 ROWS = {
     "upcoming": {
         "title": "Upcoming Events",
         "empty": "Nothing coming up yet",
         "events": upcoming_events,
+    },
+    "suggested": {
+        "title": "Suggested",
+        "empty": "No suggestions yet. Ask AI to keep looking for events you like.",
+        "events": suggested_events,
     },
     "hosted": {
         "title": "Hosted Events",
