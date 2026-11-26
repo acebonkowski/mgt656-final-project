@@ -1,0 +1,24 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="robots" content="noindex">
+  <title>Private event · Yale Events</title>
+  <link rel="stylesheet" href="{% static 'core/map.css' %}">
+  <link rel="stylesheet" href="{% static 'core/event.css' %}">
+</head>
+<body class="event-detail-page">
+<header class="event-topbar">
+  <span class="event-brand">Yale Events</span>
+</header>
+{# Logged-out view of a non-public event (#41): no event details of any kind. #}
+<main class="event-main">
+  <article class="event-detail">
+    <h1 id="event-private-title">This event is private, log in to see it</h1>
+    <a id="private-login" class="event-join-button" href="{{ login_url }}">Log in</a>
+  </article>
+</main>
+</body>
+</html>
