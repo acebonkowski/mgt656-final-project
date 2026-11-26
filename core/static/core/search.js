@@ -752,6 +752,74 @@
     qInput.focus();
   }
 
+  // Recurring searches (#37). The latest answer with filters offers to keep
+  // looking every day. When My Queries sent the user here to edit a saved search
+  // (data-edit-id), it offers to replace that search instead, after a confirmation.
+  // The server re-validates the filters; the confirmation is enforced there too.
+  var saveUrl = panel.dataset.saveUrl;
+  var editId = panel.dataset.editId || "";
+  var editLabel = panel.dataset.editLabel || "";
+
+  function recurringBox(entry) {
+    var state = entry.recurring || "ask";
+    var done = state === "saved" || state === "replaced";
+    var latest = chat.filter(function (e) { return e.role === "ai"; }).pop() === entry;
+    if (state === "declined" || (!done && !latest)) return null;
+
+    var box = document.createElement("div");
+    box.className = "search-ai-recurring";
+    var text = document.createElement("span");
+    box.appendChild(text);
+    function add(label, handler) {
+      var button = document.createElement("button");
+      button.type = "button";
+      button.textContent = label;
+      button.addEventListener("click", handler);
+      box.appendChild(button);
+    }
+    function set(next, note) {
+      entry.recurring = next;
+      entry.recurringNote = note || "";
+      saveChat();
+      renderChat();
+    }
+    function send(url, confirmed) {
+      box.querySelectorAll("button").forEach(function (button) { button.disabled = true; });
+      var previous = chat[chat.indexOf(entry) - 1];
+      var body = new FormData();
+      body.append("filters", JSON.stringify(entry.filters));
+      body.append("label", previous && previous.text ? previous.text : "");
+      if (confirmed) body.append("confirm", "1");
+      fetch(url, {
+        method: "POST", credentials: "same-origin",
+        headers: { "Accept": "application/json", "X-CSRFToken": csrfToken() }, body: body,
+      }).then(function (response) {
+        return response.json().catch(function () { return {}; }).then(function (payload) {
+          set(response.ok ? (confirmed ? "replaced" : "saved") : "ask",
+            response.ok ? "" : payload.error || "That couldn't be saved. Try again.");
+        });
+      }).catch(function () { set("ask", "Couldn't reach the server. Try again."); });
+    }
+
+    if (done) {
+      text.textContent = state === "saved"
+        ? "Saved. New matches will show up in My Events under Suggested."
+        : "Saved search updated.";
+    } else if (state === "confirm") {
+      text.textContent = "Replace “" + editLabel + "” with this search?";
+      add("Yes, Replace", function () { send(panel.dataset.updateUrl, true); });
+      add("Cancel", function () { set("ask"); });
+    } else if (editId) {
+      text.textContent = entry.recurringNote || "";
+      add("Replace Saved Search", function () { set("confirm"); });
+    } else {
+      text.textContent = entry.recurringNote || "Keep looking for this every day?";
+      add("Yes", function () { send(saveUrl, false); });
+      add("No Thanks", function () { set("declined"); });
+    }
+    return box;
+  }
+
   function aiEntry(entry) {
     var item = document.createElement("li");
     item.className = "search-ai-message search-ai-message--" + entry.role;
@@ -801,6 +869,8 @@
     edit.addEventListener("click", function () { editInFilters(entry.filters); });
     footer.appendChild(edit);
     item.appendChild(footer);
+    var recurring = labels.length ? recurringBox(entry) : null;
+    if (recurring) item.appendChild(recurring);
     return item;
   }
 
@@ -1151,5 +1221,13 @@
   var initial = new URLSearchParams(window.location.search);
   if (initial.toString()) writeFilters(fromParams(initial));
   if (initial.get("mode") === "ai") setMode("ai");
+  if (editId) {  // editing a saved search from My Queries (#37)
+    var editNote = document.createElement("p");
+    editNote.className = "search-ai-note search-ai-editing";
+    editNote.textContent = "Editing your saved search “" + editLabel +
+      "”. Tell me what to change, then replace it.";
+    aiLog.before(editNote);
+    setMode("ai");
+  }
   runSearch();
 })();
