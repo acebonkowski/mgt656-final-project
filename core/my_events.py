@@ -8,6 +8,7 @@ from django.utils import timezone
 
 from core.attendance import upcoming_events
 from core.models import Event, EventAttendance
+from core.visibility import visible_events
 
 ROW_LIMIT = 10  # events shown in a dashboard row; View All lists the rest
 
@@ -23,9 +24,9 @@ def hosted_events(user, now=None):
 
 def favorite_events(user, now=None):
     """Saved events that have not ended, including events marked Not going."""
-    return Event.objects.filter(
+    return visible_events(Event.objects.filter(
         favorites__user=user, end_at__gt=now or timezone.now()
-    ).order_by("start_at", "pk")
+    ), user).order_by("start_at", "pk")
 
 
 ROWS = {
