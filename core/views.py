@@ -21,6 +21,7 @@ from django.utils.text import slugify
 from core.forms import EventForm, OnboardingForm
 from core.favorite_views import favorite_context
 from core.attendance import can_answer, exclude_not_going
+from core.visibility import can_view, visible_events
 from core.ics import build_ics
 from accounts.models import Profile
 from core.models import DEFAULT_EVENT_IMAGE, Event, EventAttendance, Program
@@ -87,6 +88,7 @@ def map_view(request):
     form = EventForm(
         request.POST if request.method == "POST" else None,
         request.FILES if request.method == "POST" else None,
+        creator=request.user,
     )
     if request.method == "POST" and form.is_valid():
         duplicate = find_duplicate_event(
@@ -123,7 +125,10 @@ def map_view(request):
         # Field names only, never values, so the reason shows in the logs (#57).
         logger.info("Create event rejected: %s", ", ".join(sorted(form.errors)))
 
-    active_events = exclude_not_going(Event.objects.filter(end_at__gt=timezone.now()), request.user)
+    active_events = exclude_not_going(
+        visible_events(Event.objects.filter(end_at__gt=timezone.now()), request.user),
+        request.user,
+    )
     event_data = [
         {
             "id": event.pk,
@@ -189,6 +194,8 @@ def event_photo(request, object_key):
     # so their image must be too. Only keys that belong to an event are served.
     event = Event.objects.filter(image=object_key).exclude(image=DEFAULT_EVENT_IMAGE).first()
     if not event:  # the default image is a static file (#79), not a stored object
+        raise Http404
+    if not can_view(request.user, event):  # a hidden event's image is hidden too (#41)
         raise Http404
     try:
         data = photo_storage.download(
@@ -272,7 +279,9 @@ def duplicate_event(request):
     except ValueError:
         return JsonResponse({"match": None})
     event = find_duplicate_event(location, date, start_time, end_time, end_date)
-    if not event:
+    # Never name an event the user may not see (#41); saving still fails with the
+    # generic "already exists" error.
+    if not event or not can_view(request.user, event):
         return JsonResponse({"match": None})
     return JsonResponse({
         "match": {
@@ -303,6 +312,15 @@ def event_detail(request, event_id):
     event = Event.objects.filter(pk=event_id).first()
     if not event:
         raise Http404
+    if not can_view(request.user, event):
+        if request.user.is_authenticated:
+            raise Http404  # outsiders cannot tell the event exists (#41)
+        # Logged out: a private page with only the login link, no event details.
+        # After login the normal check applies.
+        login_next = reverse("event_detail", kwargs={"event_id": event.pk})
+        return render(request, "core/event_private.html", {
+            "login_url": f"{reverse('accounts:welcome')}?{urlencode({'next': login_next})}",
+        }, status=403)
     page_path = reverse("event_detail", kwargs={"event_id": event.pk})
     return render(request, "core/event_detail.html", {
         "event": event,
@@ -319,6 +337,8 @@ def event_detail(request, event_id):
 def event_calendar(request, event_id):
     """Download one event as an .ics file (America/New_York times)."""
     event = get_object_or_404(Event, pk=event_id)
+    if not can_view(request.user, event):
+        raise Http404
     response = HttpResponse(build_ics(event), content_type="text/calendar; charset=utf-8")
     filename = f"{slugify(event.name) or 'event'}.ics"
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
@@ -328,7 +348,7 @@ def event_calendar(request, event_id):
 @never_cache
 def event_detail_popup(request, event_id):
     event = Event.objects.filter(pk=event_id).first()
-    if not event:
+    if not event or not can_view(request.user, event):
         raise Http404
     return render(request, "core/event_detail.html", {
         "event": event,
@@ -357,6 +377,7 @@ def event_form_initial(event):
         "longitude": event.longitude,
         "price": event.price,
         "link": event.link,
+        "visibility": event.visibility,
     }
 
 
@@ -365,6 +386,8 @@ def event_form_initial(event):
 @require_http_methods(["GET", "POST"])
 def edit_event(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
+    if not can_view(request.user, event):
+        raise Http404  # do not reveal a hidden event (#41)
     if event.creator_id != request.user.pk:
         raise PermissionDenied
 
@@ -374,6 +397,8 @@ def edit_event(request, event_id):
         request.FILES if request.method == "POST" else None,
         initial=initial,
         existing_image=event.image,
+        creator=request.user,
+        existing_visibility=event.visibility,
     )
     if request.method == "POST" and form.is_valid():
         duplicate = find_duplicate_event(
@@ -420,6 +445,8 @@ def edit_event(request, event_id):
 @require_http_methods(["POST"])
 def delete_event(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
+    if not can_view(request.user, event):
+        raise Http404
     if event.creator_id != request.user.pk:
         raise PermissionDenied
     event.delete()

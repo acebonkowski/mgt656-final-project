@@ -81,6 +81,13 @@ and Price | Link. The image field is rendered by each page.
     </div>
   </div>
 
+  {# Who can see the event (#41). "Friends" is not offered until #39. #}
+  <div class="event-field">
+    {{ form.visibility.label_tag }}
+    {{ form.visibility }}
+    {{ form.visibility.errors }}
+  </div>
+
   {{ form.ai_image }}{{ form.location_confirmed }}{{ form.latitude }}{{ form.longitude }}
   {% if include_remove_image %}{{ form.remove_image }}{% endif %}
 </div>
