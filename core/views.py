@@ -18,6 +18,7 @@ from django.urls import reverse
 from django.utils.http import urlencode
 from django.utils.text import slugify
 
+from core.header import profile_menu_context
 from core.forms import EventForm, OnboardingForm
 from core.favorite_views import favorite_context
 from core.attendance import can_answer, exclude_not_going
@@ -154,6 +155,7 @@ def map_view(request):
         "places": YALE_AREA_PLACES,
     }
     return render(request, "core/map.html", {
+        **profile_menu_context(request.user),
         "map_config": map_config,
         "map_enabled": map_enabled,
         "event_form": form,

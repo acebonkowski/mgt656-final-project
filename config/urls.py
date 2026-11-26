@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import include, path
 
 from accounts import views as accounts_views
-from core import views
+from core import views, menu_views
 from core.photo_views import profile_photo
 from core.event_import.views import trigger_import
 from core.ai_search_views import ai_search_reset_view, ai_search_view
@@ -26,6 +26,8 @@ urlpatterns = [
     path("event-image/generate/", views.generate_event_image, name="generate_event_image"),
     path("map/geocode/", views.geocode_address, name="geocode_address"),
     path("map/duplicate/", views.duplicate_event, name="duplicate_event"),
+    path("friends/", menu_views.friends, name="friends"),
+    path("settings/", menu_views.settings, name="settings"),
     path("my-events/", my_events, name="my_events"),
     path("my-events/<slug:row>/", my_events_list, name="my_events_list"),
     path("my-events/suggested/<int:event_id>/hide/", hide_suggestion_view, name="hide_suggestion"),
