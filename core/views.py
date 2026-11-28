@@ -20,6 +20,7 @@ from django.utils.text import slugify
 
 from core.header import profile_menu_context
 from core.friends import friends_going_to, with_friends_going
+from core.invitation_views import invitation_box_context, invite_context
 from core.people import person
 from core.forms import EventForm, OnboardingForm
 from core.favorite_views import favorite_context
@@ -170,6 +171,7 @@ def map_view(request):
     }
     return render(request, "core/map.html", {
         **profile_menu_context(request.user),
+        **invitation_box_context(request.user),
         "map_config": map_config,
         "map_enabled": map_enabled,
         "event_form": form,
@@ -348,6 +350,7 @@ def event_detail(request, event_id):
         "popup": False,
         **going_context(request, event),
         **friends_going_context(request, event),
+        **invite_context(request, event),
         **favorite_context(request, event),
         "share_url": request.build_absolute_uri(page_path),
         # Visitors who join from a shared link come back to this event.
@@ -377,6 +380,7 @@ def event_detail_popup(request, event_id):
         "popup": True,
         **going_context(request, event),
         **friends_going_context(request, event),
+        **invite_context(request, event),
         **favorite_context(request, event),
     })
 
