@@ -7,7 +7,7 @@ from core.photo_views import profile_photo
 from core.event_import.views import trigger_import
 from core.ai_search_views import ai_search_reset_view, ai_search_view
 from core.attendance_views import set_going
-from core import friends_views
+from core import friends_views, invitation_views
 from core.favorite_views import set_favorite
 from core.my_events_views import my_events, my_events_list
 from core.saved_search_views import (
@@ -51,6 +51,13 @@ urlpatterns = [
     path("events/<int:event_id>/", views.event_detail, name="event_detail"),
     path("events/<int:event_id>/favorite/", set_favorite, name="set_favorite"),
     path("events/<int:event_id>/going/", set_going, name="set_going"),
+    path("events/<int:event_id>/invitations/", invitation_views.send_invitations,
+         name="send_invitations"),
+    path("invitations/", invitation_views.invitations_page, name="invitations"),
+    path("invitations/<int:invitation_id>/reply/", invitation_views.reply_invitation,
+         name="reply_invitation"),
+    path("invitations/<int:invitation_id>/resend/", invitation_views.resend_invitation,
+         name="resend_invitation"),
     path("events/<int:event_id>/popup/", views.event_detail_popup, name="event_detail_popup"),
     path("events/<int:event_id>/calendar.ics", views.event_calendar, name="event_calendar"),
     path("events/<int:event_id>/edit/", views.edit_event, name="edit_event"),

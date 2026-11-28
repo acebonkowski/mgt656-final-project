@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1220">
   <title>Home · Yale Events</title>
-  <link rel="stylesheet" href="{% static 'core/map.css' %}?v=friends-85">
+  <link rel="stylesheet" href="{% static 'core/map.css' %}?v=invitations-86">
   <link rel="stylesheet" href="{% static 'core/search.css' %}?v=search-37">
   <link rel="stylesheet" href="{% static 'core/favorites.css' %}">
   <link rel="stylesheet" href="{% static 'core/profile_menu.css' %}">
@@ -113,6 +113,7 @@
       </div>
     </dialog>
     <div id="map" class="map" role="region" aria-label="Map of New Haven"></div>
+    {% include "core/_invitations_box.html" %}
     <aside class="poi-legend" aria-label="Map place legend">
       <span><span class="poi-legend-icon poi-marker--yale" aria-hidden="true">🏛️</span> Yale facilities</span>
       <span><span class="poi-legend-icon poi-marker--restaurant" aria-hidden="true">🍴</span> Restaurants</span>

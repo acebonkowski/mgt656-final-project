@@ -1,0 +1,44 @@
+{% load tz %}
+{# Invitations box on the map (#86). Opens by itself when an invitation has no answer yet. #}
+<details class="invitations-box" id="invitations"{% if unanswered_invitations %} open{% endif %}>
+  <summary>
+    <span>Invitations</span>
+    {% if unanswered_invitations %}<span class="friend-request-badge" aria-label="{{ unanswered_invitations }} unanswered invitations">{{ unanswered_invitations }}</span>{% endif %}
+  </summary>
+  <div class="invitations-body">
+    <div class="invitations-head">
+      <a class="invitations-view-all" href="{% url 'invitations' %}">View All</a>
+    </div>
+    {% if messages %}
+      <ul class="invitations-messages" role="status" aria-live="polite">
+        {% for message in messages %}<li class="invitations-message--{{ message.tags }}">{{ message }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+    {% if invitation_items %}
+      <ul class="invitation-list">
+        {% for item in invitation_items %}
+          <li class="invitation" id="invitation-{{ item.invitation.pk }}">
+            <a class="invitation-event" href="{% url 'event_detail' item.event.pk %}">{{ item.event.name }}</a>
+            {% timezone "America/New_York" %}<time class="invitation-when" datetime="{{ item.event.start_at|date:'c' }}">{{ item.event.start_at|date:"D, M j · g:i A" }}</time>{% endtimezone %}
+            <p class="invitation-from">From {{ item.sender.name }}{% if item.invitation.note %}: “{{ item.invitation.note }}”{% endif %}</p>
+            <form class="invitation-reply" method="post" action="{% url 'reply_invitation' item.invitation.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="return_to" value="{% url 'map' %}#invitation-{{ item.invitation.pk }}">
+              <label class="visually-hidden" for="reply-message-{{ item.invitation.pk }}">Message to {{ item.sender.name }}</label>
+              <input id="reply-message-{{ item.invitation.pk }}" name="message" type="text" maxlength="140"
+                     value="{{ item.invitation.reply_message }}" placeholder="Short message (optional)">
+              <div class="invitation-answers" role="group" aria-label="Your answer">
+                <button type="submit" name="status" value="going" aria-pressed="{% if item.status == 'going' %}true{% else %}false{% endif %}" aria-label="Going" title="Going">✓</button>
+                <button type="submit" name="status" value="maybe" aria-pressed="{% if item.status == 'maybe' %}true{% else %}false{% endif %}" aria-label="Maybe" title="Maybe">?</button>
+                <button type="submit" name="status" value="not_going" aria-pressed="{% if item.status == 'not_going' %}true{% else %}false{% endif %}" aria-label="Not going" title="Not going">✗</button>
+              </div>
+            </form>
+            <p class="invitation-status">{{ item.status_label }}{% if item.status == "going" %} · <a id="add-to-calendar-{{ item.invitation.pk }}" href="{% url 'event_calendar' item.event.pk %}" download>Add to Calendar</a>{% endif %}</p>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="invitations-empty">No invitations yet.</p>
+    {% endif %}
+  </div>
+</details>

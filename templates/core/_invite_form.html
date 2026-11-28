@@ -1,0 +1,28 @@
+{# Send to Friend (#86): logged-in users, until the event ends. A <details>, so it works in the map's event window too. #}
+{% if show_invite %}
+<details class="invite-friends" id="invite-friends-{{ event.pk }}">
+  <summary>Send to Friend</summary>
+  {% if invite_friends %}
+    <form method="post" action="{% url 'send_invitations' event.pk %}">
+      {% csrf_token %}
+      <fieldset>
+        <legend>Choose friends</legend>
+        <ul class="invite-friend-list">
+          {% for p in invite_friends %}
+            <li><label>
+              <input type="checkbox" name="recipients" value="{{ p.user.pk }}">
+              <img src="{{ p.photo_url }}" alt="" width="32" height="32" loading="lazy">
+              <span>{{ p.name }} <span class="invite-username">@{{ p.username }}</span></span>
+            </label></li>
+          {% endfor %}
+        </ul>
+      </fieldset>
+      <label for="invite-note-{{ event.pk }}">Note <span class="invite-optional">(optional)</span></label>
+      <input id="invite-note-{{ event.pk }}" name="note" type="text" maxlength="{{ note_max_length }}" placeholder="Want to go together?">
+      <button type="submit" class="invite-submit">Send</button>
+    </form>
+  {% else %}
+    <p class="invite-empty">No friends to send this to yet. <a href="{% url 'friends' %}">Find friends</a></p>
+  {% endif %}
+</details>
+{% endif %}
