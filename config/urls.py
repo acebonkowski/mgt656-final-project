@@ -20,6 +20,7 @@ urlpatterns = [
     path("healthz", views.healthz, name="healthz"),
     path("onboarding/", views.onboarding, name="onboarding"),
     path("onboarding/photo/", profile_photo, name="profile_photo"),
+    path("username/", accounts_views.choose_username, name="username"),
     path("map/", views.map_view, name="map"),
     path("map/tiles/<int:z>/<int:x>/<int:y>.pbf", views.map_tile, name="map_tile"),
     path("event-photo/<path:object_key>", views.event_photo, name="event_photo"),
