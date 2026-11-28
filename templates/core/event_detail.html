@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1220">
   <title>{{ event.name }} · Yale Events</title>
-  <link rel="stylesheet" href="{% static 'core/map.css' %}">
+  <link rel="stylesheet" href="{% static 'core/map.css' %}?v=friends-85">
   <link rel="stylesheet" href="{% static 'core/event.css' %}">
   <link rel="stylesheet" href="{% static 'core/favorites.css' %}">
 </head>
@@ -46,6 +46,7 @@
         </form>
       </nav>
     {% endif %}
+    {% include "core/_friends_going.html" %}
     {# Field order is fixed by #32: image, name + description, category, date & time, location, price, link. #}
     <img class="event-detail-image" src="{{ event.image_url }}" alt=""
          data-fallback="{% static 'core/img/default-event.svg' %}">
