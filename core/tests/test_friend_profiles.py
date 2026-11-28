@@ -121,7 +121,7 @@ class FriendProfileTests(ProfileTestCase):
         for number in range(6):
             going(self.bea, make_event(f"Show {number}", days_ahead=number + 1))
         self.profile(self.bea)
-        with self.assertNumQueries(5):  # session, user, profile lookup, relationship, events
+        with self.assertNumQueries(6):  # session, user, profile lookup, relationship, attendance visibility (#41), events
             self.profile(self.bea)
 
 
