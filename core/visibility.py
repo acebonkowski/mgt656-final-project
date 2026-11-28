@@ -6,8 +6,10 @@ endpoints, so a hidden event is hidden everywhere.
 Rules (the group comes from the creator's *current* profile, not a copy):
 - everyone: any visitor, logged in or not.
 - school / program: logged-in users in the creator's school / program.
-- friends: the creator only for now. There is no friends model yet (#39), so
-  this fails closed until it exists.
+- friends: the creator and the creator's friends (#98): users with an accepted
+  friend request with the creator, in either direction. A pending or declined
+  request does not count. The rule reads current friendships, so it follows
+  them if they change.
 - The creator always sees their own event. Events with no creator (imports) are
   always visible. A viewer or creator with no program never matches a group.
 """
@@ -15,14 +17,12 @@ Rules (the group comes from the creator's *current* profile, not a copy):
 from django.db.models import Q, Subquery
 
 from accounts.models import Profile
-from core.models import Event
+from core.models import Event, FriendRequest
 
 Visibility = Event.Visibility
 
-# Choices offered in the create/edit forms. "Friends" waits for #39.
-FORM_CHOICES = [
-    (value, label) for value, label in Visibility.choices if value != Visibility.FRIENDS
-]
+# Choices offered in the create/edit forms. "Friends" since #98.
+FORM_CHOICES = list(Visibility.choices)
 
 
 def visible_events(events, user):
@@ -40,6 +40,13 @@ def visible_events(events, user):
         allowed |= Q(
             visibility=Visibility.SCHOOL,
             creator__profile__program__school=Subquery(mine.values("program__school_id")[:1]),
+        )
+        # Friends (#98): built from FriendRequest directly, not core.friends,
+        # which imports this module.
+        accepted = FriendRequest.objects.filter(status=FriendRequest.Status.ACCEPTED)
+        allowed |= Q(visibility=Visibility.FRIENDS) & (
+            Q(creator__in=accepted.filter(recipient=user).values("sender_id"))
+            | Q(creator__in=accepted.filter(sender=user).values("recipient_id"))
         )
     return events.filter(allowed)
 
