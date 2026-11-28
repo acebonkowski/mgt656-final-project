@@ -21,4 +21,5 @@ button:disabled { background: #e4e9ef; color: #58687b; cursor: not-allowed; }
 :focus-visible { outline: 3px solid #387bc0; outline-offset: 3px; }
 [aria-invalid="true"] { border-color: #ac2430; }
 .errors { color: #ac2430; font-size: .9rem; margin-top: 6px; }
+.field-help { color: #52647a; font-size: .875rem; line-height: 1.5; margin: 6px 0 0; }
 .errorlist { margin: 0; padding-left: 20px; }
