@@ -12,11 +12,12 @@ import enum
 
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
-from django.db.models import Q
+from django.db.models import Q, Subquery
 from django.db.models.functions import Lower
 from django.utils import timezone
 
 from accounts import usernames
+from accounts.models import Profile
 from core import resend
 from core.models import Event, EventAttendance, FriendRequest
 from core.visibility import visible_events
@@ -69,17 +70,41 @@ def attendance_visible_to(viewer, attendee):
     """
     Whether `viewer` may see which events `attendee` is going to (#41, #83).
 
-    Settings (#83) will store each user's choice (friends, program, school or
-    everyone) and check it here. Until then the default, "everyone", applies.
-    Every place that shows another user's going status calls this function, or
-    attendance_visible_q() for many users at once.
+    The attendee's choice is Profile.attendance_visibility (friends, program,
+    school or everyone; default everyone). Every place that shows another user's
+    going status calls this function, or attendance_visible_q() for many users
+    at once, so the rule lives in one place and is enforced on the server.
     """
-    return True
+    if viewer is None or attendee is None:
+        return False
+    return get_user_model().objects.filter(pk=attendee.pk).filter(attendance_visible_q(viewer)).exists()
 
 
 def attendance_visible_q(viewer):
-    """Queryset form of attendance_visible_to(): a Q on User. Matches all until #83."""
-    return Q()
+    """
+    Queryset form of attendance_visible_to(): a Q on User matching the users whose
+    going status `viewer` may see. Fails closed: a viewer with no program never
+    matches a program or school group, and an anonymous viewer sees only "everyone".
+    """
+    Choice = Profile.AttendanceVisibility
+    # No profile row yet means the default, everyone.
+    allowed = Q(profile__isnull=True) | Q(profile__attendance_visibility=Choice.EVERYONE)
+    if viewer is None or not viewer.is_authenticated:
+        return allowed
+    mine = Profile.objects.filter(user=viewer)
+    return (
+        allowed
+        | Q(pk=viewer.pk)
+        | (Q(profile__attendance_visibility=Choice.FRIENDS) & friend_ids(viewer))
+        | Q(
+            profile__attendance_visibility=Choice.PROGRAM,
+            profile__program=Subquery(mine.values("program_id")[:1]),
+        )
+        | Q(
+            profile__attendance_visibility=Choice.SCHOOL,
+            profile__program__school=Subquery(mine.values("program__school_id")[:1]),
+        )
+    )
 
 
 def are_friends(a, b):
