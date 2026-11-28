@@ -305,7 +305,7 @@ class AccessAndBadgeTests(FriendsTestCase):
             FriendRequest.objects.create(sender=self.alex, recipient=make_user(f"rec{number}"),
                                          last_sent_at=T0)
         self.client.get("/friends/")
-        with self.assertNumQueries(5):  # session, user, received, sent, own username
+        with self.assertNumQueries(6):  # session, user, received, sent, friends, own username
             self.client.get("/friends/")
 
 
