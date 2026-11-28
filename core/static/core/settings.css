@@ -1,0 +1,15 @@
+.settings-topbar { display: flex; justify-content: space-between; align-items: center; }
+.settings-main { max-width: 40rem; }
+.settings-section { margin: 1.5rem 0; padding-bottom: 1.5rem; border-bottom: 1px solid #72839c55; }
+.settings-avatar { display: block; width: 96px; height: 96px; margin-bottom: .75rem; border-radius: 50%; object-fit: cover; background: #253653; }
+.settings-main label { display: block; margin: .5rem 0; }
+.settings-main fieldset { border: 0; margin: 0 0 .75rem; padding: 0; }
+.settings-choice { min-height: 44px; display: flex !important; align-items: center; gap: .6rem; }
+.settings-main button, .settings-delete-link { min-height: 44px; padding: .6rem 1rem; font: inherit; cursor: pointer; }
+.settings-delete-link, .settings-cancel { display: inline-block; color: #ff9b9b; }
+.settings-danger-button { background: #b91c1c; color: #fff; border: 0; border-radius: .4rem; }
+.settings-error { color: #ff9b9b; }
+.settings-saved { color: #8ee0a3; }
+.settings-main input[type="text"] { width: 100%; box-sizing: border-box; min-height: 44px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+#photo-status.error { color: #ff9b9b; }

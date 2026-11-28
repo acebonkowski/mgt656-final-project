@@ -65,6 +65,10 @@ def download(object_key, bucket=None):
     return request("GET", "object/authenticated/" + object_path(object_key, bucket))
 
 
+def delete(object_key, bucket=None):
+    request("DELETE", "object/" + object_path(object_key, bucket))
+
+
 def ensure_bucket(bucket=None):
     """Explicit setup command only; never called from a user request or migration."""
     bucket = bucket or settings.SUPABASE_PHOTO_BUCKET

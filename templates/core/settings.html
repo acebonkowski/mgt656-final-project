@@ -1,0 +1,65 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Settings · Yale Events</title>
+  <link rel="stylesheet" href="{% static 'core/map.css' %}">
+  <link rel="stylesheet" href="{% static 'core/event.css' %}">
+  <link rel="stylesheet" href="{% static 'core/profile_menu.css' %}">
+  <link rel="stylesheet" href="{% static 'core/settings.css' %}">
+  <script src="{% static 'core/profile_menu.js' %}" defer></script>
+  <script src="{% static 'core/settings.js' %}" defer></script>
+</head>
+<body class="event-detail-page">
+  <header class="event-topbar settings-topbar">
+    <a class="event-back" href="{% url 'map' %}">← Map</a>
+    {% include "core/_profile_menu.html" %}
+  </header>
+  <main class="event-main settings-main">
+    <h1>Settings</h1>
+
+    <section aria-labelledby="photo-heading" class="settings-section">
+      <h2 id="photo-heading">Profile picture</h2>
+      <img class="settings-avatar" id="settings-photo" width="96" height="96"
+           data-default="{% static 'core/bulldog.svg' %}"
+           src="{% if profile.photo_reference %}{% url 'profile_photo' %}{% else %}{% static 'core/bulldog.svg' %}{% endif %}"
+           alt="{% if profile.photo_reference %}Your profile picture{% else %}Default Bulldog profile picture{% endif %}">
+      <form id="photo-form" method="post" action="{% url 'profile_photo' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="upload">
+        <label for="photo-file">Choose a JPEG or PNG, maximum 5 MB</label>
+        <input type="file" id="photo-file" name="photo" accept="image/jpeg,image/png" required>
+        <button type="submit" id="photo-save">Save picture</button>
+      </form>
+      <p id="photo-status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section aria-labelledby="visibility-heading" class="settings-section">
+      <h2 id="visibility-heading">Who can see the events I am going to</h2>
+      <form method="post" action="{% url 'settings' %}" id="visibility-form">
+        {% csrf_token %}
+        <fieldset>
+          <legend class="visually-hidden">Attendance visibility</legend>
+          {% for value, label in choices %}
+          <label class="settings-choice">
+            <input type="radio" name="attendance_visibility" value="{{ value }}"
+                   {% if value == profile.attendance_visibility %}checked{% endif %}>
+            {{ label }}
+          </label>
+          {% endfor %}
+        </fieldset>
+        {% if error %}<p class="settings-error" role="alert">{{ error }}</p>{% endif %}
+        {% if saved %}<p class="settings-saved" role="status">Saved.</p>{% endif %}
+        <button type="submit">Save</button>
+      </form>
+    </section>
+
+    <section aria-labelledby="delete-heading" class="settings-section settings-danger">
+      <h2 id="delete-heading">Delete account</h2>
+      <p>This permanently deletes your account and logs you out.</p>
+      <a class="settings-delete-link" href="{% url 'delete_account' %}">Delete my account…</a>
+    </section>
+  </main>
+</body>
+</html>

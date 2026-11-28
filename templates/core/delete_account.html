@@ -1,0 +1,28 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Delete account · Yale Events</title>
+  <link rel="stylesheet" href="{% static 'core/map.css' %}">
+  <link rel="stylesheet" href="{% static 'core/event.css' %}">
+  <link rel="stylesheet" href="{% static 'core/settings.css' %}">
+</head>
+<body class="event-detail-page">
+  <header class="event-topbar"><a class="event-back" href="{% url 'settings' %}">← Settings</a></header>
+  <main class="event-main settings-main">
+    <h1>Delete your account?</h1>
+    <p>This cannot be undone. Your profile, photo, saved events, going answers and saved searches are deleted.
+       Upcoming events you host, and past events that were not public, are deleted too.
+       Past public events you hosted stay, without a host.</p>
+    <form method="post" action="{% url 'delete_account' %}">
+      {% csrf_token %}
+      <label for="confirm">Type {{ confirm_word }} to confirm</label>
+      <input id="confirm" name="confirm" type="text" autocomplete="off" required aria-describedby="confirm-error">
+      <p id="confirm-error" class="settings-error" role="alert">{{ error }}</p>
+      <button type="submit" class="settings-danger-button">Delete my account</button>
+      <a class="settings-cancel" href="{% url 'settings' %}">Cancel</a>
+    </form>
+  </main>
+</body>
+</html>
