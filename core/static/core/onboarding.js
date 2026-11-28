@@ -1,6 +1,7 @@
 (() => {
   const form = document.getElementById('onboarding-form');
   const name = document.getElementById('id_display_name');
+  const username = document.getElementById('id_username');
   const school = document.getElementById('id_school');
   const program = document.getElementById('id_program');
   const button = document.getElementById('start-discovering');
@@ -8,7 +9,7 @@
   let photoBusy = false;
 
   function updateButton() {
-    button.disabled = photoBusy || !name.value.trim() || !school.value || !program.value || !form.checkValidity();
+    button.disabled = photoBusy || !name.value.trim() || !username.value.trim() || !school.value || !program.value || !form.checkValidity();
   }
 
   function showError(field) {
@@ -28,7 +29,7 @@
     program.removeAttribute('aria-invalid');
     updateButton();
   });
-  [name, school, program].forEach(field => {
+  [name, username, school, program].forEach(field => {
     field.addEventListener('blur', () => showError(field));
     field.addEventListener('input', () => {
       if (field.getAttribute('aria-invalid') === 'true') showError(field);
@@ -40,7 +41,7 @@
     updateButton();
     if (button.disabled) {
       event.preventDefault();
-      [name, school, program].forEach(showError);
+      [name, username, school, program].forEach(showError);
     }
   });
   program.disabled = !school.value;

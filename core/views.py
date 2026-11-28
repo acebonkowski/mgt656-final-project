@@ -24,6 +24,8 @@ from core.favorite_views import favorite_context
 from core.attendance import can_answer, exclude_not_going
 from core.visibility import can_view, visible_events
 from core.ics import build_ics
+from accounts import usernames
+from accounts.middleware import mark_username_set
 from accounts.models import Profile
 from core.models import DEFAULT_EVENT_IMAGE, Event, EventAttendance, Program
 from core.map_places import YALE_AREA_PLACES
@@ -43,14 +45,23 @@ def onboarding(request):
     profile, _ = Profile.objects.get_or_create(user=request.user)
     form = OnboardingForm(request.POST if request.method == "POST" else None, instance=profile)
     if request.method == "POST" and form.is_valid():
-        with transaction.atomic():
-            # Update only onboarding fields so a concurrent photo upload is preserved.
-            profile = Profile.objects.select_for_update().get(pk=profile.pk)
-            profile.display_name = form.cleaned_data["display_name"]
-            profile.program = form.cleaned_data["program"]
-            profile.onboarding_complete = True
-            profile.save(update_fields=["display_name", "program", "onboarding_complete", "updated_at"])
-        return redirect(getattr(settings, "ONBOARDING_SUCCESS_URL", "home"))
+        try:
+            with transaction.atomic():
+                # Update only onboarding fields so a concurrent photo upload is preserved.
+                profile = Profile.objects.select_for_update().get(pk=profile.pk)
+                profile.display_name = form.cleaned_data["display_name"]
+                profile.username = form.cleaned_data["username"]
+                profile.program = form.cleaned_data["program"]
+                profile.onboarding_complete = True
+                profile.save(update_fields=[
+                    "display_name", "username", "program", "onboarding_complete", "updated_at",
+                ])
+        except IntegrityError:
+            # Someone took the username between validation and saving (#95).
+            form.add_error("username", usernames.TAKEN_MESSAGE)
+        else:
+            mark_username_set(request)
+            return redirect(getattr(settings, "ONBOARDING_SUCCESS_URL", "home"))
     return render(request, "core/onboarding.html", {
         "form": form,
         "profile": profile,

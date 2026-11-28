@@ -1,0 +1,143 @@
+{% load static tz %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220">
+  <title>Friends · Yale Events</title>
+  <link rel="stylesheet" href="{% static 'core/map.css' %}?v=ui-84">
+  <link rel="stylesheet" href="{% static 'core/event.css' %}">
+  <link rel="stylesheet" href="{% static 'core/my_events.css' %}?v=my-events-37">
+  <link rel="stylesheet" href="{% static 'core/friends.css' %}?v=friends-96">
+</head>
+<body class="event-detail-page friends-page">
+<header class="event-topbar my-events-topbar">
+  <a class="event-back" href="{% url 'map' %}">← Map</a>
+  <h1>Friends</h1>
+  <span aria-hidden="true"></span>
+</header>
+<main class="friends-main">
+  {% if messages %}
+    <ul class="friends-messages" role="status" aria-live="polite">
+      {% for message in messages %}<li class="friends-message friends-message--{{ message.tags }}">{{ message }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+
+  <p id="my-username" class="friends-me">You're <strong>@{{ my_username }}</strong> · <a href="{% url 'username' %}">Change Username</a></p>
+
+  {# Search (#96): exact username or email only. #}
+  <section class="friends-section" aria-labelledby="find-friends">
+    <h2 id="find-friends">Find Friends</h2>
+    <form class="friends-search" method="get" action="{% url 'friends' %}" role="search">
+      <label class="visually-hidden" for="friend-search">Username or email</label>
+      <input id="friend-search" name="q" type="search" value="{{ query }}" maxlength="254"
+             placeholder="Exact username or Yale email" autocomplete="off" autocapitalize="none" spellcheck="false">
+      <input type="hidden" name="tab" value="{{ tab }}">
+      <button type="submit">Search</button>
+    </form>
+    {% if searched %}
+      {% if result %}
+        <div class="person-row" id="search-result">
+          {% if result.state != "none" %}<a class="person-link-inline" href="{% url 'profile_page' result.person.username %}">{% include "core/_person.html" with p=result.person show_program=True %}</a>
+          {% else %}{% include "core/_person.html" with p=result.person show_program=True %}{% endif %}
+          {% if result.state == "none" %}
+            <form method="post" action="{% url 'send_friend_request' %}">
+              {% csrf_token %}
+              <input type="hidden" name="username" value="{{ result.person.username }}">
+              <input type="hidden" name="return_to" value="{{ return_to }}">
+              <button type="submit" class="friends-primary">Add Friend</button>
+            </form>
+          {% elif result.state == "received" %}
+            <form method="post" action="{% url 'send_friend_request' %}">
+              {% csrf_token %}
+              <input type="hidden" name="username" value="{{ result.person.username }}">
+              <input type="hidden" name="return_to" value="{{ return_to }}">
+              <button type="submit" class="friends-primary">Accept</button>
+            </form>
+          {% elif result.state == "sent" %}
+            <span class="friends-state">Request Sent</span>
+          {% else %}
+            <span class="friends-state">Friends</span>
+          {% endif %}
+        </div>
+      {% else %}
+        <p class="my-events-empty" id="search-empty">No user has that exact username or email.</p>
+      {% endif %}
+    {% endif %}
+  </section>
+
+  {# Open Requests (#96): red counter of pending received requests. #}
+  <section class="friends-section" aria-labelledby="open-requests">
+    <h2 id="open-requests">Open Requests
+      {% if received_count %}<span class="friend-request-badge" aria-label="{{ received_count }} incoming friend requests">{{ received_count }}</span>{% endif %}
+    </h2>
+    <nav class="my-events-tabs" aria-label="Requests">
+      <a href="?tab=received{% if query %}&amp;q={{ query|urlencode }}{% endif %}"{% if tab == "received" %} aria-current="page"{% endif %}>Received</a>
+      <a href="?tab=sent{% if query %}&amp;q={{ query|urlencode }}{% endif %}"{% if tab == "sent" %} aria-current="page"{% endif %}>Sent</a>
+    </nav>
+
+    {% if tab == "received" %}
+      {% if received %}
+        <ul class="person-list" id="received-requests">
+          {% for item in received %}
+            <li class="person-row">
+              <a class="person-link-inline" href="{% url 'profile_page' item.person.username %}">{% include "core/_person.html" with p=item.person show_email=True %}</a>
+              <div class="request-actions">
+                <form method="post" action="{% url 'accept_friend_request' item.request.pk %}">
+                  {% csrf_token %}<input type="hidden" name="return_to" value="{{ return_to }}">
+                  <button type="submit" class="request-accept" aria-label="Accept {{ item.person.name }}" title="Accept">✓</button>
+                </form>
+                <form method="post" action="{% url 'decline_friend_request' item.request.pk %}">
+                  {% csrf_token %}<input type="hidden" name="return_to" value="{{ return_to }}">
+                  <button type="submit" class="request-decline" aria-label="Decline {{ item.person.name }}" title="Decline">✗</button>
+                </form>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="my-events-empty">No open requests.</p>
+      {% endif %}
+    {% else %}
+      {% if sent %}
+        <ul class="person-list" id="sent-requests">
+          {% for item in sent %}
+            <li class="person-row">
+              <a class="person-link-inline" href="{% url 'profile_page' item.person.username %}">{% include "core/_person.html" with p=item.person %}</a>
+              <div class="request-actions request-actions--sent">
+                <span class="friends-state">Sent <time datetime="{{ item.request.last_sent_at|date:'c' }}">{{ item.request.last_sent_at|localtime|date:"M j, g:i A" }}</time></span>
+                <form method="post" action="{% url 'resend_friend_request' item.request.pk %}">
+                  {% csrf_token %}<input type="hidden" name="return_to" value="{{ return_to }}">
+                  <button type="submit" class="friends-secondary"{% if item.resend_refusal %} disabled aria-describedby="resend-{{ item.request.pk }}"{% endif %}>Resend</button>
+                </form>
+                {% if item.resend_refusal %}<span class="friends-hint" id="resend-{{ item.request.pk }}">{{ item.resend_refusal }}</span>
+                {% else %}<span class="friends-hint">{{ item.resends_left }} resend{{ item.resends_left|pluralize }} left</span>{% endif %}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="my-events-empty">You have no open sent requests.</p>
+      {% endif %}
+    {% endif %}
+  </section>
+
+  {# Friends list (#97). #}
+  <section class="friends-section" aria-labelledby="my-friends">
+    <h2 id="my-friends">My Friends{% if friends %} <span class="friends-count">{{ friends|length }}</span>{% endif %}</h2>
+    {% if friends %}
+      <ul class="person-list" id="friends-list">
+        {% for friend in friends %}
+          <li><a class="person-row person-link" href="{% url 'profile_page' friend.username %}">
+            {% include "core/_person.html" with p=friend show_program=True %}
+            <span aria-hidden="true" class="person-chevron">›</span>
+          </a></li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="my-events-empty">No friends yet. Search for a classmate above.</p>
+    {% endif %}
+  </section>
+</main>
+</body>
+</html>

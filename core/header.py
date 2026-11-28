@@ -2,16 +2,14 @@
 from django.urls import reverse
 
 from accounts.models import Profile
+from core import friends
 
 
 def incoming_friend_request_count(user):
-    """Return the signed-in user's pending incoming request count.
-
-    Temporary zero until #39 supplies its model/query. Count received pending
-    requests only, not sent, accepted, rejected, or cancelled requests. The
-    menu reads this once per page render; both badges share the result.
-    """
-    return 0
+    """Pending friend requests sent to the user (#96). Only received, pending
+    requests count. The menu reads this once per page render; both badges
+    share the result."""
+    return friends.incoming_request_count(user)
 
 
 def profile_menu_context(user):

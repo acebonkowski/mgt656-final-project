@@ -5,9 +5,9 @@ from accounts.models import LoginCode, Profile
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = ("user", "onboarding_complete", "created_at")
+    list_display = ("user", "username", "onboarding_complete", "created_at")
     list_filter = ("onboarding_complete",)
-    search_fields = ("user__username", "user__email")
+    search_fields = ("username", "user__username", "user__email")
 
 
 @admin.register(LoginCode)

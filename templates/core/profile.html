@@ -1,0 +1,44 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220">
+  <title>{{ p.name }} · Yale Events</title>
+  <link rel="stylesheet" href="{% static 'core/map.css' %}?v=ui-84">
+  <link rel="stylesheet" href="{% static 'core/event.css' %}">
+  <link rel="stylesheet" href="{% static 'core/my_events.css' %}?v=my-events-37">
+  <link rel="stylesheet" href="{% static 'core/friends.css' %}?v=friends-97">
+</head>
+<body class="event-detail-page friends-page">
+<header class="event-topbar my-events-topbar">
+  <a class="event-back" href="{% url 'friends' %}">← Friends</a>
+  <h1>Profile</h1>
+  <span aria-hidden="true"></span>
+</header>
+<main class="friends-main">
+  <section class="profile-head" aria-labelledby="profile-name">
+    <img class="profile-photo-large" src="{{ p.photo_url }}" alt="{% if p.has_photo %}Profile picture of {{ p.name }}{% else %}Default Bulldog profile picture{% endif %}" width="112" height="112">
+    <h2 id="profile-name">{{ p.name }}</h2>
+    <p class="person-meta">@{{ p.username }}</p>
+    {% if p.program %}<p class="profile-program">{{ p.program }}</p>{% endif %}
+    {% if is_friend %}<p class="friends-state">Friends</p>
+    {% elif state == "sent" %}<p class="friends-state">Request sent</p>
+    {% elif state == "received" %}<p class="friends-state">Wants to be your friend · <a href="{% url 'friends' %}">Answer in Open Requests</a></p>{% endif %}
+  </section>
+
+  {% if is_friend %}
+    <section class="friends-section" aria-labelledby="friend-events">
+      <h2 id="friend-events">Upcoming Events</h2>
+      {% if events %}
+        <ul class="my-events-grid" id="friend-upcoming-events">
+          {% for event in events %}<li>{% include "core/_my_event_card.html" %}</li>{% endfor %}
+        </ul>
+      {% else %}
+        <p class="my-events-empty">{{ p.name }} isn't going to any upcoming events yet.</p>
+      {% endif %}
+    </section>
+  {% endif %}
+</main>
+</body>
+</html>

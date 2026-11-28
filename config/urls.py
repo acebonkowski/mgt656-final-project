@@ -2,11 +2,12 @@ from django.contrib import admin
 from django.urls import include, path
 
 from accounts import views as accounts_views
-from core import views, menu_views, settings_views
+from core import views, settings_views
 from core.photo_views import profile_photo
 from core.event_import.views import trigger_import
 from core.ai_search_views import ai_search_reset_view, ai_search_view
 from core.attendance_views import set_going
+from core import friends_views
 from core.favorite_views import set_favorite
 from core.my_events_views import my_events, my_events_list
 from core.saved_search_views import (
@@ -20,13 +21,23 @@ urlpatterns = [
     path("healthz", views.healthz, name="healthz"),
     path("onboarding/", views.onboarding, name="onboarding"),
     path("onboarding/photo/", profile_photo, name="profile_photo"),
+    path("username/", accounts_views.choose_username, name="username"),
     path("map/", views.map_view, name="map"),
     path("map/tiles/<int:z>/<int:x>/<int:y>.pbf", views.map_tile, name="map_tile"),
     path("event-photo/<path:object_key>", views.event_photo, name="event_photo"),
     path("event-image/generate/", views.generate_event_image, name="generate_event_image"),
     path("map/geocode/", views.geocode_address, name="geocode_address"),
     path("map/duplicate/", views.duplicate_event, name="duplicate_event"),
-    path("friends/", menu_views.friends, name="friends"),
+    path("friends/", friends_views.friends_page, name="friends"),
+    path("friends/requests/", friends_views.send_friend_request, name="send_friend_request"),
+    path("friends/requests/<int:request_id>/accept/", friends_views.accept_friend_request,
+         name="accept_friend_request"),
+    path("friends/requests/<int:request_id>/decline/", friends_views.decline_friend_request,
+         name="decline_friend_request"),
+    path("friends/requests/<int:request_id>/resend/", friends_views.resend_friend_request,
+         name="resend_friend_request"),
+    path("people/photo/<str:token>/", friends_views.person_photo, name="person_photo"),
+    path("people/<str:username>/", friends_views.profile_page, name="profile_page"),
     path("settings/", settings_views.settings_page, name="settings"),
     path("settings/delete/", settings_views.delete_account, name="delete_account"),
     path("my-events/", my_events, name="my_events"),

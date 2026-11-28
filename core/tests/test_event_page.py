@@ -40,7 +40,7 @@ def make_event(**overrides):
 
 def make_user(email="student@yale.edu"):
     user = get_user_model().objects.create_user(username=email, email=email)
-    Profile.objects.create(user=user, onboarding_complete=True)
+    Profile.objects.create(user=user, username=f"u{user.pk}", onboarding_complete=True)
     return user
 
 

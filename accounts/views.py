@@ -5,12 +5,16 @@ from urllib.parse import urlencode
 from django.conf import settings
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.decorators import login_required
+from django.db import IntegrityError, transaction
 from django.shortcuts import redirect, render, resolve_url
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods, require_POST
 
-from accounts import otp
+from accounts import otp, usernames
+from accounts.forms import UsernameForm
+from accounts.middleware import mark_username_set, username_url
 from accounts.models import Profile
 
 SESSION_EMAIL = "login_email"
@@ -31,6 +35,9 @@ def destination_for(user, next_url=None):
     profile, _ = Profile.objects.get_or_create(user=user)
     if not profile.onboarding_complete:
         return resolve_url(settings.ONBOARDING_URL)
+    if not profile.username:
+        # Accounts from before usernames (#95) choose one first.
+        return username_url(next_url)
     return next_url or resolve_url(settings.LOGIN_REDIRECT_URL)
 
 
@@ -149,3 +156,37 @@ def admin_login(request):
     if next_url:
         url = f"{url}?{urlencode({'next': next_url})}"
     return redirect(url)
+
+
+@login_required
+@never_cache
+@require_http_methods(["GET", "POST"])
+def choose_username(request):
+    """
+    /username/ (#95): choose a username, or change it. Users who finished
+    onboarding without one are sent here by UsernameRequiredMiddleware.
+    """
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    if not profile.onboarding_complete:
+        return redirect(settings.ONBOARDING_URL)  # onboarding asks for it
+    next_url = _safe_next(request, request.POST.get("next") or request.GET.get("next"))
+    had_username = bool(profile.username)
+    form = UsernameForm(request.POST if request.method == "POST" else None, instance=profile)
+    if request.method == "POST" and form.is_valid():
+        try:
+            with transaction.atomic():
+                Profile.objects.filter(pk=profile.pk).update(
+                    username=form.cleaned_data["username"], updated_at=timezone.now()
+                )
+        except IntegrityError:
+            # Someone took the name between validation and saving.
+            form.add_error("username", usernames.TAKEN_MESSAGE)
+        else:
+            mark_username_set(request)
+            return redirect(next_url or resolve_url(settings.LOGIN_REDIRECT_URL))
+    return render(request, "accounts/username.html", {
+        "form": form,
+        "next": next_url or "",
+        "is_change": had_username,
+        "current_username": profile.username if had_username else "",
+    }, status=400 if form.errors else 200)

@@ -145,7 +145,7 @@ class VerifyCodeTests(TestCase):
 
     def test_existing_user_with_completed_profile_goes_to_the_map(self):
         user = User.objects.create_user(username=STUDENT, email=STUDENT)
-        Profile.objects.create(user=user, onboarding_complete=True)
+        Profile.objects.create(user=user, username=f"u{user.pk}", onboarding_complete=True)
         send_code(self.client)
         response = self.client.post("/login/code/", {"code": last_code()})
         self.assertRedirects(response, "/map/", fetch_redirect_response=False)
@@ -153,7 +153,7 @@ class VerifyCodeTests(TestCase):
 
     def test_logging_in_from_a_protected_page_returns_to_it(self):
         user = User.objects.create_user(username=STUDENT, email=STUDENT)
-        Profile.objects.create(user=user, onboarding_complete=True)
+        Profile.objects.create(user=user, username=f"u{user.pk}", onboarding_complete=True)
         response = self.client.get("/map/")
         self.assertRedirects(response, "/login/?next=/map/")
         self.client.get("/login/?next=/map/")
@@ -163,7 +163,7 @@ class VerifyCodeTests(TestCase):
 
     def test_unsafe_next_is_ignored(self):
         user = User.objects.create_user(username=STUDENT, email=STUDENT)
-        Profile.objects.create(user=user, onboarding_complete=True)
+        Profile.objects.create(user=user, username=f"u{user.pk}", onboarding_complete=True)
         self.client.get("/login/?next=https://evil.example.com/")
         send_code(self.client)
         response = self.client.post("/login/code/", {"code": last_code()})
@@ -214,7 +214,7 @@ class VerifyCodeTests(TestCase):
 class RoutingAndLogoutTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username=STUDENT, email=STUDENT)
-        Profile.objects.create(user=self.user, onboarding_complete=True)
+        Profile.objects.create(user=self.user, username=f"u{self.user.pk}", onboarding_complete=True)
 
     def test_root_sends_visitors_to_welcome_and_users_to_the_map(self):
         self.assertRedirects(self.client.get("/"), "/login/")

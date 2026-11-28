@@ -30,7 +30,7 @@ class OnboardingJourneyTests(TestCase):
         user.profile.refresh_from_db()
         self.assertFalse(user.profile.onboarding_complete)
         response = self.client.post("/onboarding/", {
-            "display_name": "Alex", "school": self.program.school_id, "program": self.program.pk,
+            "display_name": "Alex", "username": "alex", "school": self.program.school_id, "program": self.program.pk,
         })
         self.assertRedirects(response, "/map/")
         user.profile.refresh_from_db()

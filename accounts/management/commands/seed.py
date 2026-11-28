@@ -51,6 +51,8 @@ class Command(BaseCommand):
         profile, _ = Profile.objects.get_or_create(user=user)
         if not profile.display_name:
             profile.display_name = "Demo administrator" if is_admin else "Demo student"
+        if not profile.username:
+            profile.username = "demo.admin" if is_admin else "demo.student"
         if not profile.program_id:
             profile.program = Program.objects.get(
                 school__name="School of Management", name="Master of Business Administration (M.B.A.)")

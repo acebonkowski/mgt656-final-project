@@ -306,3 +306,45 @@ class EventGeocodeCache(models.Model):
     key = models.CharField(max_length=64, primary_key=True)
     result = models.JSONField(null=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class FriendRequest(models.Model):
+    """
+    A friend request (#96). Friends are the two users of an accepted request, in
+    either direction (see core.friends). One row per ordered pair: a resend
+    updates the row, and a request the other way round accepts this one.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        ACCEPTED = "accepted", "Accepted"
+        DECLINED = "declined", "Declined"
+
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="sent_friend_requests"
+    )
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="received_friend_requests"
+    )
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    # The first send, then each resend (core.resend: 2 resends, 24h apart).
+    last_sent_at = models.DateTimeField()
+    resend_count = models.PositiveSmallIntegerField(default=0)
+    responded_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["sender", "recipient"], name="friend_request_pair_unique"),
+            models.CheckConstraint(
+                condition=~models.Q(sender=models.F("recipient")),
+                name="friend_request_not_to_self",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["recipient", "status"], name="friend_request_inbox_idx"),
+            models.Index(fields=["sender", "status"], name="friend_request_outbox_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.sender_id} -> {self.recipient_id} ({self.status})"
