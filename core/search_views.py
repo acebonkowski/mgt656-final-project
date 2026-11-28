@@ -30,6 +30,7 @@ def event_json(event):
         "latitude": float(event.latitude),
         "longitude": float(event.longitude),
         "price": event.price_label,
+        "friends_going": getattr(event, "friends_going", 0),  # (#85)
         "category": event.category,
         "category_label": event.get_category_display(),
         "start_at": event.start_at.astimezone(NEW_YORK).isoformat(),

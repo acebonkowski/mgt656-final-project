@@ -159,7 +159,19 @@
       element.classList.add("event-marker");
       element.setAttribute("role", "button");
       element.setAttribute("tabindex", "0");
-      element.setAttribute("aria-label", "Event: " + event.name);
+      var label = "Event: " + event.name;
+      // Friends going (#85): a person icon with the count.
+      var friendsGoing = Number(event.friends_going) || 0;
+      if (friendsGoing > 0) {
+        var badge = document.createElement("span");
+        badge.className = "marker-friends";
+        badge.setAttribute("aria-hidden", "true");
+        badge.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="7" r="5"/><path d="M2 23a10 10 0 0 1 20 0Z"/></svg>';
+        badge.appendChild(document.createTextNode(String(friendsGoing)));
+        element.appendChild(badge);
+        label += ", " + friendsGoing + (friendsGoing === 1 ? " friend" : " friends") + " going";
+      }
+      element.setAttribute("aria-label", label);
       function open() {
         if (eventClickHandler) eventClickHandler(event.id);
         else window.location.href = event.detail_url || event.url || "/events/" + event.id + "/";

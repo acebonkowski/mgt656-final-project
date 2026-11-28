@@ -949,3 +949,77 @@ span.time12 input.time12-minute {
   margin: 1rem 0 0;
   font-weight: 700;
 }
+
+/* Friends going (#85): a person icon with the count on the pin. */
+.map .event-marker .marker-friends {
+  position: absolute;
+  top: -0.55rem;
+  right: -0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  min-height: 1.15rem;
+  padding: 0 0.3rem;
+  border: 2px solid var(--map-bg);
+  border-radius: 999px;
+  background: #f5b83d;
+  color: #0b1220;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* "X friends going" on the event page and in the event window (#85). */
+.friends-going {
+  margin: 0 0 0.85rem;
+  border: 1px solid rgba(245, 184, 61, 0.55);
+  border-radius: 0.8rem;
+  background: rgba(245, 184, 61, 0.1);
+}
+
+.friends-going summary {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  padding: 0.4rem 0.8rem;
+  color: #f5b83d;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.friends-going summary:focus-visible {
+  outline: 3px solid #4da3ff;
+  outline-offset: 2px;
+}
+
+.friends-going-list {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0 0.8rem 0.7rem;
+  list-style: none;
+}
+
+.friends-going-list a {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  color: var(--map-text);
+  text-decoration: none;
+}
+
+.friends-going-list a:hover span,
+.friends-going-list a:focus-visible span {
+  text-decoration: underline;
+}
+
+.friends-going-list img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #1f2f4a;
+}
