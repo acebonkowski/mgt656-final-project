@@ -1,0 +1,6 @@
+{# One person (#96): photo, name, @username and an optional second line. Needs `p` from core.people.person. #}
+<img class="person-photo" src="{{ p.photo_url }}" alt="" width="48" height="48" loading="lazy">
+<span class="person-text">
+  <span class="person-name">{{ p.name }}</span>
+  <span class="person-meta">@{{ p.username }}{% if show_email %} · {{ p.email }}{% endif %}{% if show_program and p.program %} · {{ p.program }}{% endif %}</span>
+</span>

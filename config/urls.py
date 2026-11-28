@@ -7,6 +7,7 @@ from core.photo_views import profile_photo
 from core.event_import.views import trigger_import
 from core.ai_search_views import ai_search_reset_view, ai_search_view
 from core.attendance_views import set_going
+from core import friends_views
 from core.favorite_views import set_favorite
 from core.my_events_views import my_events, my_events_list
 from core.saved_search_views import (
@@ -27,7 +28,15 @@ urlpatterns = [
     path("event-image/generate/", views.generate_event_image, name="generate_event_image"),
     path("map/geocode/", views.geocode_address, name="geocode_address"),
     path("map/duplicate/", views.duplicate_event, name="duplicate_event"),
-    path("friends/", menu_views.friends, name="friends"),
+    path("friends/", friends_views.friends_page, name="friends"),
+    path("friends/requests/", friends_views.send_friend_request, name="send_friend_request"),
+    path("friends/requests/<int:request_id>/accept/", friends_views.accept_friend_request,
+         name="accept_friend_request"),
+    path("friends/requests/<int:request_id>/decline/", friends_views.decline_friend_request,
+         name="decline_friend_request"),
+    path("friends/requests/<int:request_id>/resend/", friends_views.resend_friend_request,
+         name="resend_friend_request"),
+    path("people/photo/<str:token>/", friends_views.person_photo, name="person_photo"),
     path("settings/", menu_views.settings, name="settings"),
     path("my-events/", my_events, name="my_events"),
     path("my-events/<slug:row>/", my_events_list, name="my_events_list"),
