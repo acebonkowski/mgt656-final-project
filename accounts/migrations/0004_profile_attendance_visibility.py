@@ -2,7 +2,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [("accounts", "0002_onboarding_fields")]
+    dependencies = [("accounts", "0003_profile_username")]
     operations = [
         migrations.AddField(
             model_name="profile",
