@@ -14,6 +14,19 @@ class Profile(models.Model):
     # A user exists before onboarding. The form requires a program on completion.
     program = models.ForeignKey("core.Program", on_delete=models.PROTECT, null=True, blank=True)
     photo_reference = models.CharField(max_length=500, blank=True)
+
+    class AttendanceVisibility(models.TextChoices):
+        FRIENDS = "friends", "Friends"
+        PROGRAM = "program", "My program"
+        SCHOOL = "school", "My school"
+        EVERYONE = "everyone", "Everyone"
+
+    # Who sees the events this user is going to (#83). Stored here; enforced
+    # server-side by whatever shows other people's attendance (#41, #84, #85).
+    attendance_visibility = models.CharField(
+        max_length=10, choices=AttendanceVisibility.choices,
+        default=AttendanceVisibility.EVERYONE,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
