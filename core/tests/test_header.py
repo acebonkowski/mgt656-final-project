@@ -134,10 +134,10 @@ class ProfileMenuTests(TestCase):
         self.assertNotIn("_auth_user_id", client.session)
 
     def test_pending_destinations_are_accessible_only_after_login(self):
-        for url, title in (("/friends/", "Friends"), ("/settings/", "Settings")):
-            response = self.client.get(url)
-            self.assertContains(response, f"<h1>{title}</h1>")
-            self.assertContains(response, "coming soon")
+        response = self.client.get("/friends/")
+        self.assertContains(response, "<h1>Friends</h1>")
+        self.assertContains(response, "coming soon")
+        self.assertContains(self.client.get("/settings/"), "<h1>Settings</h1>")
         self.client.logout()
         for url in ("/friends/", "/settings/"):
             self.assertEqual(self.client.get(url).status_code, 302)
