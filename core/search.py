@@ -21,6 +21,7 @@ from django.utils import timezone
 
 from core.attendance import exclude_not_going
 from core.models import Event
+from core.friends import with_friends_going
 from core.visibility import visible_events
 
 NEW_YORK = ZoneInfo("America/New_York")
@@ -217,6 +218,7 @@ def search_events(filters, now=None, user=None, queryset=None):
     now = now or timezone.now()
     events = (Event.objects.all() if queryset is None else queryset).filter(end_at__gt=now)
     events = visible_events(events, user)  # hidden events never appear (#41)
+    events = with_friends_going(events, user)  # person icon on the pin (#85)
     if not filters.get("include_not_going"):
         events = exclude_not_going(events, user)
 

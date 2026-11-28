@@ -12,8 +12,8 @@ import enum
 
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
-from django.db.models import Q
-from django.db.models.functions import Lower
+from django.db.models import Exists, F, Func, IntegerField, OuterRef, Q, Subquery, Value
+from django.db.models.functions import Coalesce, Lower
 from django.utils import timezone
 
 from accounts import usernames
@@ -245,4 +245,52 @@ def upcoming_events_of(friend, viewer, now=None):
         .filter(Q(creator=friend) | going)
         .distinct()
         .order_by("start_at", "pk")
+    )
+
+
+def _going_friends(viewer, event_ref):
+    """
+    Friends going (#85): the viewer's friends who answered Going to the event,
+    or who host it (hosts count as going, #84). Maybe and Not going do not
+    count, the viewer never counts, and attendance visibility (#83) applies.
+
+    `event_ref` is an event id, or an OuterRef for the per-event map count, so
+    the list on the event page and the count on the map use the same rule.
+    """
+    answered_going = EventAttendance.objects.filter(
+        user=OuterRef("pk"), event=event_ref, status=EventAttendance.Status.GOING
+    )
+    hosting = Event.objects.filter(pk=event_ref, creator=OuterRef("pk"))
+    return (
+        friends_of(viewer)
+        .filter(attendance_visible_q(viewer))
+        .filter(Exists(answered_going) | Exists(hosting))
+    )
+
+
+class _Count(Func):
+    # COUNT without GROUP BY, so it can be a correlated subquery.
+    function = "COUNT"
+    output_field = IntegerField()
+
+
+def with_friends_going(events, viewer):
+    """
+    Annotate each event with `friends_going`, the number of the viewer's
+    friends going (#85), in one query for all events. 0 for logged-out viewers.
+    """
+    if viewer is None or not viewer.is_authenticated:
+        return events.annotate(friends_going=Value(0, output_field=IntegerField()))
+    count = _going_friends(viewer, OuterRef(OuterRef("pk"))).annotate(n=_Count(F("pk"))).values("n")
+    return events.annotate(friends_going=Coalesce(Subquery(count), 0))
+
+
+def friends_going_to(event, viewer):
+    """The friends going to one event (#85), sorted by name, for the event page."""
+    if viewer is None or not viewer.is_authenticated:
+        return []
+    return list(
+        _going_friends(viewer, event.pk)
+        .select_related("profile")
+        .order_by(Lower("profile__display_name"), "profile__username")
     )

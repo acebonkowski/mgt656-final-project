@@ -19,6 +19,8 @@ from django.utils.http import urlencode
 from django.utils.text import slugify
 
 from core.header import profile_menu_context
+from core.friends import friends_going_to, with_friends_going
+from core.people import person
 from core.forms import EventForm, OnboardingForm
 from core.favorite_views import favorite_context
 from core.attendance import can_answer, exclude_not_going
@@ -137,10 +139,10 @@ def map_view(request):
         # Field names only, never values, so the reason shows in the logs (#57).
         logger.info("Create event rejected: %s", ", ".join(sorted(form.errors)))
 
-    active_events = exclude_not_going(
+    active_events = with_friends_going(exclude_not_going(
         visible_events(Event.objects.filter(end_at__gt=timezone.now()), request.user),
         request.user,
-    )
+    ), request.user)
     event_data = [
         {
             "id": event.pk,
@@ -150,6 +152,7 @@ def map_view(request):
             "latitude": float(event.latitude),
             "longitude": float(event.longitude),
             "price": event.price_label,
+            "friends_going": event.friends_going,  # person icon on the pin (#85)
         }
         for event in active_events
     ]
@@ -305,6 +308,11 @@ def duplicate_event(request):
     })
 
 
+def friends_going_context(request, event):
+    """"X friends going" at the top of the event page and popup (#85)."""
+    return {"friends_going": [person(friend) for friend in friends_going_to(event, request.user)]}
+
+
 def going_context(request, event):
     """Going dropdown state (#84): who sees it, and the user's saved answer."""
     user = request.user
@@ -339,6 +347,7 @@ def event_detail(request, event_id):
         "event": event,
         "popup": False,
         **going_context(request, event),
+        **friends_going_context(request, event),
         **favorite_context(request, event),
         "share_url": request.build_absolute_uri(page_path),
         # Visitors who join from a shared link come back to this event.
@@ -367,6 +376,7 @@ def event_detail_popup(request, event_id):
         "event": event,
         "popup": True,
         **going_context(request, event),
+        **friends_going_context(request, event),
         **favorite_context(request, event),
     })
 
