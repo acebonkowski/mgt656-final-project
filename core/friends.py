@@ -13,11 +13,13 @@ import enum
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 from django.db.models import Q
+from django.db.models.functions import Lower
 from django.utils import timezone
 
 from accounts import usernames
 from core import resend
-from core.models import FriendRequest
+from core.models import Event, EventAttendance, FriendRequest
+from core.visibility import visible_events
 
 Status = FriendRequest.Status
 
@@ -52,6 +54,32 @@ def friend_ids(user):
 
 def friends_of(user):
     return get_user_model().objects.filter(friend_ids(user))
+
+
+def friends_list(user):
+    """The Friends page list (#97): friends sorted by name, profiles selected."""
+    return (
+        friends_of(user)
+        .select_related("profile__program")
+        .order_by(Lower("profile__display_name"), "profile__username")
+    )
+
+
+def attendance_visible_to(viewer, attendee):
+    """
+    Whether `viewer` may see which events `attendee` is going to (#41, #83).
+
+    Settings (#83) will store each user's choice (friends, program, school or
+    everyone) and check it here. Until then the default, "everyone", applies.
+    Every place that shows another user's going status calls this function, or
+    attendance_visible_q() for many users at once.
+    """
+    return True
+
+
+def attendance_visible_q(viewer):
+    """Queryset form of attendance_visible_to(): a Q on User. Matches all until #83."""
+    return Q()
 
 
 def are_friends(a, b):
@@ -188,4 +216,33 @@ def sent_requests(user):
         .exclude(status=Status.ACCEPTED)
         .select_related("recipient__profile__program")
         .order_by("-last_sent_at", "-pk")
+    )
+
+
+def can_view_profile(viewer, other):
+    """
+    Profiles (#97) are open to friends and to the two users of a pending
+    request (either direction). Everyone else gets a 404.
+    """
+    if viewer.pk == other.pk:
+        return True
+    state, _ = relationship(viewer, other)
+    return state != Relationship.NONE
+
+
+def upcoming_events_of(friend, viewer, now=None):
+    """
+    A friend's profile (#97): events that have not ended which the friend hosts
+    or answered Going, limited to what the viewer may see (#41). Maybe and Not
+    going are left out.
+    """
+    if not attendance_visible_to(viewer, friend):
+        return Event.objects.none()
+    now = now or timezone.now()
+    going = Q(attendances__user=friend, attendances__status=EventAttendance.Status.GOING)
+    return (
+        visible_events(Event.objects.filter(end_at__gt=now), viewer)
+        .filter(Q(creator=friend) | going)
+        .distinct()
+        .order_by("start_at", "pk")
     )

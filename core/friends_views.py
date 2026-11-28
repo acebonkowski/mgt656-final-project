@@ -66,6 +66,7 @@ def friends_page(request):
         for r in friends.received_requests(request.user)
     ]
     sent = [_sent_item(r) for r in friends.sent_requests(request.user)]
+    friend_list = [people.person(friend) for friend in friends.friends_list(request.user)]
     profile = Profile.objects.filter(user=request.user).only("username").first()
     return render(request, "core/friends.html", {
         "my_username": profile.username if profile else "",
@@ -76,6 +77,7 @@ def friends_page(request):
         "received": received,
         "sent": sent,
         "received_count": len(received),
+        "friends": friend_list,
         "return_to": request.get_full_path(),
     })
 
@@ -119,6 +121,33 @@ def resend_friend_request(request, request_id):
     else:
         messages.success(request, "Friend request sent again.")
     return _back(request)
+
+
+@login_required
+@never_cache
+@require_GET
+def profile_page(request, username):
+    """
+    /people/<username>/ (#97): name, photo and program for friends and pending
+    requests; a friend's upcoming events too. Anyone else gets a 404, so
+    profiles cannot be browsed by guessing usernames.
+    """
+    other = friends.find_by_username(username)
+    if other is None or other.pk == request.user.pk:
+        if other is not None:
+            return redirect("friends")  # your own profile: the Friends page
+        raise Http404
+    state, _ = friends.relationship(request.user, other)
+    if state == friends.Relationship.NONE:
+        raise Http404
+    is_friend = state == friends.Relationship.FRIENDS
+    events = list(friends.upcoming_events_of(other, request.user)) if is_friend else []
+    return render(request, "core/profile.html", {
+        "p": people.person(other),
+        "state": state.value,
+        "is_friend": is_friend,
+        "events": events,
+    })
 
 
 @login_required
