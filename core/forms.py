@@ -191,7 +191,7 @@ class EventForm(forms.Form):
     link = forms.URLField(max_length=2048, required=False,
                           widget=forms.URLInput(attrs={"placeholder": "Optional"}))
 
-    # Who can see the event (#41). "Friends" is stored but not offered until #39.
+    # Who can see the event (#41). "Friends" is offered since #98.
     visibility = forms.ChoiceField(
         choices=FORM_CHOICES, initial=Event.Visibility.EVERYONE, label="Who Can See It",
         required=False,

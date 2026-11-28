@@ -2,8 +2,9 @@
 Event visibility (#41): the creator picks who can see an event, and the server
 hides it everywhere else (404, so its existence isn't revealed).
 
-Groups come from the creator's profile. "Friends" is stored but only the creator
-sees it until #39 adds friendships. Attendance privacy waits on #83/#39/#85.
+Groups come from the creator's profile. "Friends" means the creator's accepted
+friends (#98); its own tests are in test_friends_visibility.py. Attendance
+privacy waits on #83.
 OpenRouter, the geocoder and photo storage are mocked.
 """
 
@@ -89,7 +90,7 @@ class RuleTests(VisibilityTestCase):
     def test_program(self):
         self.assertEqual(self.allowed(E.PROGRAM), {"creator", "same_program"})
 
-    def test_friends_is_the_creator_only_until_friendships_exist(self):
+    def test_friends_is_the_creator_only_while_they_have_no_friends(self):
         self.assertEqual(self.allowed(E.FRIENDS), {"creator"})
 
     def test_logged_out_visitors_only_see_everyone(self):
@@ -140,11 +141,12 @@ class DefaultTests(VisibilityTestCase):
         form.is_valid()
         self.assertEqual(form.cleaned_data["visibility"], E.EVERYONE)
 
-    def test_friends_is_not_offered_in_the_form(self):
-        self.assertNotIn(E.FRIENDS, [value for value, _ in EventForm().fields["visibility"].choices])
+    def test_friends_is_offered_in_the_form(self):
+        self.assertIn(E.FRIENDS, [value for value, _ in EventForm().fields["visibility"].choices])
         form = self.form(visibility=E.FRIENDS)
         form.is_valid()
-        self.assertIn("visibility", form.errors)
+        self.assertNotIn("visibility", form.errors)
+        self.assertEqual(form.cleaned_data["visibility"], E.FRIENDS)
 
     def test_school_and_program_need_a_program_on_the_profile(self):
         form = EventForm(self.form(visibility=E.PROGRAM).data, creator=self.no_program)
@@ -168,7 +170,7 @@ class FormPageTests(VisibilityTestCase):
         self.assertIn('name="visibility"', create)
         self.assertIn("My school", create)
         # Check the option, not the text: the profile menu also says "Friends" (#81).
-        self.assertNotIn('<option value="friends"', create)
+        self.assertIn('<option value="friends"', create)
         edit = self.client.get(f"/events/{event.pk}/edit/")
         self.assertEqual(edit.context["event_form"].initial["visibility"], E.PROGRAM)
 
