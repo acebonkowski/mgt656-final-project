@@ -116,3 +116,16 @@
   .person-row { flex-wrap: wrap; }
   .request-actions { flex-basis: 100%; }
 }
+
+/* Friends list and profiles (#97). */
+.friends-count { color: var(--map-muted); font-weight: 400; }
+.person-link { color: inherit; text-decoration: none; }
+.person-link:hover { border-color: #4da3ff; }
+.person-link-inline { flex: 1; min-width: 0; display: flex; align-items: center; gap: .75rem; color: inherit; text-decoration: none; }
+.person-chevron { color: var(--map-muted); font-size: 1.4rem; }
+.profile-head { display: flex; flex-direction: column; align-items: center; text-align: center; margin-top: 1.5rem; gap: .25rem; }
+.profile-head h2 { margin: .5rem 0 0; font-size: 1.35rem; }
+.profile-head p { margin: 0; }
+.profile-photo-large { width: 112px; height: 112px; border-radius: 50%; object-fit: cover; background: #1f2f4a; }
+.profile-program { color: var(--map-text); }
+.profile-head .friends-state a { color: #4da3ff; }

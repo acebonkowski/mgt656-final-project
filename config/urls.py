@@ -37,6 +37,7 @@ urlpatterns = [
     path("friends/requests/<int:request_id>/resend/", friends_views.resend_friend_request,
          name="resend_friend_request"),
     path("people/photo/<str:token>/", friends_views.person_photo, name="person_photo"),
+    path("people/<str:username>/", friends_views.profile_page, name="profile_page"),
     path("settings/", menu_views.settings, name="settings"),
     path("my-events/", my_events, name="my_events"),
     path("my-events/<slug:row>/", my_events_list, name="my_events_list"),

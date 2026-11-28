@@ -38,7 +38,8 @@
     {% if searched %}
       {% if result %}
         <div class="person-row" id="search-result">
-          {% include "core/_person.html" with p=result.person show_program=True %}
+          {% if result.state != "none" %}<a class="person-link-inline" href="{% url 'profile_page' result.person.username %}">{% include "core/_person.html" with p=result.person show_program=True %}</a>
+          {% else %}{% include "core/_person.html" with p=result.person show_program=True %}{% endif %}
           {% if result.state == "none" %}
             <form method="post" action="{% url 'send_friend_request' %}">
               {% csrf_token %}
@@ -80,7 +81,7 @@
         <ul class="person-list" id="received-requests">
           {% for item in received %}
             <li class="person-row">
-              {% include "core/_person.html" with p=item.person show_email=True %}
+              <a class="person-link-inline" href="{% url 'profile_page' item.person.username %}">{% include "core/_person.html" with p=item.person show_email=True %}</a>
               <div class="request-actions">
                 <form method="post" action="{% url 'accept_friend_request' item.request.pk %}">
                   {% csrf_token %}<input type="hidden" name="return_to" value="{{ return_to }}">
@@ -102,7 +103,7 @@
         <ul class="person-list" id="sent-requests">
           {% for item in sent %}
             <li class="person-row">
-              {% include "core/_person.html" with p=item.person %}
+              <a class="person-link-inline" href="{% url 'profile_page' item.person.username %}">{% include "core/_person.html" with p=item.person %}</a>
               <div class="request-actions request-actions--sent">
                 <span class="friends-state">Sent <time datetime="{{ item.request.last_sent_at|date:'c' }}">{{ item.request.last_sent_at|localtime|date:"M j, g:i A" }}</time></span>
                 <form method="post" action="{% url 'resend_friend_request' item.request.pk %}">
@@ -118,6 +119,23 @@
       {% else %}
         <p class="my-events-empty">You have no open sent requests.</p>
       {% endif %}
+    {% endif %}
+  </section>
+
+  {# Friends list (#97). #}
+  <section class="friends-section" aria-labelledby="my-friends">
+    <h2 id="my-friends">My Friends{% if friends %} <span class="friends-count">{{ friends|length }}</span>{% endif %}</h2>
+    {% if friends %}
+      <ul class="person-list" id="friends-list">
+        {% for friend in friends %}
+          <li><a class="person-row person-link" href="{% url 'profile_page' friend.username %}">
+            {% include "core/_person.html" with p=friend show_program=True %}
+            <span aria-hidden="true" class="person-chevron">›</span>
+          </a></li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="my-events-empty">No friends yet. Search for a classmate above.</p>
     {% endif %}
   </section>
 </main>
