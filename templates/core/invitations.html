@@ -1,0 +1,54 @@
+{% load static tz %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220">
+  <title>Invitations · Yale Events</title>
+  <link rel="stylesheet" href="{% static 'core/map.css' %}?v=invitations-86">
+  <link rel="stylesheet" href="{% static 'core/event.css' %}">
+  <link rel="stylesheet" href="{% static 'core/my_events.css' %}?v=my-events-37">
+  <link rel="stylesheet" href="{% static 'core/friends.css' %}?v=friends-97">
+</head>
+<body class="event-detail-page friends-page">
+<header class="event-topbar my-events-topbar">
+  <a class="event-back" href="{% url 'map' %}">← Map</a>
+  <h1>Invitations</h1>
+  <span aria-hidden="true"></span>
+</header>
+<main class="friends-main">
+  {% if messages %}
+    <ul class="friends-messages" role="status" aria-live="polite">
+      {% for message in messages %}<li class="friends-message friends-message--{{ message.tags }}">{{ message }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+  <p class="friends-me">Events you sent to friends, with their answers.</p>
+  {% for group in groups %}
+    <section class="friends-section invitation-group" aria-labelledby="invited-event-{{ group.event.pk }}">
+      <h2 id="invited-event-{{ group.event.pk }}"><a href="{% url 'event_detail' group.event.pk %}">{{ group.event.name }}</a></h2>
+      {% timezone "America/New_York" %}<p class="person-meta"><time datetime="{{ group.event.start_at|date:'c' }}">{{ group.event.start_at|date:"D, M j · g:i A" }}</time> · {{ group.event.location }}</p>{% endtimezone %}
+      <ul class="person-list">
+        {% for item in group.items %}
+          <li class="person-row invitation-row" data-status="{{ item.status|default:'none' }}">
+            {% include "core/_person.html" with p=item.person %}
+            <div class="request-actions">
+              <span class="invitation-badge invitation-badge--{{ item.status|default:'none' }}">{{ item.status_label }}</span>
+              {% if not item.status %}
+                <form method="post" action="{% url 'resend_invitation' item.invitation.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="friends-secondary"{% if item.resend_refusal %} disabled aria-describedby="invite-resend-{{ item.invitation.pk }}"{% endif %}>Resend</button>
+                </form>
+                {% if item.resend_refusal %}<span class="friends-hint" id="invite-resend-{{ item.invitation.pk }}">{{ item.resend_refusal }}</span>{% endif %}
+              {% endif %}
+              {% if item.invitation.reply_message %}<p class="invitation-reply-message">“{{ item.invitation.reply_message }}”</p>{% endif %}
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% empty %}
+    <p class="my-events-empty">You haven't sent any upcoming events yet. Open an event and choose Send to Friend.</p>
+  {% endfor %}
+</main>
+</body>
+</html>
