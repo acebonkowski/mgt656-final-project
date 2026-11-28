@@ -348,3 +348,46 @@ class FriendRequest(models.Model):
 
     def __str__(self):
         return f"{self.sender_id} -> {self.recipient_id} ({self.status})"
+
+
+INVITATION_TEXT_MAX_LENGTH = 140
+
+
+class EventInvitation(models.Model):
+    """
+    An event sent to a friend (#86). The answer is not stored here: it is the
+    recipient's going status for the event (EventAttendance, #84), so replying
+    on the map and changing the event page dropdown are the same thing.
+    """
+
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="sent_invitations"
+    )
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="received_invitations"
+    )
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="invitations")
+    note = models.CharField(max_length=INVITATION_TEXT_MAX_LENGTH, blank=True)
+    reply_message = models.CharField(max_length=INVITATION_TEXT_MAX_LENGTH, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    # The first send, then each resend (core.resend: 2 resends, 24h apart).
+    last_sent_at = models.DateTimeField()
+    resend_count = models.PositiveSmallIntegerField(default=0)
+    replied_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["sender", "recipient", "event"], name="invitation_sender_recipient_event_unique"
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(sender=models.F("recipient")), name="invitation_not_to_self"
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["recipient", "last_sent_at"], name="invitation_inbox_idx"),
+            models.Index(fields=["sender", "event"], name="invitation_sent_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.sender_id} invited {self.recipient_id} to {self.event_id}"
