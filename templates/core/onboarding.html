@@ -33,6 +33,7 @@
       <div class="field">
         {{ field.label_tag }}
         {{ field }}
+        {% if field.help_text %}<p class="field-help" id="{{ field.name }}-help">{{ field.help_text }}</p>{% endif %}
         <div class="errors" id="{{ field.name }}-errors" aria-live="polite">{{ field.errors }}</div>
       </div>
       {% endfor %}

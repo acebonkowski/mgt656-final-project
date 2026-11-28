@@ -1,0 +1,24 @@
+{% extends "accounts/base.html" %}
+{% block title %}{% if is_change %}Change Username{% else %}Choose a Username{% endif %} · Yale Events{% endblock %}
+{% block content %}
+  <h1>{% if is_change %}Change Your Username.{% else %}Choose a Username.{% endif %}</h1>
+  <p class="hint">{% if is_change %}You're <strong>@{{ current_username }}</strong>. Friends find you by this name.{% else %}Friends find you by this name. You can change it later.{% endif %}</p>
+  <form method="post" action="{% url 'username' %}" novalidate>
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    {% for error in form.non_field_errors %}<p class="error" role="alert">{{ error }}</p>{% endfor %}
+    {% with field=form.username %}
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    <input id="{{ field.id_for_label }}" name="{{ field.html_name }}" type="text"
+           value="{{ field.value|default_if_none:'' }}"
+           autocomplete="username" autocapitalize="none" spellcheck="false"
+           maxlength="{{ field.field.widget.attrs.maxlength }}" required
+           aria-describedby="username-help{% if field.errors %} username-errors{% endif %}"
+           {% if field.errors %}aria-invalid="true" autofocus{% endif %}>
+    <p id="username-help" class="hint">{{ field.help_text }}</p>
+    {% if field.errors %}<p id="username-errors" class="error" role="alert">{{ field.errors.0 }}</p>{% endif %}
+    {% endwith %}
+    <button type="submit" class="primary">{% if is_change %}Save Username{% else %}Continue{% endif %}</button>
+  </form>
+  {% if is_change %}<a class="back" href="{% url 'friends' %}">← Friends</a>{% endif %}
+{% endblock %}

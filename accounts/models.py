@@ -1,5 +1,8 @@
 from django.conf import settings
 from django.db import models
+from django.db.models.functions import Lower
+
+from accounts import usernames
 
 
 class Profile(models.Model):
@@ -14,8 +17,24 @@ class Profile(models.Model):
     # A user exists before onboarding. The form requires a program on completion.
     program = models.ForeignKey("core.Program", on_delete=models.PROTECT, null=True, blank=True)
     photo_reference = models.CharField(max_length=500, blank=True)
+    # The handle friends search for (#95), stored lowercase. Blank until chosen:
+    # users from before #95 are asked for one after login.
+    username = models.CharField(
+        max_length=usernames.MAX_LENGTH, blank=True, validators=[usernames.validate_username]
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            # Unique in any letter case, enforced by the database (#95).
+            models.UniqueConstraint(
+                Lower("username"),
+                condition=~models.Q(username=""),
+                name="profile_username_ci_unique",
+                violation_error_message=usernames.TAKEN_MESSAGE,
+            ),
+        ]
 
     def __str__(self):
         return f"profile of {self.user}"

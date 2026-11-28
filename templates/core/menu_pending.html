@@ -9,6 +9,8 @@
 </head>
 <body class="event-detail-page">
   <header class="event-topbar"><a class="event-back" href="{% url 'map' %}">← Map</a></header>
-  <main class="event-main"><h1>{{ title }}</h1><p>{{ message }}</p></main>
+  <main class="event-main"><h1>{{ title }}</h1>
+    {% if username %}<p id="my-username">You're <strong>@{{ username }}</strong> · <a href="{% url 'username' %}">Change username</a></p>{% endif %}
+    <p>{{ message }}</p></main>
 </body>
 </html>

@@ -54,7 +54,7 @@ class VisibilityTestCase(TestCase):
     def user(name, program):
         user = get_user_model().objects.create_user(username=f"{name}@yale.edu",
                                                     email=f"{name}@yale.edu")
-        Profile.objects.create(user=user, onboarding_complete=True, program=program)
+        Profile.objects.create(user=user, username=f"u{user.pk}", onboarding_complete=True, program=program)
         return user
 
     def get_as(self, user, url, data=None):

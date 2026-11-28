@@ -63,7 +63,7 @@ def make_event(**overrides):
 
 def make_user(email="student@yale.edu", onboarded=True):
     user = get_user_model().objects.create_user(username=email, email=email)
-    Profile.objects.create(user=user, onboarding_complete=onboarded)
+    Profile.objects.create(user=user, username=f"u{user.pk}" if onboarded else "", onboarding_complete=onboarded)
     return user
 
 

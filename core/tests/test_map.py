@@ -50,7 +50,7 @@ class MapAccessTests(TestCase):
     def test_logging_in_from_the_map_lands_back_on_the_map(self):
         # The login story (#6) replaced the temporary admin password login.
         user = get_user_model().objects.create_user(username="student@yale.edu")
-        Profile.objects.create(user=user, onboarding_complete=True)
+        Profile.objects.create(user=user, username=f"u{user.pk}", onboarding_complete=True)
         self.client.get(f"{resolve_url(settings.LOGIN_URL)}?next=/map/")
         self.client.post("/login/", {"email": "student@yale.edu"})
         code = re.search(r"\b(\d{6})\b", mail.outbox[-1].body).group(1)

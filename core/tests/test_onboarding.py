@@ -25,7 +25,7 @@ class OnboardingTests(TestCase):
         self.client.force_login(self.user)
 
     def payload(self, **changes):
-        return {"display_name": "Alex", "school": self.school.pk, "program": self.program.pk, **changes}
+        return {"display_name": "Alex", "username": "alex.k", "school": self.school.pk, "program": self.program.pk, **changes}
 
     def test_anonymous_user_cannot_view_or_save(self):
         self.client.logout()
@@ -38,14 +38,14 @@ class OnboardingTests(TestCase):
         self.assertContains(response, "Let's Get to Know You Better.")
         self.assertContains(response, "core/bulldog.svg")
         self.assertContains(response, "Start Discovering")
-        self.assertEqual(set(response.context["form"].fields), {"display_name", "school", "program"})
+        self.assertEqual(set(response.context["form"].fields), {"display_name", "username", "school", "program"})
 
     def test_empty_fields_and_whitespace_name_rejected(self):
         for payload in [{}, self.payload(display_name="   ")]:
             response = self.client.post(reverse("onboarding"), payload)
             self.assertIn("display_name", response.context["form"].errors)
         response = self.client.post(reverse("onboarding"), {})
-        self.assertEqual(set(response.context["form"].errors), {"display_name", "school", "program"})
+        self.assertEqual(set(response.context["form"].errors), {"display_name", "username", "school", "program"})
         self.assertFalse(Profile.objects.get(user=self.user).onboarding_complete)
 
     def test_program_must_belong_to_selected_school(self):
